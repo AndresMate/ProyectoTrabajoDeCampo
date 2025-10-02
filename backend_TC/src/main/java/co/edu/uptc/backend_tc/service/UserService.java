@@ -9,26 +9,41 @@ import java.util.List;
 @Service
 public class UserService {
 
-    private final UserRepository userRepository;
+    private final UserRepository repository;
 
-    public UserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public UserService(UserRepository repository) {
+        this.repository = repository;
     }
 
+    // 🔹 Listar todos los usuarios
     public List<User> getAllUsers() {
-        return userRepository.findAll();
+        return repository.findAll();
     }
 
-    public User createUser(User user) {
-        return userRepository.save(user);
-    }
-
+    // 🔹 Buscar usuario por ID
     public User getUserById(Long id) {
-        return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        return repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
     }
 
+    // 🔹 Crear usuario
+    public User createUser(User user) {
+        return repository.save(user);
+    }
+
+    // 🔹 Actualizar usuario
+    public User updateUser(Long id, User user) {
+        User existing = getUserById(id);
+        existing.setFullName(user.getFullName());
+        existing.setEmail(user.getEmail());
+        existing.setRole(user.getRole());
+        existing.setIsActive(user.getIsActive());
+        // ⚠️ Nota: si manejas passwordHash, deberías agregar lógica separada aquí
+        return repository.save(existing);
+    }
+
+    // 🔹 Eliminar usuario
     public void deleteUser(Long id) {
-        userRepository.deleteById(id);
+        repository.deleteById(id);
     }
 }

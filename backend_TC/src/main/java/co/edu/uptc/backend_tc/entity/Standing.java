@@ -1,5 +1,6 @@
 package co.edu.uptc.backend_tc.entity;
 
+import co.edu.uptc.backend_tc.entity.id.StandingId;
 import jakarta.persistence.*;
 import lombok.*;
 

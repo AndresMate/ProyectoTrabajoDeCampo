@@ -14,4 +14,15 @@ public class UserMapper {
                 .isActive(user.getIsActive())
                 .build();
     }
+
+    public static User toEntity(UserDTO dto) {
+        return User.builder()
+                .id(dto.getId())
+                .fullName(dto.getFullName())
+                .email(dto.getEmail())
+                .role(dto.getRole())
+                .isActive(dto.getIsActive() != null ? dto.getIsActive() : true)
+                // ⚠️ El passwordHash debería manejarse en otro flujo (ej. registro con seguridad)
+                .build();
+    }
 }
