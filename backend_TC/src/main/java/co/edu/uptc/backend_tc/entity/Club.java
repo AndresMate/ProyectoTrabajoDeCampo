@@ -10,11 +10,16 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class Club {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false, unique = true, length = 150)
     private String name;
 
+    @Column(length = 255)
     private String description;
+
+    @Column(nullable = false)
+    private Boolean isActive = true;
 }

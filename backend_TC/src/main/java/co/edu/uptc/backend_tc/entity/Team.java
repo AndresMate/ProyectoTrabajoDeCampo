@@ -10,18 +10,26 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class Team {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String name;
     private Boolean isActive = true;
 
-    @ManyToOne @JoinColumn(name = "tournament_id", nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "tournament_id", nullable = false)
     private Tournament tournament;
 
-    @ManyToOne @JoinColumn(name = "category_id", nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    @OneToOne @JoinColumn(name = "origin_inscription_id")
+    @OneToOne
+    @JoinColumn(name = "origin_inscription_id")
     private Inscription originInscription;
+
+    @ManyToOne
+    @JoinColumn(name = "club_id", nullable = false)
+    private Club club;
 }

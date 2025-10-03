@@ -1,6 +1,5 @@
 package co.edu.uptc.backend_tc.entity;
 
-import co.edu.uptc.backend_tc.entity.id.StandingId;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -10,17 +9,18 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@IdClass(StandingId.class)
 public class Standing {
+
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     @ManyToOne @JoinColumn(name = "tournament_id", nullable = false)
     private Tournament tournament;
 
-    @Id
     @ManyToOne @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    @Id
     @ManyToOne @JoinColumn(name = "team_id", nullable = false)
     private Team team;
 

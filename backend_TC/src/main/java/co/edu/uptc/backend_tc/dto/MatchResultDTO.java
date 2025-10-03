@@ -1,8 +1,7 @@
 package co.edu.uptc.backend_tc.dto;
 
 import lombok.*;
-
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -14,7 +13,7 @@ public class MatchResultDTO {
     private Integer awayScore;
     private String notes;
     private Long enteredById;
-    private OffsetDateTime enteredAt;
+    private LocalDateTime enteredAt;
     private Long validatedById;
-    private OffsetDateTime validatedAt;
+    private LocalDateTime validatedAt;
 }
