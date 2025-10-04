@@ -2,6 +2,7 @@ package co.edu.uptc.backend_tc.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -13,8 +14,11 @@ import java.time.LocalDateTime;
 public class MatchResult {
 
     @Id
+    private Long matchId; // la PK es el mismo id del partido
+
     @OneToOne
-    @JoinColumn(name = "match_id", nullable = false)
+    @MapsId
+    @JoinColumn(name = "match_id")
     private Match match;
 
     private Integer homeScore = 0;
@@ -22,15 +26,6 @@ public class MatchResult {
 
     private String notes;
 
-    @ManyToOne
-    @JoinColumn(name = "entered_by", nullable = false)
-    private User enteredBy;
-
+    @Column(nullable = false)
     private LocalDateTime enteredAt = LocalDateTime.now();
-
-    @ManyToOne
-    @JoinColumn(name = "validated_by")
-    private User validatedBy;
-
-    private LocalDateTime validatedAt;
 }

@@ -7,10 +7,10 @@ public class StandingMapper {
 
     public static StandingDTO toDTO(Standing s) {
         return StandingDTO.builder()
-                .id(s.getId())
                 .tournamentId(s.getTournament().getId())
                 .categoryId(s.getCategory().getId())
                 .teamId(s.getTeam().getId())
+                .teamName(s.getTeam() != null ? s.getTeam().getName() : "N/A") // ✅ seguro
                 .points(s.getPoints())
                 .played(s.getPlayed())
                 .wins(s.getWins())

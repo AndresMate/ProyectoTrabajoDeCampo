@@ -1,52 +1,57 @@
 package co.edu.uptc.backend_tc.service;
 
 import co.edu.uptc.backend_tc.dto.MatchResultDTO;
-import co.edu.uptc.backend_tc.entity.*;
+import co.edu.uptc.backend_tc.entity.Match;
+import co.edu.uptc.backend_tc.entity.MatchResult;
 import co.edu.uptc.backend_tc.mapper.MatchResultMapper;
-import co.edu.uptc.backend_tc.repository.*;
+import co.edu.uptc.backend_tc.repository.MatchRepository;
+import co.edu.uptc.backend_tc.repository.MatchResultRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class MatchResultService {
 
     private final MatchResultRepository matchResultRepository;
     private final MatchRepository matchRepository;
-    private final UserRepository userRepository;
     private final StandingService standingService;
+    private final SanctionService sanctionService;
 
     public MatchResultService(MatchResultRepository matchResultRepository,
                               MatchRepository matchRepository,
-                              UserRepository userRepository,
-                              StandingService standingService) {
+                              StandingService standingService,
+                              SanctionService sanctionService) {
         this.matchResultRepository = matchResultRepository;
         this.matchRepository = matchRepository;
-        this.userRepository = userRepository;
         this.standingService = standingService;
+        this.sanctionService = sanctionService;
     }
 
-    public MatchResultDTO getByMatchId(Long matchId) {
-        return matchResultRepository.findById(matchId)
-                .map(MatchResultMapper::toDTO)
-                .orElseThrow(() -> new RuntimeException("Result not found for match " + matchId));
-    }
-
-    public MatchResultDTO createOrUpdateResult(MatchResultDTO dto) {
+    @Transactional
+    public MatchResultDTO saveResult(MatchResultDTO dto) {
         Match match = matchRepository.findById(dto.getMatchId())
                 .orElseThrow(() -> new RuntimeException("Match not found"));
-        User enteredBy = userRepository.findById(dto.getEnteredById())
-                .orElseThrow(() -> new RuntimeException("EnteredBy user not found"));
-        User validatedBy = dto.getValidatedById() != null
-                ? userRepository.findById(dto.getValidatedById()).orElse(null)
-                : null;
 
-        // Guardar resultado
-        MatchResult matchResult = MatchResultMapper.toEntity(dto, match, enteredBy, validatedBy);
-        matchResult = matchResultRepository.save(matchResult);
+        MatchResult result = MatchResultMapper.toEntity(dto, match);
+        result = matchResultRepository.save(result);
 
-        // 🔥 Actualizar standings automáticamente
+        // Marcar partido como finalizado
+        match.setStatus(co.edu.uptc.backend_tc.model.MatchStatus.FINISHED);
+        matchRepository.save(match);
+
+        // Actualizar tabla de posiciones
         standingService.updateStandingsFromMatch(match, dto.getHomeScore(), dto.getAwayScore());
 
-        return MatchResultMapper.toDTO(matchResult);
+        // ⚠️ Aquí podrías revisar sanciones automáticas por eventos (ej: tarjetas rojas)
+        // Ejemplo: sanctionService.autoSanction(match);
+
+        return MatchResultMapper.toDTO(result);
+    }
+
+    public MatchResultDTO getResult(Long matchId) {
+        MatchResult result = matchResultRepository.findById(matchId)
+                .orElseThrow(() -> new RuntimeException("Result not found"));
+        return MatchResultMapper.toDTO(result);
     }
 
     public void deleteResult(Long matchId) {

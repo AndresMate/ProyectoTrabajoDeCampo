@@ -1,9 +1,10 @@
 package co.edu.uptc.backend_tc.entity;
 
+import co.edu.uptc.backend_tc.model.SanctionType;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "sanctions")
@@ -12,15 +13,34 @@ import java.time.OffsetDateTime;
 @AllArgsConstructor
 @Builder
 public class Sanction {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String description;
-    private OffsetDateTime appliedAt = OffsetDateTime.now();
-
-    @ManyToOne @JoinColumn(name = "player_id", nullable = false)
+    // Relación con jugador (opcional si es para un equipo completo)
+    @ManyToOne
+    @JoinColumn(name = "player_id")
     private Player player;
 
-    @ManyToOne @JoinColumn(name = "match_id")
+    // Relación con equipo
+    @ManyToOne
+    @JoinColumn(name = "team_id")
+    private Team team;
+
+    // Relación con partido donde ocurrió la sanción
+    @ManyToOne
+    @JoinColumn(name = "match_id")
     private Match match;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 50)
+    private SanctionType type; // Ej: YELLOW_CARD, RED_CARD, SUSPENSION, FINE
+
+    private String reason;
+
+    @Column(nullable = false)
+    private LocalDateTime dateIssued = LocalDateTime.now();
+
+    private LocalDateTime validUntil; // Ejemplo: suspensión hasta X fecha
 }

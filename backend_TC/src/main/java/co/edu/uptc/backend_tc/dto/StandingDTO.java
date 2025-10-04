@@ -8,6 +8,7 @@ import lombok.*;
 @Builder
 public class StandingDTO {
     private Long id;
+    private String teamName;
     private Long tournamentId;
     private Long categoryId;
     private Long teamId;

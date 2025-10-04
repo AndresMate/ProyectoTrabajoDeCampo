@@ -5,7 +5,7 @@ import co.edu.uptc.backend_tc.service.MatchResultService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/match-results")
+@RequestMapping("/api/matches/{matchId}/result")
 public class MatchResultController {
 
     private final MatchResultService matchResultService;
@@ -14,17 +14,18 @@ public class MatchResultController {
         this.matchResultService = matchResultService;
     }
 
-    @GetMapping("/{matchId}")
-    public MatchResultDTO getByMatchId(@PathVariable Long matchId) {
-        return matchResultService.getByMatchId(matchId);
+    @GetMapping
+    public MatchResultDTO getResult(@PathVariable Long matchId) {
+        return matchResultService.getResult(matchId);
     }
 
     @PostMapping
-    public MatchResultDTO createOrUpdateResult(@RequestBody MatchResultDTO dto) {
-        return matchResultService.createOrUpdateResult(dto);
+    public MatchResultDTO saveResult(@PathVariable Long matchId, @RequestBody MatchResultDTO dto) {
+        dto.setMatchId(matchId);
+        return matchResultService.saveResult(dto);
     }
 
-    @DeleteMapping("/{matchId}")
+    @DeleteMapping
     public void deleteResult(@PathVariable Long matchId) {
         matchResultService.deleteResult(matchId);
     }

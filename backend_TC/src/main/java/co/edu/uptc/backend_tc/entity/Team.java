@@ -3,6 +3,9 @@ package co.edu.uptc.backend_tc.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.*;
+
+
 @Entity
 @Table(name = "teams")
 @Data
@@ -32,4 +35,8 @@ public class Team {
     @ManyToOne
     @JoinColumn(name = "club_id", nullable = false)
     private Club club;
+
+    @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TeamAvailability> availabilities = new ArrayList<>();
+
 }
