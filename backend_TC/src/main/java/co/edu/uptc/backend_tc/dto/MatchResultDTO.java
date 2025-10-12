@@ -1,7 +1,6 @@
 package co.edu.uptc.backend_tc.dto;
 
 import lombok.*;
-
 import java.time.LocalDateTime;
 
 @Data

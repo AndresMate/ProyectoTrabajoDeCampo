@@ -21,4 +21,9 @@ public class Category {
 
     @ManyToOne @JoinColumn(name = "sport_id", nullable = false)
     private Sport sport;
+
+    public Category(Long id) {
+        this.id = id;
+    }
+
 }

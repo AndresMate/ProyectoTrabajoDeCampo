@@ -1,118 +1,170 @@
 package co.edu.uptc.backend_tc.service;
 
 import co.edu.uptc.backend_tc.entity.*;
+import co.edu.uptc.backend_tc.model.InscriptionStatus;
+import co.edu.uptc.backend_tc.model.MatchStatus;
 import co.edu.uptc.backend_tc.repository.*;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
-import java.time.DayOfWeek;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class FixtureService {
 
+    private final TournamentRepository tournamentRepository;
     private final TeamRepository teamRepository;
     private final MatchRepository matchRepository;
-    private final TournamentRepository tournamentRepository;
-    private final CategoryRepository categoryRepository;
     private final TeamAvailabilityRepository availabilityRepository;
 
-    public FixtureService(TeamRepository teamRepository,
+    public FixtureService(TournamentRepository tournamentRepository,
+                          TeamRepository teamRepository,
                           MatchRepository matchRepository,
-                          TournamentRepository tournamentRepository,
-                          CategoryRepository categoryRepository,
                           TeamAvailabilityRepository availabilityRepository) {
+        this.tournamentRepository = tournamentRepository;
         this.teamRepository = teamRepository;
         this.matchRepository = matchRepository;
-        this.tournamentRepository = tournamentRepository;
-        this.categoryRepository = categoryRepository;
         this.availabilityRepository = availabilityRepository;
     }
 
-    public List<Match> generateRoundRobin(Long tournamentId, Long categoryId, LocalDateTime startDate) {
+    /**
+     * Genera el fixture automáticamente según el modo elegido.
+     * @param tournamentId id del torneo
+     * @param categoryId id de la categoría
+     * @param mode "round_robin" o "knockout"
+     */
+    @Transactional
+    public void generateFixture(Long tournamentId, Long categoryId, String mode) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
-        Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new RuntimeException("Category not found"));
 
-        // 🔥 Obtener equipos activos
-        List<Team> teams = teamRepository.findAll().stream()
-                .filter(t -> t.getTournament().getId().equals(tournamentId))
-                .filter(t -> t.getCategory().getId().equals(categoryId))
-                .filter(Team::getIsActive)
-                .toList();
+        // 🔹 Filtrar equipos con inscripción aprobada
+        List<Team> teams = teamRepository.findByTournamentIdAndCategoryId(tournamentId, categoryId)
+                .stream()
+                .filter(t -> t.getOriginInscription() != null &&
+                        t.getOriginInscription().getStatus() == InscriptionStatus.APPROVED)
+                .collect(Collectors.toList());
 
         if (teams.size() < 2) {
-            throw new RuntimeException("Not enough teams to generate fixtures");
+            throw new RuntimeException("Not enough approved teams to generate a fixture");
         }
 
-        List<Team> teamList = new ArrayList<>(teams);
-
-        // Si es impar, añadimos un BYE
-        if (teamList.size() % 2 != 0) {
-            teamList.add(null);
+        // 🔹 Elegir modo
+        switch (mode.toLowerCase()) {
+            case "round_robin" -> generateRoundRobin(tournament, categoryId, teams);
+            case "knockout" -> generateKnockout(tournament, categoryId, teams);
+            default -> throw new RuntimeException("Invalid fixture mode: " + mode);
         }
+    }
 
-        int numTeams = teamList.size();
-        int rounds = numTeams - 1;
-        int matchesPerRound = numTeams / 2;
+    /**
+     * Genera un fixture tipo "todos contra todos"
+     */
+    private void generateRoundRobin(Tournament tournament, Long categoryId, List<Team> teams) {
+        int numTeams = teams.size();
+        boolean hasBye = (numTeams % 2 != 0);
 
-        List<Match> allMatches = new ArrayList<>();
+        if (hasBye) teams.add(null); // “bye” para número impar
+
+        int rounds = teams.size() - 1;
+        int matchesPerRound = teams.size() / 2;
+
+        List<Match> matches = new ArrayList<>();
 
         for (int round = 0; round < rounds; round++) {
             for (int i = 0; i < matchesPerRound; i++) {
-                Team home = teamList.get(i);
-                Team away = teamList.get(numTeams - 1 - i);
+                Team home = teams.get(i);
+                Team away = teams.get(teams.size() - 1 - i);
 
-                if (home != null && away != null) {
-                    LocalDateTime slot = findNextAvailableSlot(home, away, startDate.plusDays(round));
-                    Match match = Match.builder()
-                            .tournament(tournament)
-                            .category(category)
-                            .homeTeam(home)
-                            .awayTeam(away)
-                            .startsAt(slot)
-                            .status(slot != null ? co.edu.uptc.backend_tc.model.MatchStatus.SCHEDULED
-                                    : co.edu.uptc.backend_tc.model.MatchStatus.POSTPONED)
-                            .build();
-                    allMatches.add(match);
-                }
+                if (home == null || away == null) continue; // uno descansa
+
+                LocalDateTime matchTime = findCompatibleSlot(home, away);
+
+                Match match = Match.builder()
+                        .tournament(tournament)
+                        .category(new Category(categoryId))
+                        .homeTeam(home)
+                        .awayTeam(away)
+                        .status(MatchStatus.SCHEDULED)
+                        .startsAt(matchTime)
+                        .build();
+
+                matches.add(match);
             }
 
-            // Rotación (Round-Robin)
-            List<Team> rotated = new ArrayList<>(teamList);
-            Team fixed = rotated.remove(0);
-            Collections.rotate(rotated, 1);
-            rotated.add(0, fixed);
-            teamList = rotated;
+            // rotar equipos excepto el primero
+            teams.add(1, teams.remove(teams.size() - 1));
         }
 
-        return matchRepository.saveAll(allMatches);
+        matchRepository.saveAll(matches);
     }
 
-    private LocalDateTime findNextAvailableSlot(Team home, Team away, LocalDateTime startDate) {
-        List<TeamAvailability> homeSlots = availabilityRepository.findByTeamId(home.getId());
-        List<TeamAvailability> awaySlots = availabilityRepository.findByTeamId(away.getId());
+    /**
+     * Genera un fixture tipo "eliminación directa"
+     */
+    private void generateKnockout(Tournament tournament, Long categoryId, List<Team> teams) {
+        Collections.shuffle(teams); // emparejamientos aleatorios
+        List<Match> matches = new ArrayList<>();
 
-        for (int i = 0; i < 14; i++) { // buscar hasta 2 semanas
-            LocalDateTime candidate = startDate.plusDays(i);
-            DayOfWeek day = candidate.getDayOfWeek();
+        for (int i = 0; i < teams.size(); i += 2) {
+            if (i + 1 >= teams.size()) break; // impar queda libre
 
-            List<TeamAvailability> homeDay = homeSlots.stream().filter(a -> a.getDayOfWeek().equals(day)).toList();
-            List<TeamAvailability> awayDay = awaySlots.stream().filter(a -> a.getDayOfWeek().equals(day)).toList();
+            Team home = teams.get(i);
+            Team away = teams.get(i + 1);
 
-            for (TeamAvailability h : homeDay) {
-                for (TeamAvailability a : awayDay) {
-                    LocalTime start = h.getStartTime().isAfter(a.getStartTime()) ? h.getStartTime() : a.getStartTime();
-                    LocalTime end = h.getEndTime().isBefore(a.getEndTime()) ? h.getEndTime() : a.getEndTime();
+            LocalDateTime matchTime = findCompatibleSlot(home, away);
 
-                    if (start.isBefore(end)) {
-                        return LocalDateTime.of(candidate.toLocalDate(), start);
-                    }
+            Match match = Match.builder()
+                    .tournament(tournament)
+                    .category(new Category(categoryId))
+                    .homeTeam(home)
+                    .awayTeam(away)
+                    .status(MatchStatus.SCHEDULED)
+                    .startsAt(matchTime)
+                    .build();
+
+            matches.add(match);
+        }
+
+        matchRepository.saveAll(matches);
+    }
+
+    /**
+     * Busca un horario compatible entre dos equipos según TeamAvailability
+     */
+    private LocalDateTime findCompatibleSlot(Team teamA, Team teamB) {
+        List<TeamAvailability> aAvail = availabilityRepository.findByTeamId(teamA.getId());
+        List<TeamAvailability> bAvail = availabilityRepository.findByTeamId(teamB.getId());
+
+        for (TeamAvailability a : aAvail) {
+            for (TeamAvailability b : bAvail) {
+                if (a.getDayOfWeek() == b.getDayOfWeek() &&
+                        a.getStartTime().equals(b.getStartTime()) &&
+                        a.getEndTime().equals(b.getEndTime())) {
+
+                    // 🔹 Retorna un horario compatible
+                    return LocalDateTime.now()
+                            .with(a.getDayOfWeek())
+                            .withHour(a.getStartTime().getHour())
+                            .withMinute(a.getStartTime().getMinute());
                 }
             }
         }
-        return null; // no coincidencia
+
+        throw new RuntimeException("No compatible time found between teams " +
+                teamA.getName() + " and " + teamB.getName());
+    }
+
+    /**
+     * Elimina todos los partidos de un torneo y categoría
+     */
+    @Transactional
+    public void deleteFixture(Long tournamentId, Long categoryId) {
+        List<Match> matches = matchRepository.findByTournamentIdAndCategoryId(tournamentId, categoryId);
+        if (!matches.isEmpty()) {
+            matchRepository.deleteAll(matches);
+        }
     }
 }

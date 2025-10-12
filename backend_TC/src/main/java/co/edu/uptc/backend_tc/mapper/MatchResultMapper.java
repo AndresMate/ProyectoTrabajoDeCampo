@@ -6,13 +6,13 @@ import co.edu.uptc.backend_tc.entity.MatchResult;
 
 public class MatchResultMapper {
 
-    public static MatchResultDTO toDTO(MatchResult result) {
+    public static MatchResultDTO toDTO(MatchResult r) {
         return MatchResultDTO.builder()
-                .matchId(result.getMatch().getId())
-                .homeScore(result.getHomeScore())
-                .awayScore(result.getAwayScore())
-                .notes(result.getNotes())
-                .enteredAt(result.getEnteredAt())
+                .matchId(r.getMatch().getId())
+                .homeScore(r.getHomeScore())
+                .awayScore(r.getAwayScore())
+                .notes(r.getNotes())
+                .enteredAt(r.getEnteredAt())
                 .build();
     }
 
@@ -22,6 +22,7 @@ public class MatchResultMapper {
                 .homeScore(dto.getHomeScore())
                 .awayScore(dto.getAwayScore())
                 .notes(dto.getNotes())
+                .enteredAt(dto.getEnteredAt() != null ? dto.getEnteredAt() : java.time.LocalDateTime.now())
                 .build();
     }
 }

@@ -28,4 +28,6 @@ public class MatchResult {
 
     @Column(nullable = false)
     private LocalDateTime enteredAt = LocalDateTime.now();
+
+
 }

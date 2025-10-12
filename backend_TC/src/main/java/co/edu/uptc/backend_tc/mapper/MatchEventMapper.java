@@ -7,14 +7,15 @@ import co.edu.uptc.backend_tc.entity.Player;
 
 public class MatchEventMapper {
 
-    public static MatchEventDTO toDTO(MatchEvent event) {
+    public static MatchEventDTO toDTO(MatchEvent e) {
         return MatchEventDTO.builder()
-                .id(event.getId())
-                .matchId(event.getMatch().getId())
-                .playerId(event.getPlayer().getId())
-                .type(event.getType())
-                .minute(event.getMinute())
-                .description(event.getDescription())
+                .id(e.getId())
+                .matchId(e.getMatch().getId())
+                .playerId(e.getPlayer().getId())
+                .type(e.getType())
+                .minute(e.getMinute())
+                .description(e.getDescription())
+                .createdAt(e.getCreatedAt())
                 .build();
     }
 
@@ -26,6 +27,7 @@ public class MatchEventMapper {
                 .type(dto.getType())
                 .minute(dto.getMinute())
                 .description(dto.getDescription())
+                .createdAt(dto.getCreatedAt() != null ? dto.getCreatedAt() : java.time.LocalDateTime.now())
                 .build();
     }
 }

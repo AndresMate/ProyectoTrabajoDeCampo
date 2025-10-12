@@ -3,58 +3,91 @@ package co.edu.uptc.backend_tc.service;
 import co.edu.uptc.backend_tc.dto.MatchResultDTO;
 import co.edu.uptc.backend_tc.entity.Match;
 import co.edu.uptc.backend_tc.entity.MatchResult;
+import co.edu.uptc.backend_tc.exception.ResourceNotFoundException;
+import co.edu.uptc.backend_tc.model.MatchStatus;
 import co.edu.uptc.backend_tc.mapper.MatchResultMapper;
 import co.edu.uptc.backend_tc.repository.MatchRepository;
 import co.edu.uptc.backend_tc.repository.MatchResultRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Service
 public class MatchResultService {
 
-    private final MatchResultRepository matchResultRepository;
     private final MatchRepository matchRepository;
+    private final MatchResultRepository matchResultRepository;
     private final StandingService standingService;
-    private final SanctionService sanctionService;
 
-    public MatchResultService(MatchResultRepository matchResultRepository,
-                              MatchRepository matchRepository,
-                              StandingService standingService,
-                              SanctionService sanctionService) {
-        this.matchResultRepository = matchResultRepository;
+    public MatchResultService(MatchRepository matchRepository,
+                              MatchResultRepository matchResultRepository,
+                              StandingService standingService) {
         this.matchRepository = matchRepository;
+        this.matchResultRepository = matchResultRepository;
         this.standingService = standingService;
-        this.sanctionService = sanctionService;
     }
 
     @Transactional
-    public MatchResultDTO saveResult(MatchResultDTO dto) {
+    public MatchResultDTO registerOrUpdateResult(MatchResultDTO dto) {
         Match match = matchRepository.findById(dto.getMatchId())
                 .orElseThrow(() -> new RuntimeException("Match not found"));
 
-        MatchResult result = MatchResultMapper.toEntity(dto, match);
-        result = matchResultRepository.save(result);
+        if (match.getStatus() == MatchStatus.FINISHED) {
+            throw new RuntimeException("Match already finished. Use update endpoint instead.");
+        }
 
-        // Marcar partido como finalizado
-        match.setStatus(co.edu.uptc.backend_tc.model.MatchStatus.FINISHED);
+        MatchResult result = matchResultRepository.findById(dto.getMatchId())
+                .orElse(MatchResultMapper.toEntity(dto, match));
+
+        result.setHomeScore(dto.getHomeScore());
+        result.setAwayScore(dto.getAwayScore());
+        result.setNotes(dto.getNotes());
+        result.setEnteredAt(LocalDateTime.now());
+
+        MatchResult savedResult = matchResultRepository.save(result);
+
+        match.setStatus(MatchStatus.FINISHED);
         matchRepository.save(match);
 
-        // Actualizar tabla de posiciones
         standingService.updateStandingsFromMatch(match, dto.getHomeScore(), dto.getAwayScore());
 
-        // ⚠️ Aquí podrías revisar sanciones automáticas por eventos (ej: tarjetas rojas)
-        // Ejemplo: sanctionService.autoSanction(match);
-
-        return MatchResultMapper.toDTO(result);
+        return MatchResultMapper.toDTO(savedResult);
     }
 
-    public MatchResultDTO getResult(Long matchId) {
-        MatchResult result = matchResultRepository.findById(matchId)
-                .orElseThrow(() -> new RuntimeException("Result not found"));
-        return MatchResultMapper.toDTO(result);
+    @Transactional
+    public MatchResultDTO updateResult(MatchResultDTO dto) {
+        MatchResult result = matchResultRepository.findById(dto.getMatchId())
+                .orElseThrow(() -> new RuntimeException("Match result not found"));
+
+        result.setHomeScore(dto.getHomeScore());
+        result.setAwayScore(dto.getAwayScore());
+        result.setNotes(dto.getNotes());
+        result.setEnteredAt(LocalDateTime.now());
+
+        Match match = result.getMatch();
+        match.setStatus(MatchStatus.FINISHED);
+        matchRepository.save(match);
+
+        standingService.updateStandingsFromMatch(match, dto.getHomeScore(), dto.getAwayScore());
+
+        return MatchResultMapper.toDTO(matchResultRepository.save(result));
+    }
+
+    public MatchResultDTO getResultByMatchId(Long matchId) {
+        return matchResultRepository.findById(matchId)
+                .map(MatchResultMapper::toDTO)
+                .orElseThrow(() -> new RuntimeException("Result not found for match ID: " + matchId));
     }
 
     public void deleteResult(Long matchId) {
-        matchResultRepository.deleteById(matchId);
+        MatchResult result = matchResultRepository.findById(matchId)
+                .orElseThrow(() -> new ResourceNotFoundException("Match not found"));
+
+        Match match = result.getMatch();
+        match.setStatus(MatchStatus.SCHEDULED);
+        matchRepository.save(match);
+
+        matchResultRepository.delete(result);
     }
 }

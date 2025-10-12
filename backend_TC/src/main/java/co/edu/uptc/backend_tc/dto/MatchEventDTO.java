@@ -2,6 +2,7 @@ package co.edu.uptc.backend_tc.dto;
 
 import co.edu.uptc.backend_tc.model.MatchEventType;
 import lombok.*;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -14,4 +15,5 @@ public class MatchEventDTO {
     private MatchEventType type;
     private Integer minute;
     private String description;
+    private LocalDateTime createdAt;
 }
