@@ -1,51 +1,70 @@
 package co.edu.uptc.backend_tc.controller;
 
 import co.edu.uptc.backend_tc.dto.SportDTO;
-import co.edu.uptc.backend_tc.entity.Sport;
-import co.edu.uptc.backend_tc.mapper.SportMapper;
+import co.edu.uptc.backend_tc.dto.page.PageResponseDTO;
+import co.edu.uptc.backend_tc.exception.ConflictException;
+import co.edu.uptc.backend_tc.exception.ResourceNotFoundException;
 import co.edu.uptc.backend_tc.service.SportService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/sports")
+@RequiredArgsConstructor
 public class SportController {
 
-    private final SportService service;
-
-    public SportController(SportService service) {
-        this.service = service;
-    }
+    private final SportService sportService;
 
     @GetMapping
-    public List<SportDTO> getAll() {
-        return service.getAll()
-                .stream()
-                .map(SportMapper::toDTO)
-                .collect(Collectors.toList());
+    public PageResponseDTO<SportDTO> getAll(Pageable pageable) {
+        return sportService.getAll(pageable);
+    }
+
+    @GetMapping("/active")
+    public List<SportDTO> getAllActive() {
+        return sportService.getAllActive();
     }
 
     @GetMapping("/{id}")
     public SportDTO getById(@PathVariable Long id) {
-        return SportMapper.toDTO(service.getById(id));
+        return sportService.getById(id);
     }
 
     @PostMapping
     public SportDTO create(@RequestBody SportDTO dto) {
-        Sport sport = SportMapper.toEntity(dto);
-        return SportMapper.toDTO(service.create(sport));
+        return sportService.create(dto);
     }
 
     @PutMapping("/{id}")
     public SportDTO update(@PathVariable Long id, @RequestBody SportDTO dto) {
-        Sport sport = SportMapper.toEntity(dto);
-        return SportMapper.toDTO(service.update(id, sport));
+        return sportService.update(id, dto);
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        service.delete(id);
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        sportService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{id}/hard")
+    public ResponseEntity<Void> hardDelete(@PathVariable Long id) {
+        sportService.hardDelete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // Manejo de excepciones
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<String> handleNotFound(ResourceNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<String> handleConflict(ConflictException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
     }
 }

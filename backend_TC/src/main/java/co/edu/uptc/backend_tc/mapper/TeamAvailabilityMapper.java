@@ -3,21 +3,27 @@ package co.edu.uptc.backend_tc.mapper;
 import co.edu.uptc.backend_tc.dto.TeamAvailabilityDTO;
 import co.edu.uptc.backend_tc.entity.TeamAvailability;
 import co.edu.uptc.backend_tc.entity.Team;
+import org.springframework.stereotype.Component;
 
+@Component
 public class TeamAvailabilityMapper {
 
-    public static TeamAvailabilityDTO toDTO(TeamAvailability ta) {
+    public TeamAvailabilityDTO toDTO(TeamAvailability entity) {
+        if (entity == null) return null;
+
         return TeamAvailabilityDTO.builder()
-                .id(ta.getId())
-                .teamId(ta.getTeam().getId())
-                .dayOfWeek(ta.getDayOfWeek())
-                .startTime(ta.getStartTime())
-                .endTime(ta.getEndTime())
-                .available(ta.getAvailable())
+                .id(entity.getId())
+                .teamId(entity.getTeam() != null ? entity.getTeam().getId() : null)
+                .dayOfWeek(entity.getDayOfWeek())
+                .startTime(entity.getStartTime())
+                .endTime(entity.getEndTime())
+                .available(entity.getAvailable())
                 .build();
     }
 
-    public static TeamAvailability toEntity(TeamAvailabilityDTO dto, Team team) {
+    public TeamAvailability toEntity(TeamAvailabilityDTO dto, Team team) {
+        if (dto == null) return null;
+
         return TeamAvailability.builder()
                 .id(dto.getId())
                 .team(team)

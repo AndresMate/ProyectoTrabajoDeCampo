@@ -9,13 +9,16 @@ import java.util.Objects;
 @NoArgsConstructor
 @AllArgsConstructor
 public class InscriptionPlayerId implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
     private Long inscription;
     private Long player;
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof InscriptionPlayerId)) return false;
+        if (o == null || getClass() != o.getClass()) return false;
         InscriptionPlayerId that = (InscriptionPlayerId) o;
         return Objects.equals(inscription, that.inscription) &&
                 Objects.equals(player, that.player);

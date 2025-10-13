@@ -12,6 +12,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import co.edu.uptc.backend_tc.exception.BadRequestException;
 
 @Service
 public class MatchResultService {
@@ -31,10 +32,10 @@ public class MatchResultService {
     @Transactional
     public MatchResultDTO registerOrUpdateResult(MatchResultDTO dto) {
         Match match = matchRepository.findById(dto.getMatchId())
-                .orElseThrow(() -> new RuntimeException("Match not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Match not found"));
 
         if (match.getStatus() == MatchStatus.FINISHED) {
-            throw new RuntimeException("Match already finished. Use update endpoint instead.");
+            throw new BadRequestException("Match already finished. Use update endpoint instead.");
         }
 
         MatchResult result = matchResultRepository.findById(dto.getMatchId())
@@ -58,7 +59,7 @@ public class MatchResultService {
     @Transactional
     public MatchResultDTO updateResult(MatchResultDTO dto) {
         MatchResult result = matchResultRepository.findById(dto.getMatchId())
-                .orElseThrow(() -> new RuntimeException("Match result not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Match result not found"));
 
         result.setHomeScore(dto.getHomeScore());
         result.setAwayScore(dto.getAwayScore());

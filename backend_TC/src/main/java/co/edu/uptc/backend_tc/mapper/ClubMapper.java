@@ -1,25 +1,41 @@
 package co.edu.uptc.backend_tc.mapper;
 
 import co.edu.uptc.backend_tc.dto.ClubDTO;
+import co.edu.uptc.backend_tc.dto.response.ClubSummaryDTO;
 import co.edu.uptc.backend_tc.entity.Club;
+import org.springframework.stereotype.Component;
 
+@Component
 public class ClubMapper {
 
-    public static ClubDTO toDTO(Club club) {
+    public ClubDTO toDTO(Club entity) {
+        if (entity == null) return null;
+
         return ClubDTO.builder()
-                .id(club.getId())
-                .name(club.getName())
-                .description(club.getDescription())
-                .isActive(club.getIsActive())
+                .id(entity.getId())
+                .name(entity.getName())
+                .description(entity.getDescription())
+                .isActive(entity.getIsActive())
                 .build();
     }
 
-    public static Club toEntity(ClubDTO dto) {
+    public Club toEntity(ClubDTO dto) {
+        if (dto == null) return null;
+
         return Club.builder()
                 .id(dto.getId())
                 .name(dto.getName())
                 .description(dto.getDescription())
                 .isActive(dto.getIsActive())
+                .build();
+    }
+
+    public ClubSummaryDTO toSummaryDTO(Club entity) {
+        if (entity == null) return null;
+
+        return ClubSummaryDTO.builder()
+                .id(entity.getId())
+                .name(entity.getName())
                 .build();
     }
 }

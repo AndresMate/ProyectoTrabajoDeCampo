@@ -1,44 +1,46 @@
 package co.edu.uptc.backend_tc.controller;
 
 import co.edu.uptc.backend_tc.dto.InscriptionPlayerDTO;
-import co.edu.uptc.backend_tc.entity.Inscription;
-import co.edu.uptc.backend_tc.entity.InscriptionPlayer;
-import co.edu.uptc.backend_tc.entity.Player;
-import co.edu.uptc.backend_tc.mapper.InscriptionPlayerMapper;
+import co.edu.uptc.backend_tc.exception.BusinessException;
+import co.edu.uptc.backend_tc.exception.ConflictException;
+import co.edu.uptc.backend_tc.exception.ResourceNotFoundException;
 import co.edu.uptc.backend_tc.service.InscriptionPlayerService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/inscription-players")
+@RequiredArgsConstructor
 public class InscriptionPlayerController {
 
     private final InscriptionPlayerService service;
 
-    public InscriptionPlayerController(InscriptionPlayerService service) {
-        this.service = service;
-    }
-
-    @GetMapping
-    public List<InscriptionPlayerDTO> getAll() {
-        return service.getAll()
-                .stream()
-                .map(InscriptionPlayerMapper::toDTO)
-                .collect(Collectors.toList());
+    @GetMapping("/{inscriptionId}")
+    public ResponseEntity<List<InscriptionPlayerDTO>> getByInscription(@PathVariable Long inscriptionId) {
+        return ResponseEntity.ok(service.getByInscription(inscriptionId));
     }
 
     @PostMapping
-    public InscriptionPlayerDTO create(@RequestBody InscriptionPlayerDTO dto) {
-        Inscription inscription = service.getInscriptionById(dto.getInscriptionId());
-        Player player = service.getPlayerById(dto.getPlayerId());
-        InscriptionPlayer ip = InscriptionPlayerMapper.toEntity(dto, inscription, player);
-        return InscriptionPlayerMapper.toDTO(service.create(ip));
+    public ResponseEntity<InscriptionPlayerDTO> addPlayerToInscription(@RequestBody InscriptionPlayerDTO dto) {
+        try {
+            return ResponseEntity.ok(service.addPlayerToInscription(dto));
+        } catch (ResourceNotFoundException | BusinessException | ConflictException ex) {
+            return ResponseEntity.badRequest().body(null);
+        }
     }
 
-    @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        service.delete(id);
+    @DeleteMapping
+    public ResponseEntity<Void> removePlayerFromInscription(
+            @RequestParam Long inscriptionId,
+            @RequestParam Long playerId) {
+        try {
+            service.removePlayerFromInscription(inscriptionId, playerId);
+            return ResponseEntity.noContent().build();
+        } catch (ResourceNotFoundException | BusinessException ex) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 }

@@ -9,13 +9,16 @@ import java.util.Objects;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TeamRosterId implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
     private Long team;
     private Long player;
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof TeamRosterId)) return false;
+        if (o == null || getClass() != o.getClass()) return false;
         TeamRosterId that = (TeamRosterId) o;
         return Objects.equals(team, that.team) &&
                 Objects.equals(player, that.player);

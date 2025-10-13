@@ -1,28 +1,44 @@
 package co.edu.uptc.backend_tc.service;
 
 import co.edu.uptc.backend_tc.dto.StandingDTO;
+import co.edu.uptc.backend_tc.dto.response.StandingResponseDTO;
 import co.edu.uptc.backend_tc.entity.*;
+import co.edu.uptc.backend_tc.exception.ResourceNotFoundException;
 import co.edu.uptc.backend_tc.mapper.StandingMapper;
 import co.edu.uptc.backend_tc.repository.StandingRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class StandingService {
 
     private final StandingRepository standingRepository;
-
-    public StandingService(StandingRepository standingRepository) {
-        this.standingRepository = standingRepository;
-    }
+    private final StandingMapper standingMapper;
 
     public List<StandingDTO> getStandings(Long tournamentId, Long categoryId) {
         return standingRepository.findByTournamentIdAndCategoryId(tournamentId, categoryId)
                 .stream()
-                .map(StandingMapper::toDTO)
+                .map(standingMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<StandingResponseDTO> getStandingsWithPosition(Long tournamentId, Long categoryId) {
+        List<Standing> standings = standingRepository
+                .findByTournamentIdAndCategoryId(tournamentId, categoryId);
+
+        return IntStream.range(0, standings.size())
+                .mapToObj(i -> standingMapper.toResponseDTO(
+                        standings.get(i),
+                        i + 1, // posición
+                        null   // form - se puede calcular después
+                ))
                 .collect(Collectors.toList());
     }
 
@@ -70,7 +86,7 @@ public class StandingService {
     }
 
     private Standing initStanding(Tournament tournament, Category category, Team team) {
-        Standing s = Standing.builder()
+        Standing standing = Standing.builder()
                 .tournament(tournament)
                 .category(category)
                 .team(team)
@@ -82,12 +98,13 @@ public class StandingService {
                 .goalsFor(0)
                 .goalsAgainst(0)
                 .build();
-        return standingRepository.save(s);
+        return standingRepository.save(standing);
     }
+
     @Transactional
     public void recalculateStandings(Long tournamentId, Long categoryId, List<MatchResult> results) {
         // Borrar standings previos
-        standingRepository.deleteAll(standingRepository.findByTournamentIdAndCategoryId(tournamentId, categoryId));
+        standingRepository.deleteByTournamentIdAndCategoryId(tournamentId, categoryId);
 
         // Reprocesar todos los resultados
         for (MatchResult result : results) {

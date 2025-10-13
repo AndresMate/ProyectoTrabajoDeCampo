@@ -1,60 +1,95 @@
 package co.edu.uptc.backend_tc.controller;
 
 import co.edu.uptc.backend_tc.dto.InscriptionDTO;
-import co.edu.uptc.backend_tc.entity.Category;
-import co.edu.uptc.backend_tc.entity.Inscription;
-import co.edu.uptc.backend_tc.entity.Player;
-import co.edu.uptc.backend_tc.entity.Tournament;
-import co.edu.uptc.backend_tc.mapper.InscriptionMapper;
+import co.edu.uptc.backend_tc.dto.response.InscriptionResponseDTO;
+import co.edu.uptc.backend_tc.entity.User;
+import co.edu.uptc.backend_tc.exception.BusinessException;
+import co.edu.uptc.backend_tc.exception.ConflictException;
+import co.edu.uptc.backend_tc.exception.ForbiddenException;
+import co.edu.uptc.backend_tc.exception.ResourceNotFoundException;
 import co.edu.uptc.backend_tc.service.InscriptionService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/inscriptions")
+@RequiredArgsConstructor
 public class InscriptionController {
 
-    private final InscriptionService service;
-
-    public InscriptionController(InscriptionService service) {
-        this.service = service;
-    }
+    private final InscriptionService inscriptionService;
 
     @GetMapping
-    public List<InscriptionDTO> getAll() {
-        return service.getAll()
-                .stream()
-                .map(InscriptionMapper::toDTO)
-                .collect(Collectors.toList());
+    public ResponseEntity<?> getAll() {
+        try {
+            List<InscriptionResponseDTO> result = inscriptionService.getAll();
+            return ResponseEntity.ok(result);
+        } catch (Exception ex) {
+            return ResponseEntity.badRequest().body("Error al obtener inscripciones: " + ex.getMessage());
+        }
+    }
+
+    @GetMapping("/tournament/{tournamentId}")
+    public ResponseEntity<?> getByTournament(@PathVariable Long tournamentId) {
+        try {
+            List<InscriptionResponseDTO> result = inscriptionService.getByTournament(tournamentId);
+            return ResponseEntity.ok(result);
+        } catch (Exception ex) {
+            return ResponseEntity.badRequest().body("Error al obtener inscripciones: " + ex.getMessage());
+        }
     }
 
     @GetMapping("/{id}")
-    public InscriptionDTO getById(@PathVariable Long id) {
-        return InscriptionMapper.toDTO(service.getById(id));
+    public ResponseEntity<?> getById(@PathVariable Long id) {
+        try {
+            InscriptionResponseDTO result = inscriptionService.getById(id);
+            return ResponseEntity.ok(result);
+        } catch (ResourceNotFoundException ex) {
+            return ResponseEntity.status(404).body(ex.getMessage());
+        } catch (Exception ex) {
+            return ResponseEntity.badRequest().body("Error: " + ex.getMessage());
+        }
     }
 
     @PostMapping
-    public InscriptionDTO create(@RequestBody InscriptionDTO dto) {
-        Tournament tournament = service.getTournamentById(dto.getTournamentId());
-        Category category = service.getCategoryById(dto.getCategoryId());
-        Player delegate = service.getPlayerById(dto.getDelegatePlayerId());
-        Inscription inscription = InscriptionMapper.toEntity(dto, tournament, category, delegate);
-        return InscriptionMapper.toDTO(service.create(inscription));
+    public ResponseEntity<?> create(@RequestBody InscriptionDTO dto) {
+        try {
+            InscriptionResponseDTO result = inscriptionService.create(dto);
+            return ResponseEntity.ok(result);
+        } catch (ResourceNotFoundException | BusinessException | ConflictException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        }
     }
 
-    @PutMapping("/{id}")
-    public InscriptionDTO update(@PathVariable Long id, @RequestBody InscriptionDTO dto) {
-        Tournament tournament = service.getTournamentById(dto.getTournamentId());
-        Category category = service.getCategoryById(dto.getCategoryId());
-        Player delegate = service.getPlayerById(dto.getDelegatePlayerId());
-        Inscription inscription = InscriptionMapper.toEntity(dto, tournament, category, delegate);
-        return InscriptionMapper.toDTO(service.update(id, inscription));
+    @PostMapping("/{id}/approve")
+    public ResponseEntity<?> approve(@PathVariable Long id, @RequestBody User approver) {
+        try {
+            InscriptionResponseDTO result = inscriptionService.approve(id, approver);
+            return ResponseEntity.ok(result);
+        } catch (ResourceNotFoundException | BusinessException | ForbiddenException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        }
+    }
+
+    @PostMapping("/{id}/reject")
+    public ResponseEntity<?> reject(@PathVariable Long id, @RequestBody User rejector) {
+        try {
+            InscriptionResponseDTO result = inscriptionService.reject(id, rejector);
+            return ResponseEntity.ok(result);
+        } catch (ResourceNotFoundException | BusinessException | ForbiddenException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        service.delete(id);
+    public ResponseEntity<?> delete(@PathVariable Long id, @RequestBody User deleter) {
+        try {
+            inscriptionService.delete(id, deleter);
+            return ResponseEntity.ok("Inscripción eliminada correctamente");
+        } catch (ResourceNotFoundException | BusinessException | ForbiddenException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        }
     }
 }

@@ -1,12 +1,26 @@
 package co.edu.uptc.backend_tc.service;
 
+import co.edu.uptc.backend_tc.dto.TeamDTO;
+import co.edu.uptc.backend_tc.dto.page.PageResponseDTO;
+import co.edu.uptc.backend_tc.dto.response.TeamResponseDTO;
 import co.edu.uptc.backend_tc.entity.*;
+import co.edu.uptc.backend_tc.exception.BusinessException;
+import co.edu.uptc.backend_tc.exception.ConflictException;
+import co.edu.uptc.backend_tc.exception.ResourceNotFoundException;
+import co.edu.uptc.backend_tc.mapper.TeamMapper;
+import co.edu.uptc.backend_tc.mapper.MapperUtils;
 import co.edu.uptc.backend_tc.repository.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class TeamService {
 
     private final TeamRepository teamRepository;
@@ -14,64 +28,132 @@ public class TeamService {
     private final CategoryRepository categoryRepository;
     private final InscriptionRepository inscriptionRepository;
     private final ClubRepository clubRepository;
+    private final MatchRepository matchRepository;
+    private final TeamMapper teamMapper;
+    private final MapperUtils mapperUtils;
 
-    public TeamService(TeamRepository teamRepository,
-                       TournamentRepository tournamentRepository,
-                       CategoryRepository categoryRepository,
-                       InscriptionRepository inscriptionRepository,
-                       ClubRepository clubRepository) {
-        this.teamRepository = teamRepository;
-        this.tournamentRepository = tournamentRepository;
-        this.categoryRepository = categoryRepository;
-        this.inscriptionRepository = inscriptionRepository;
-        this.clubRepository = clubRepository;
+    public PageResponseDTO<TeamDTO> getAll(Pageable pageable) {
+        Page<Team> page = teamRepository.findAll(pageable);
+        return mapperUtils.mapPage(page, teamMapper::toDTO);
     }
 
-    public List<Team> getAll() {
-        return teamRepository.findAll();
+    public List<TeamDTO> getByTournament(Long tournamentId) {
+        return mapperUtils.mapList(
+                teamRepository.findByTournamentId(tournamentId),
+                teamMapper::toDTO
+        );
     }
 
-    public Team getById(Long id) {
-        return teamRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Team not found with id: " + id));
+    public List<TeamDTO> getByTournamentAndCategory(Long tournamentId, Long categoryId) {
+        return mapperUtils.mapList(
+                teamRepository.findByTournamentIdAndCategoryId(tournamentId, categoryId),
+                teamMapper::toDTO
+        );
     }
 
-    public Team create(Team team) {
-        return teamRepository.save(team);
+    public TeamResponseDTO getById(Long id) {
+        Team team = teamRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Team", "id", id));
+        return enrichResponseDTO(team);
     }
 
-    public Team update(Long id, Team team) {
-        Team existing = getById(id);
-        existing.setName(team.getName());
-        existing.setIsActive(team.getIsActive());
-        existing.setTournament(team.getTournament());
-        existing.setCategory(team.getCategory());
-        existing.setOriginInscription(team.getOriginInscription());
-        existing.setClub(team.getClub());
-        return teamRepository.save(existing);
+    @Transactional
+    public TeamDTO create(TeamDTO dto) {
+        // Verificar torneo
+        Tournament tournament = tournamentRepository.findById(dto.getTournamentId())
+                .orElseThrow(() -> new ResourceNotFoundException("Tournament", "id", dto.getTournamentId()));
+
+        // Verificar categoría
+        Category category = categoryRepository.findById(dto.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Category", "id", dto.getCategoryId()));
+
+        // Verificar club
+        Club club = clubRepository.findById(dto.getClubId())
+                .orElseThrow(() -> new ResourceNotFoundException("Club", "id", dto.getClubId()));
+
+        // Verificar nombre único en el torneo
+        if (teamRepository.existsByTournamentIdAndNameIgnoreCase(tournament.getId(), dto.getName())) {
+            throw new ConflictException(
+                    "Team with this name already exists in this tournament",
+                    "name",
+                    dto.getName()
+            );
+        }
+
+        // Verificar inscripción si se proporciona
+        Inscription inscription = null;
+        if (dto.getOriginInscriptionId() != null) {
+            inscription = inscriptionRepository.findById(dto.getOriginInscriptionId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Inscription", "id", dto.getOriginInscriptionId()));
+        }
+
+        Team team = Team.builder()
+                .name(dto.getName())
+                .tournament(tournament)
+                .category(category)
+                .club(club)
+                .originInscription(inscription)
+                .isActive(true)
+                .build();
+
+        team = teamRepository.save(team);
+        return teamMapper.toDTO(team);
     }
 
+    @Transactional
+    public TeamDTO update(Long id, TeamDTO dto) {
+        Team team = teamRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Team", "id", id));
+
+        // Validar nombre único si cambió
+        if (!team.getName().equalsIgnoreCase(dto.getName()) &&
+                teamRepository.existsByTournamentIdAndNameIgnoreCase(team.getTournament().getId(), dto.getName())) {
+            throw new ConflictException(
+                    "Team with this name already exists in this tournament",
+                    "name",
+                    dto.getName()
+            );
+        }
+
+        team.setName(dto.getName());
+        if (dto.getIsActive() != null) {
+            team.setIsActive(dto.getIsActive());
+        }
+
+        team = teamRepository.save(team);
+        return teamMapper.toDTO(team);
+    }
+
+    @Transactional
     public void delete(Long id) {
-        teamRepository.deleteById(id);
+        Team team = teamRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Team", "id", id));
+
+        // Verificar que no tenga partidos jugados
+        long playedMatches = matchRepository.countByTeamIdAndStatusNot(
+                id,
+                co.edu.uptc.backend_tc.model.MatchStatus.SCHEDULED
+        );
+
+        if (playedMatches > 0) {
+            throw new BusinessException(
+                    "Cannot delete team with played matches",
+                    "TEAM_HAS_PLAYED_MATCHES"
+            );
+        }
+
+        // Soft delete
+        team.setIsActive(false);
+        teamRepository.save(team);
     }
 
-    public Tournament getTournamentById(Long id) {
-        return tournamentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Tournament not found with id: " + id));
-    }
+    private TeamResponseDTO enrichResponseDTO(Team team) {
+        TeamResponseDTO dto = teamMapper.toResponseDTO(team);
 
-    public Category getCategoryById(Long id) {
-        return categoryRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Category not found with id: " + id));
-    }
+        // Agregar estadísticas
+        dto.setRosterSize(team.getRoster().size());
+        dto.setMatchesPlayed((int) matchRepository.countByTeamId(team.getId()));
 
-    public Inscription getInscriptionById(Long id) {
-        return inscriptionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Inscription not found with id: " + id));
-    }
-
-    public Club getClubById(Long id) {
-        return clubRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Club not found with id: " + id));
+        return dto;
     }
 }

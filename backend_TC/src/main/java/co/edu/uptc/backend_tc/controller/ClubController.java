@@ -1,51 +1,50 @@
 package co.edu.uptc.backend_tc.controller;
 
 import co.edu.uptc.backend_tc.dto.ClubDTO;
-import co.edu.uptc.backend_tc.entity.Club;
-import co.edu.uptc.backend_tc.mapper.ClubMapper;
+import co.edu.uptc.backend_tc.dto.page.PageResponseDTO;
 import co.edu.uptc.backend_tc.service.ClubService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/clubs")
+@RequiredArgsConstructor
 public class ClubController {
 
-    private final ClubService service;
-
-    public ClubController(ClubService service) {
-        this.service = service;
-    }
+    private final ClubService clubService;
 
     @GetMapping
-    public List<ClubDTO> getAll() {
-        return service.getAll()
-                .stream()
-                .map(ClubMapper::toDTO)
-                .collect(Collectors.toList());
+    public ResponseEntity<PageResponseDTO<ClubDTO>> getAll(Pageable pageable) {
+        return ResponseEntity.ok(clubService.getAll(pageable));
+    }
+
+    @GetMapping("/active")
+    public ResponseEntity<List<ClubDTO>> getAllActive() {
+        return ResponseEntity.ok(clubService.getAllActive());
     }
 
     @GetMapping("/{id}")
-    public ClubDTO getById(@PathVariable Long id) {
-        return ClubMapper.toDTO(service.getById(id));
+    public ResponseEntity<ClubDTO> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(clubService.getById(id));
     }
 
     @PostMapping
-    public ClubDTO create(@RequestBody ClubDTO dto) {
-        Club club = ClubMapper.toEntity(dto);
-        return ClubMapper.toDTO(service.create(club));
+    public ResponseEntity<ClubDTO> create(@RequestBody ClubDTO dto) {
+        return ResponseEntity.ok(clubService.create(dto));
     }
 
     @PutMapping("/{id}")
-    public ClubDTO update(@PathVariable Long id, @RequestBody ClubDTO dto) {
-        Club club = ClubMapper.toEntity(dto);
-        return ClubMapper.toDTO(service.update(id, club));
+    public ResponseEntity<ClubDTO> update(@PathVariable Long id, @RequestBody ClubDTO dto) {
+        return ResponseEntity.ok(clubService.update(id, dto));
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        service.delete(id);
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        clubService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

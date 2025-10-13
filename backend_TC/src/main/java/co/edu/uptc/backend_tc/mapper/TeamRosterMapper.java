@@ -1,27 +1,39 @@
 package co.edu.uptc.backend_tc.mapper;
 
 import co.edu.uptc.backend_tc.dto.TeamRosterDTO;
+import co.edu.uptc.backend_tc.dto.response.TeamRosterResponseDTO;
 import co.edu.uptc.backend_tc.entity.Player;
 import co.edu.uptc.backend_tc.entity.Team;
 import co.edu.uptc.backend_tc.entity.TeamRoster;
+import org.springframework.stereotype.Component;
 
+@Component
 public class TeamRosterMapper {
 
-    public static TeamRosterDTO toDTO(TeamRoster tr) {
+    private final PlayerMapper playerMapper;
+
+    public TeamRosterMapper(PlayerMapper playerMapper) {
+        this.playerMapper = playerMapper;
+    }
+
+    public TeamRosterDTO toDTO(TeamRoster entity) {
+        if (entity == null) return null;
+
         return TeamRosterDTO.builder()
-                .teamId(tr.getTeam().getId())
-                .playerId(tr.getPlayer().getId())
-                .jerseyNumber(tr.getJerseyNumber())
-                .captain(tr.getCaptain()) // 🔹 ahora coincide
+                .teamId(entity.getTeam() != null ? entity.getTeam().getId() : null)
+                .playerId(entity.getPlayer() != null ? entity.getPlayer().getId() : null)
+                .jerseyNumber(entity.getJerseyNumber())
+                .isCaptain(entity.getIsCaptain())
                 .build();
     }
 
-    public static TeamRoster toEntity(TeamRosterDTO dto, Team team, Player player) {
-        return TeamRoster.builder()
-                .team(team)
-                .player(player)
-                .jerseyNumber(dto.getJerseyNumber())
-                .captain(dto.getCaptain()) // 🔹 ahora coincide
+    public TeamRosterResponseDTO toResponseDTO(TeamRoster entity) {
+        if (entity == null) return null;
+
+        return TeamRosterResponseDTO.builder()
+                .player(playerMapper.toSummaryDTO(entity.getPlayer()))
+                .jerseyNumber(entity.getJerseyNumber())
+                .isCaptain(entity.getIsCaptain())
                 .build();
     }
 }

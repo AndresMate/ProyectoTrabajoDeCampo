@@ -1,29 +1,71 @@
 package co.edu.uptc.backend_tc.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
-@Table(name = "categories")
+@Table(name = "categories", indexes = {
+        @Index(name = "idx_category_sport", columnList = "sport_id"),
+        @Index(name = "idx_category_name", columnList = "name")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Category {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+@ToString(exclude = {"sport", "inscriptions", "teams", "matches", "standings"})
+@EqualsAndHashCode(exclude = {"sport", "inscriptions", "teams", "matches", "standings"})
+public class Category implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @NotBlank(message = "Category name is required")
+    @Size(min = 2, max = 100, message = "Name must be between 2 and 100 characters")
+    @Column(nullable = false, length = 100)
     private String name;
 
+    @Size(max = 500, message = "Description cannot exceed 500 characters")
+    @Column(length = 500)
     private String description;
+
+    @Column(nullable = false)
     private Boolean isActive = true;
 
-    @ManyToOne @JoinColumn(name = "sport_id", nullable = false)
+    @NotNull(message = "Sport is required")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sport_id", nullable = false)
     private Sport sport;
 
-    public Category(Long id) {
-        this.id = id;
-    }
+    @OneToMany(mappedBy = "category")
+    @Builder.Default
+    private List<Inscription> inscriptions = new ArrayList<>();
 
+    @OneToMany(mappedBy = "category")
+    @Builder.Default
+    private List<Team> teams = new ArrayList<>();
+
+    @OneToMany(mappedBy = "category")
+    @Builder.Default
+    private List<Match> matches = new ArrayList<>();
+
+    @OneToMany(mappedBy = "category")
+    @Builder.Default
+    private List<Standing> standings = new ArrayList<>();
+
+    // Constructor de conveniencia si lo necesitas
+    public static Category withId(Long id) {
+        Category category = new Category();
+        category.setId(id);
+        return category;
+    }
 }

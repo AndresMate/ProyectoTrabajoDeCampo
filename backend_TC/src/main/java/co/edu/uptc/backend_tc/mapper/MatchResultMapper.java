@@ -3,26 +3,43 @@ package co.edu.uptc.backend_tc.mapper;
 import co.edu.uptc.backend_tc.dto.MatchResultDTO;
 import co.edu.uptc.backend_tc.entity.Match;
 import co.edu.uptc.backend_tc.entity.MatchResult;
+import org.springframework.stereotype.Component;
 
+@Component
 public class MatchResultMapper {
 
-    public static MatchResultDTO toDTO(MatchResult r) {
+    public static MatchResultDTO toDTO(MatchResult entity) {
+        if (entity == null) return null;
+
         return MatchResultDTO.builder()
-                .matchId(r.getMatch().getId())
-                .homeScore(r.getHomeScore())
-                .awayScore(r.getAwayScore())
-                .notes(r.getNotes())
-                .enteredAt(r.getEnteredAt())
+                .matchId(entity.getMatchId())
+                .homeScore(entity.getHomeScore())
+                .awayScore(entity.getAwayScore())
+                .notes(entity.getNotes())
+                .enteredAt(entity.getEnteredAt())
                 .build();
     }
 
     public static MatchResult toEntity(MatchResultDTO dto, Match match) {
+        if (dto == null) return null;
+
         return MatchResult.builder()
                 .match(match)
                 .homeScore(dto.getHomeScore())
                 .awayScore(dto.getAwayScore())
                 .notes(dto.getNotes())
-                .enteredAt(dto.getEnteredAt() != null ? dto.getEnteredAt() : java.time.LocalDateTime.now())
                 .build();
+    }
+
+    public void updateEntityFromDTO(MatchResultDTO dto, MatchResult entity) {
+        if (dto.getHomeScore() != null) {
+            entity.setHomeScore(dto.getHomeScore());
+        }
+        if (dto.getAwayScore() != null) {
+            entity.setAwayScore(dto.getAwayScore());
+        }
+        if (dto.getNotes() != null) {
+            entity.setNotes(dto.getNotes());
+        }
     }
 }

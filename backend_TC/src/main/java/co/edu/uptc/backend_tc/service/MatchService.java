@@ -18,31 +18,34 @@ public class MatchService {
     private final ScenarioRepository scenarioRepository;
     private final TeamRepository teamRepository;
     private final UserRepository userRepository;
+    private final MatchMapper matchMapper;
 
     public MatchService(MatchRepository matchRepository,
                         TournamentRepository tournamentRepository,
                         CategoryRepository categoryRepository,
                         ScenarioRepository scenarioRepository,
                         TeamRepository teamRepository,
-                        UserRepository userRepository) {
+                        UserRepository userRepository,
+                        MatchMapper matchMapper) {
         this.matchRepository = matchRepository;
         this.tournamentRepository = tournamentRepository;
         this.categoryRepository = categoryRepository;
         this.scenarioRepository = scenarioRepository;
         this.teamRepository = teamRepository;
         this.userRepository = userRepository;
+        this.matchMapper = matchMapper;
     }
 
     public List<MatchDTO> getAllMatches() {
         return matchRepository.findAll()
                 .stream()
-                .map(MatchMapper::toDTO)
+                .map(matchMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
     public MatchDTO getMatchById(Long id) {
         return matchRepository.findById(id)
-                .map(MatchMapper::toDTO)
+                .map(matchMapper::toDTO)
                 .orElseThrow(() -> new RuntimeException("Match not found with id: " + id));
     }
 
@@ -62,11 +65,12 @@ public class MatchService {
                 ? userRepository.findById(dto.getRefereeId()).orElse(null)
                 : null;
 
-        Match match = MatchMapper.toEntity(dto, tournament, category, scenario, homeTeam, awayTeam, referee);
-        return MatchMapper.toDTO(matchRepository.save(match));
+        Match match = matchMapper.toEntity(dto, tournament, category, scenario, homeTeam, awayTeam, referee);
+        return matchMapper.toDTO(matchRepository.save(match));
     }
 
     public void deleteMatch(Long id) {
         matchRepository.deleteById(id);
     }
 }
+

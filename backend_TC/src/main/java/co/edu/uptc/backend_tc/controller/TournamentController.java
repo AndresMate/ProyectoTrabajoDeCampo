@@ -1,57 +1,82 @@
 package co.edu.uptc.backend_tc.controller;
 
 import co.edu.uptc.backend_tc.dto.TournamentDTO;
-import co.edu.uptc.backend_tc.entity.Tournament;
-import co.edu.uptc.backend_tc.entity.Sport;
-import co.edu.uptc.backend_tc.entity.User;
-import co.edu.uptc.backend_tc.mapper.TournamentMapper;
+import co.edu.uptc.backend_tc.dto.filter.TournamentFilterDTO;
+import co.edu.uptc.backend_tc.dto.page.PageResponseDTO;
+import co.edu.uptc.backend_tc.dto.response.TournamentResponseDTO;
+import co.edu.uptc.backend_tc.exception.BadRequestException;
+import co.edu.uptc.backend_tc.exception.BusinessException;
+import co.edu.uptc.backend_tc.exception.ResourceNotFoundException;
 import co.edu.uptc.backend_tc.service.TournamentService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/tournaments")
+@RequiredArgsConstructor
 public class TournamentController {
 
-    private final TournamentService service;
-
-    public TournamentController(TournamentService service) {
-        this.service = service;
-    }
+    private final TournamentService tournamentService;
 
     @GetMapping
-    public List<TournamentDTO> getAll() {
-        return service.getAll()
-                .stream()
-                .map(TournamentMapper::toDTO)
-                .collect(Collectors.toList());
+    public PageResponseDTO<TournamentResponseDTO> getAll(Pageable pageable) {
+        return tournamentService.getAll(pageable);
+    }
+
+    @PostMapping("/search")
+    public PageResponseDTO<TournamentResponseDTO> search(
+            @RequestBody TournamentFilterDTO filter,
+            Pageable pageable) {
+        return tournamentService.search(filter, pageable);
     }
 
     @GetMapping("/{id}")
-    public TournamentDTO getById(@PathVariable Long id) {
-        return TournamentMapper.toDTO(service.getById(id));
+    public TournamentResponseDTO getById(@PathVariable Long id) {
+        return tournamentService.getById(id);
     }
 
     @PostMapping
-    public TournamentDTO create(@RequestBody TournamentDTO dto) {
-        Sport sport = service.getSportById(dto.getSportId());
-        User createdBy = service.getUserById(dto.getCreatedById());
-        Tournament tournament = TournamentMapper.toEntity(dto, sport, createdBy);
-        return TournamentMapper.toDTO(service.create(tournament));
+    public TournamentResponseDTO create(@RequestBody TournamentDTO dto) {
+        return tournamentService.create(dto);
     }
 
     @PutMapping("/{id}")
-    public TournamentDTO update(@PathVariable Long id, @RequestBody TournamentDTO dto) {
-        Sport sport = service.getSportById(dto.getSportId());
-        User createdBy = service.getUserById(dto.getCreatedById());
-        Tournament tournament = TournamentMapper.toEntity(dto, sport, createdBy);
-        return TournamentMapper.toDTO(service.update(id, tournament));
+    public TournamentResponseDTO update(@PathVariable Long id, @RequestBody TournamentDTO dto) {
+        return tournamentService.update(id, dto);
+    }
+
+    @PostMapping("/{id}/start")
+    public TournamentResponseDTO startTournament(@PathVariable Long id) {
+        return tournamentService.startTournament(id);
+    }
+
+    @PostMapping("/{id}/complete")
+    public TournamentResponseDTO completeTournament(@PathVariable Long id) {
+        return tournamentService.completeTournament(id);
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        service.delete(id);
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        tournamentService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // Manejo de excepciones
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<String> handleNotFound(ResourceNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<String> handleBadRequest(BadRequestException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<String> handleBusiness(BusinessException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
     }
 }

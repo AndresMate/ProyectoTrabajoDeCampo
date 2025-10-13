@@ -1,51 +1,58 @@
 package co.edu.uptc.backend_tc.controller;
 
 import co.edu.uptc.backend_tc.dto.VenueDTO;
-import co.edu.uptc.backend_tc.entity.Venue;
-import co.edu.uptc.backend_tc.mapper.VenueMapper;
+import co.edu.uptc.backend_tc.dto.page.PageResponseDTO;
+import co.edu.uptc.backend_tc.exception.BusinessException;
 import co.edu.uptc.backend_tc.service.VenueService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/venues")
+@RequestMapping("/venues")
+@RequiredArgsConstructor
+@Tag(name = "Venue", description = "Operaciones sobre venues")
 public class VenueController {
 
-    private final VenueService service;
+    private final VenueService venueService;
 
-    public VenueController(VenueService service) {
-        this.service = service;
-    }
-
+    @Operation(summary = "Obtener todos los venues paginados")
     @GetMapping
-    public List<VenueDTO> getAll() {
-        return service.getAll()
-                .stream()
-                .map(VenueMapper::toDTO)
-                .collect(Collectors.toList());
+    public PageResponseDTO<VenueDTO> getAll(Pageable pageable) {
+        return venueService.getAll(pageable);
     }
 
+    @Operation(summary = "Buscar venues por nombre")
+    @GetMapping("/search")
+    public List<VenueDTO> searchByName(@RequestParam String name) {
+        return venueService.searchByName(name);
+    }
+
+    @Operation(summary = "Obtener venue por id")
     @GetMapping("/{id}")
     public VenueDTO getById(@PathVariable Long id) {
-        return VenueMapper.toDTO(service.getById(id));
+        return venueService.getById(id);
     }
 
+    @Operation(summary = "Crear un nuevo venue")
     @PostMapping
     public VenueDTO create(@RequestBody VenueDTO dto) {
-        Venue venue = VenueMapper.toEntity(dto);
-        return VenueMapper.toDTO(service.create(venue));
+        return venueService.create(dto);
     }
 
+    @Operation(summary = "Actualizar un venue")
     @PutMapping("/{id}")
     public VenueDTO update(@PathVariable Long id, @RequestBody VenueDTO dto) {
-        Venue venue = VenueMapper.toEntity(dto);
-        return VenueMapper.toDTO(service.update(id, venue));
+        return venueService.update(id, dto);
     }
 
+    @Operation(summary = "Eliminar un venue")
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
-        service.delete(id);
+        venueService.delete(id);
     }
 }
