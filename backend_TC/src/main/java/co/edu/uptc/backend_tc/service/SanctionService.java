@@ -90,7 +90,7 @@ public class SanctionService {
                 .build();
 
         sanction = sanctionRepository.save(sanction);
-        return sanctionMapper.toDTO(sanction);
+        return SanctionMapper.toDTO(sanction);
     }
 
     @Transactional

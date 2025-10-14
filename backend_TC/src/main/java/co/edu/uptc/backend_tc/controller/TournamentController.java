@@ -4,6 +4,7 @@ import co.edu.uptc.backend_tc.dto.TournamentDTO;
 import co.edu.uptc.backend_tc.dto.filter.TournamentFilterDTO;
 import co.edu.uptc.backend_tc.dto.page.PageResponseDTO;
 import co.edu.uptc.backend_tc.dto.response.TournamentResponseDTO;
+import co.edu.uptc.backend_tc.entity.Tournament;
 import co.edu.uptc.backend_tc.exception.BadRequestException;
 import co.edu.uptc.backend_tc.exception.BusinessException;
 import co.edu.uptc.backend_tc.exception.ResourceNotFoundException;
@@ -14,6 +15,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
+//@CrossOrigin(origins = "http://localhost:3000") // permite peticiones desde el frontend
 @RestController
 @RequestMapping("/api/tournaments")
 @RequiredArgsConstructor
@@ -36,6 +40,12 @@ public class TournamentController {
     @GetMapping("/{id}")
     public TournamentResponseDTO getById(@PathVariable Long id) {
         return tournamentService.getById(id);
+    }
+
+    @GetMapping("/active")
+    public ResponseEntity<List<TournamentResponseDTO>> getActiveTournaments() {
+        List<TournamentResponseDTO> activeTournaments = tournamentService.findActiveTournaments();
+        return ResponseEntity.ok(activeTournaments);
     }
 
     @PostMapping
@@ -79,4 +89,5 @@ public class TournamentController {
     public ResponseEntity<String> handleBusiness(BusinessException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
     }
+
 }

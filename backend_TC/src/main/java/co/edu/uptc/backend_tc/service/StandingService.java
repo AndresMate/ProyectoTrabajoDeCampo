@@ -3,7 +3,7 @@ package co.edu.uptc.backend_tc.service;
 import co.edu.uptc.backend_tc.dto.StandingDTO;
 import co.edu.uptc.backend_tc.dto.response.StandingResponseDTO;
 import co.edu.uptc.backend_tc.entity.*;
-import co.edu.uptc.backend_tc.exception.ResourceNotFoundException;
+import co.edu.uptc.backend_tc.exception.*;
 import co.edu.uptc.backend_tc.mapper.StandingMapper;
 import co.edu.uptc.backend_tc.repository.StandingRepository;
 import lombok.RequiredArgsConstructor;

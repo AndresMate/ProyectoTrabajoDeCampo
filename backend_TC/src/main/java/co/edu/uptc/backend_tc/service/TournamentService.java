@@ -21,6 +21,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -257,4 +260,15 @@ public class TournamentService {
             return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
         };
     }
+
+    public List<TournamentResponseDTO> findActiveTournaments() {
+        // Opción 1: Usando findByStatusIn
+        List<Tournament> tournaments = tournamentRepository.findByStatusIn(
+                List.of(TournamentStatus.OPEN_FOR_INSCRIPTION, TournamentStatus.IN_PROGRESS)
+        );
+        return tournaments.stream()
+                .map(this::enrichResponseDTO)
+                .collect(Collectors.toList());
+    }
+
 }

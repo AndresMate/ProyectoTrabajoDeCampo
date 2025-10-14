@@ -17,32 +17,27 @@ import java.util.List;
 public interface TournamentRepository extends JpaRepository<Tournament, Long>,
         JpaSpecificationExecutor<Tournament> {
 
-    // Por deporte
-    List<Tournament> findBySportId(Long sportId);
-    Page<Tournament> findBySportId(Long sportId, Pageable pageable);
+    // ✅ MÉTODO NUEVO: Buscar por múltiples estados
+    List<Tournament> findByStatusIn(List<TournamentStatus> statuses);
 
-    // Por estado
+    // ✅ MÉTODO ALTERNATIVO: Query personalizada para torneos activos
+    @Query("SELECT t FROM Tournament t WHERE t.status IN :statuses")
+    List<Tournament> findByStatusList(@Param("statuses") List<TournamentStatus> statuses);
+
+    // ✅ MÉTODO ESPECÍFICO: Torneos activos (abiertos o en progreso)
+    @Query("SELECT t FROM Tournament t WHERE t.status = 'OPEN_FOR_INSCRIPTION' OR t.status = 'IN_PROGRESS'")
+    List<Tournament> findActiveTournaments();
+
+    // ✅ MÉTODO CON PAGINACIÓN: Torneos activos paginados
+    @Query("SELECT t FROM Tournament t WHERE t.status IN ('OPEN_FOR_INSCRIPTION', 'IN_PROGRESS')")
+    Page<Tournament> findActiveTournaments(Pageable pageable);
+
+    // Otros métodos existentes...
+    List<Tournament> findBySportId(Long sportId);
     List<Tournament> findByStatus(TournamentStatus status);
     Page<Tournament> findByStatus(TournamentStatus status, Pageable pageable);
-
-    // Por creador
     List<Tournament> findByCreatedById(Long userId);
-
-    // Por fechas
     List<Tournament> findByStartDateBetween(LocalDate start, LocalDate end);
-
-    @Query("SELECT t FROM Tournament t " +
-            "WHERE t.status = :status " +
-            "AND t.startDate <= :date " +
-            "AND t.endDate >= :date")
-    List<Tournament> findActiveOnDate(
-            @Param("status") TournamentStatus status,
-            @Param("date") LocalDate date
-    );
-
-    // Búsqueda por nombre
     Page<Tournament> findByNameContainingIgnoreCase(String name, Pageable pageable);
-
-    // Existencia
     boolean existsByNameIgnoreCase(String name);
 }
