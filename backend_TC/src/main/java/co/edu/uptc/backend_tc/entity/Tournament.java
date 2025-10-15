@@ -76,7 +76,7 @@ public class Tournament implements Serializable {
     @Builder.Default
     private List<Inscription> inscriptions = new ArrayList<>();
 
-    @OneToMany(mappedBy = "tournament", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "tournament")
     @Builder.Default
     private List<Team> teams = new ArrayList<>();
 

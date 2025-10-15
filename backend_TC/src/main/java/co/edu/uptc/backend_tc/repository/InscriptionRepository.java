@@ -51,4 +51,17 @@ public interface InscriptionRepository extends JpaRepository<Inscription, Long>,
             "LEFT JOIN FETCH i.players " +
             "WHERE i.id = :inscriptionId")
     Inscription findByIdWithPlayers(@Param("inscriptionId") Long inscriptionId);
+
+    // CORREGIDO: Usar @Query explícito para buscar por institutionalEmail del delegado
+    @Query("SELECT i FROM Inscription i JOIN i.delegate d WHERE d.institutionalEmail = :email")
+    List<Inscription> findByDelegateEmail(@Param("email") String email);
+
+    // CORREGIDO: Usar @Query explícito para la validación de nombre de equipo
+    @Query("SELECT COUNT(i) > 0 FROM Inscription i WHERE i.tournament.id = :tournamentId AND LOWER(i.teamName) = LOWER(:teamName) AND i.status != :status")
+    boolean existsByTournamentIdAndTeamNameIgnoreCaseAndStatusNot(
+            @Param("tournamentId") Long tournamentId,
+            @Param("teamName") String teamName,
+            @Param("status") InscriptionStatus status);
+
+    long countByStatus(InscriptionStatus status);
 }

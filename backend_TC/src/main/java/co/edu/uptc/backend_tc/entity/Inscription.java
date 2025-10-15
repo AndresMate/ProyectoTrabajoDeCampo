@@ -66,9 +66,10 @@ public class Inscription implements Serializable {
     @JoinColumn(name = "delegate_player_id", nullable = false)
     private Player delegate;
 
+    @NotNull(message = "Club is required")
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "club_id")
-    private Club club; // opcional según modalidad
+    @JoinColumn(name = "club_id", nullable = false)
+    private Club club;
 
     @OneToMany(mappedBy = "inscription", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

@@ -35,7 +35,7 @@ public class Player implements Serializable {
     @Column(name = "full_name", nullable = false, length = 200)
     private String fullName;
 
-    @Size(max = 50)
+    @Size(max = 50, message = "Student code cannot exceed 50 characters")
     @Column(name = "student_code", unique = true, length = 50)
     private String studentCode;
 
@@ -63,11 +63,11 @@ public class Player implements Serializable {
     @Builder.Default
     private List<Inscription> inscriptionsAsDelegate = new ArrayList<>();
 
-    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "player")
     @Builder.Default
     private List<InscriptionPlayer> inscriptionPlayers = new ArrayList<>();
 
-    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "player")
     @Builder.Default
     private List<TeamRoster> teamRosters = new ArrayList<>();
 

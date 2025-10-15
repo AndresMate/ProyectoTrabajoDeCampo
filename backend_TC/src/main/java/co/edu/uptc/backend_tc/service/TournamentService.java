@@ -4,6 +4,7 @@ import co.edu.uptc.backend_tc.dto.TournamentDTO;
 import co.edu.uptc.backend_tc.dto.filter.TournamentFilterDTO;
 import co.edu.uptc.backend_tc.dto.page.PageResponseDTO;
 import co.edu.uptc.backend_tc.dto.response.TournamentResponseDTO;
+import co.edu.uptc.backend_tc.dto.stats.TournamentStatsDTO;
 import co.edu.uptc.backend_tc.entity.Sport;
 import co.edu.uptc.backend_tc.entity.Tournament;
 import co.edu.uptc.backend_tc.entity.User;
@@ -269,6 +270,49 @@ public class TournamentService {
         return tournaments.stream()
                 .map(this::enrichResponseDTO)
                 .collect(Collectors.toList());
+    }
+
+    // En TournamentService.java - Agregar estos métodos:
+
+    @Transactional
+    public TournamentResponseDTO cancelTournament(Long id) {
+        Tournament tournament = tournamentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Tournament", "id", id));
+
+        // Validar que se puede cancelar
+        if (tournament.getStatus() == TournamentStatus.FINISHED) {
+            throw new BusinessException(
+                    "Cannot cancel completed tournament",
+                    "TOURNAMENT_COMPLETED"
+            );
+        }
+
+        tournament.setStatus(TournamentStatus.CANCELLED);
+        tournament = tournamentRepository.save(tournament);
+        return enrichResponseDTO(tournament);
+    }
+
+    public List<TournamentResponseDTO> findInProgressTournaments() {
+        List<Tournament> tournaments = tournamentRepository.findByStatus(TournamentStatus.IN_PROGRESS);
+        return tournaments.stream()
+                .map(this::enrichResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    public TournamentStatsDTO getTournamentStats() {
+        long totalTournaments = tournamentRepository.count();
+        long planningCount = tournamentRepository.countByStatus(TournamentStatus.PLANNING);
+        long inProgressCount = tournamentRepository.countByStatus(TournamentStatus.IN_PROGRESS);
+        long finishedCount = tournamentRepository.countByStatus(TournamentStatus.FINISHED);
+        long cancelledCount = tournamentRepository.countByStatus(TournamentStatus.CANCELLED);
+
+        return TournamentStatsDTO.builder()
+                .totalTournaments(totalTournaments)
+                .planningCount(planningCount)
+                .inProgressCount(inProgressCount)
+                .finishedCount(finishedCount)
+                .cancelledCount(cancelledCount)
+                .build();
     }
 
 }

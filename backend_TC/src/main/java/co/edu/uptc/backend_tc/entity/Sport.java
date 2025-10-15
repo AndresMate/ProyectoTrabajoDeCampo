@@ -39,7 +39,7 @@ public class Sport implements Serializable {
     @Column(nullable = false)
     private Boolean isActive = true;
 
-    @OneToMany(mappedBy = "sport", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "sport")
     @Builder.Default
     private List<Category> categories = new ArrayList<>();
 

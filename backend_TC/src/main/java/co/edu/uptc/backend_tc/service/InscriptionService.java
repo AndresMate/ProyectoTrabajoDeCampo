@@ -1,9 +1,10 @@
 package co.edu.uptc.backend_tc.service;
 
 import co.edu.uptc.backend_tc.dto.InscriptionDTO;
+import co.edu.uptc.backend_tc.dto.response.InscriptionResponseDTO;
+import co.edu.uptc.backend_tc.dto.stats.InscriptionStatsDTO;
 import co.edu.uptc.backend_tc.dto.response.CategorySummaryDTO;
 import co.edu.uptc.backend_tc.dto.response.ClubSummaryDTO;
-import co.edu.uptc.backend_tc.dto.response.InscriptionResponseDTO;
 import co.edu.uptc.backend_tc.dto.response.TournamentSummaryDTO;
 import co.edu.uptc.backend_tc.entity.*;
 import co.edu.uptc.backend_tc.exception.BusinessException;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -54,6 +56,28 @@ public class InscriptionService {
         Inscription inscription = inscriptionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Inscription", "id", id));
         return enrichResponseDTO(inscription);
+    }
+
+    // Nuevo método para obtener inscripciones por email del delegado
+    public List<InscriptionResponseDTO> getByDelegateEmail(String delegateEmail) {
+        return inscriptionRepository.findByDelegateEmail(delegateEmail)
+                .stream()
+                .map(this::enrichResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    // Nuevo método para obtener inscripciones aprobadas por torneo
+    public List<InscriptionResponseDTO> getApprovedByTournament(Long tournamentId) {
+        return inscriptionRepository.findByTournamentIdAndStatus(tournamentId, InscriptionStatus.APPROVED)
+                .stream()
+                .map(this::enrichResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    // Nuevo método para verificar disponibilidad de nombre de equipo
+    public boolean isTeamNameAvailable(Long tournamentId, String teamName) {
+        return !inscriptionRepository.existsByTournamentIdAndTeamNameIgnoreCaseAndStatusNot(
+                tournamentId, teamName, InscriptionStatus.REJECTED);
     }
 
     @Transactional
@@ -122,14 +146,11 @@ public class InscriptionService {
         return enrichResponseDTO(inscription);
     }
 
+    // Método actualizado sin parámetro User
     @Transactional
-    public InscriptionResponseDTO approve(Long id, User approver) {
+    public InscriptionResponseDTO approve(Long id) {
         Inscription inscription = inscriptionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Inscription", "id", id));
-
-        if (approver.getRole() != UserRole.ADMIN) {
-            throw new ForbiddenException("inscription", "approve");
-        }
 
         if (inscription.getStatus() != InscriptionStatus.PENDING) {
             throw new BusinessException("Only PENDING inscriptions can be approved", "INVALID_STATUS_FOR_APPROVAL");
@@ -140,34 +161,27 @@ public class InscriptionService {
         return enrichResponseDTO(inscription);
     }
 
+    // Método actualizado con parámetro reason
     @Transactional
-    public InscriptionResponseDTO reject(Long id, User rejector) {
+    public InscriptionResponseDTO reject(Long id, String reason) {
         Inscription inscription = inscriptionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Inscription", "id", id));
-
-        if (rejector.getRole() != UserRole.ADMIN) {
-            throw new ForbiddenException("inscription", "reject");
-        }
 
         if (inscription.getStatus() != InscriptionStatus.PENDING) {
             throw new BusinessException("Only PENDING inscriptions can be rejected", "INVALID_STATUS_FOR_REJECTION");
         }
 
         inscription.setStatus(InscriptionStatus.REJECTED);
+        // Puedes agregar un campo para guardar el motivo del rechazo si lo necesitas
         inscription = inscriptionRepository.save(inscription);
         return enrichResponseDTO(inscription);
     }
 
+    // Método actualizado sin parámetro User
     @Transactional
-    public void delete(Long id, User deleter) {
+    public void delete(Long id) {
         Inscription inscription = inscriptionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Inscription", "id", id));
-
-        // Solo el delegado o el ADMIN pueden eliminar
-        if (!inscription.getDelegate().getId().equals(deleter.getId()) &&
-                deleter.getRole() != UserRole.ADMIN) {
-            throw new ForbiddenException("inscription", "delete");
-        }
 
         // No permitir eliminar inscripciones ya aprobadas
         if (inscription.getStatus() == InscriptionStatus.APPROVED) {
@@ -176,6 +190,7 @@ public class InscriptionService {
 
         inscriptionRepository.delete(inscription);
     }
+
 
     // Método auxiliar para armar correctamente el DTO de respuesta
     private InscriptionResponseDTO enrichResponseDTO(Inscription inscription) {
@@ -216,7 +231,6 @@ public class InscriptionService {
                             .collect(Collectors.toList())
             );
             response.setPlayerCount(inscription.getPlayers().size());
-
         } else {
             response.setPlayers(List.of());
             response.setPlayerCount(0);
@@ -224,5 +238,4 @@ public class InscriptionService {
 
         return response;
     }
-
 }

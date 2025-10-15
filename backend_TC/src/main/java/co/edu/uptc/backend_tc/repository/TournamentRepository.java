@@ -40,4 +40,6 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long>,
     List<Tournament> findByStartDateBetween(LocalDate start, LocalDate end);
     Page<Tournament> findByNameContainingIgnoreCase(String name, Pageable pageable);
     boolean existsByNameIgnoreCase(String name);
+    long countByStatus(TournamentStatus status);
+
 }

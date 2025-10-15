@@ -8,11 +8,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class MatchResultMapper {
 
-    public static MatchResultDTO toDTO(MatchResult entity) {
+    public MatchResultDTO toDTO(MatchResult entity) {
         if (entity == null) return null;
 
         return MatchResultDTO.builder()
-                .matchId(entity.getMatchId())
+                .matchId(entity.getMatchId())  // ✅ CORRECTO: Usar getMatchId()
                 .homeScore(entity.getHomeScore())
                 .awayScore(entity.getAwayScore())
                 .notes(entity.getNotes())
@@ -20,11 +20,11 @@ public class MatchResultMapper {
                 .build();
     }
 
-    public static MatchResult toEntity(MatchResultDTO dto, Match match) {
+    public MatchResult toEntity(MatchResultDTO dto, Match match) {
         if (dto == null) return null;
 
         return MatchResult.builder()
-                .match(match)
+                .match(match)  // ✅ El matchId se genera automáticamente por @MapsId
                 .homeScore(dto.getHomeScore())
                 .awayScore(dto.getAwayScore())
                 .notes(dto.getNotes())

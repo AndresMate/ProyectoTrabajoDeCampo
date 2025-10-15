@@ -58,11 +58,11 @@ public class Team implements Serializable {
     @JoinColumn(name = "club_id", nullable = false)
     private Club club;
 
-    @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "team", orphanRemoval = true)
     @Builder.Default
     private List<TeamAvailability> availabilities = new ArrayList<>();
 
-    @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "team", orphanRemoval = true)
     @Builder.Default
     private List<TeamRoster> roster = new ArrayList<>();
 
