@@ -22,61 +22,52 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configure(http))
-                .csrf(csrf -> csrf.disable()) // ✅ Solo para desarrollo
+                .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // 🔓 ENDPOINTS PÚBLICOS (sin autenticación)
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
-                                "/api/auth/**",           // Autenticación
-                                "/api/tournaments/public/**", // Torneos públicos
-                                "/api/matches/public/**",     // Partidos públicos
-                                "/api/standings/public/**",   // Tablas públicas
-                                "/api/inscriptions/**",       // Inscripciones (usuarios normales)
-                                "/api/sports/public/**",      // Deportes públicos
-                                "/api/venues/public/**"       // Espacios públicos
+                                "/api/auth/**",
+                                "/api/tournaments/public/**",
+                                "/api/matches/public/**",
+                                "/api/standings/public/**",
+                                "/api/inscriptions/**",
+                                "/api/sports/public/**",
+                                "/api/venues/public/**"
                         ).permitAll()
-
-                        // 👑 SUPER_ADMIN - Gestión completa de usuarios
                         .requestMatchers("/api/users/**").hasRole("SUPER_ADMIN")
-
-                        // ⚙️ ADMIN - Gestión de torneos, deportes, espacios + referís
                         .requestMatchers(
                                 "/api/tournaments/**",
                                 "/api/categories/**",
                                 "/api/sports/**",
                                 "/api/venues/**",
                                 "/api/scenarios/**",
-                                "/api/inscriptions/admin/**"  // Aprobación de inscripciones
+                                "/api/inscriptions/admin/**"
                         ).hasAnyRole("ADMIN", "SUPER_ADMIN")
-
-                        // 🏅 REFEREE - Gestión de partidos y sanciones
                         .requestMatchers(
                                 "/api/matches/**",
                                 "/api/match-results/**",
                                 "/api/match-events/**",
                                 "/api/sanctions/**"
                         ).hasAnyRole("REFEREE", "ADMIN", "SUPER_ADMIN")
-
-                        // 📊 ENDPOINTS DE CONSULTA - Todos los roles autenticados
                         .requestMatchers(
                                 "/api/teams/**",
                                 "/api/players/**",
                                 "/api/clubs/**",
                                 "/api/standings/**"
                         ).authenticated()
-
-                        // ❌ Cualquier otra endpoint requiere autenticación
                         .anyRequest().authenticated()
                 )
-                .httpBasic(httpBasic -> {}); // ✅ Autenticación básica para desarrollo
+                // ⚠️ REMOVER esta línea - Deshabilitar HTTP Basic
+                // .httpBasic(httpBasic -> {}) // ❌ ELIMINAR ESTA LÍNEA
+
+                // ✅ AGREGAR el JWT filter
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
-
-
 
     @Bean
     public PasswordEncoder passwordEncoder() {
