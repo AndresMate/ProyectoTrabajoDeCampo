@@ -60,10 +60,7 @@ public class SecurityConfig {
                         ).authenticated()
                         .anyRequest().authenticated()
                 )
-                // ⚠️ REMOVER esta línea - Deshabilitar HTTP Basic
-                // .httpBasic(httpBasic -> {}) // ❌ ELIMINAR ESTA LÍNEA
 
-                // ✅ AGREGAR el JWT filter
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
