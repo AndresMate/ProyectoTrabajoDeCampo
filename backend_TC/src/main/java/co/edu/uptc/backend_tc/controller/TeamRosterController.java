@@ -2,60 +2,66 @@ package co.edu.uptc.backend_tc.controller;
 
 import co.edu.uptc.backend_tc.dto.TeamRosterDTO;
 import co.edu.uptc.backend_tc.dto.response.TeamRosterResponseDTO;
-import co.edu.uptc.backend_tc.exception.BusinessException;
-import co.edu.uptc.backend_tc.exception.ConflictException;
-import co.edu.uptc.backend_tc.exception.ResourceNotFoundException;
 import co.edu.uptc.backend_tc.service.TeamRosterService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/team-roster")
+@RequestMapping("/api/teams/{teamId}/roster")
 @RequiredArgsConstructor
-@Tag(name = "Team Roster", description = "Operaciones sobre el roster de equipos")
+@Tag(name = "Equipos - Roster", description = "Operaciones para gestionar los jugadores de un equipo")
+@SecurityRequirement(name = "bearerAuth")
 public class TeamRosterController {
 
     private final TeamRosterService teamRosterService;
 
-    @Operation(summary = "Obtener jugadores por equipo")
-    @GetMapping("/team/{teamId}")
-    public ResponseEntity<List<TeamRosterResponseDTO>> getByTeam(@PathVariable Long teamId) {
+    @Operation(summary = "Obtener el roster completo de un equipo")
+    @GetMapping
+    public ResponseEntity<List<TeamRosterResponseDTO>> getRosterByTeam(@PathVariable Long teamId) {
         return ResponseEntity.ok(teamRosterService.getByTeam(teamId));
     }
 
-    @Operation(summary = "Obtener equipos por jugador")
-    @GetMapping("/player/{playerId}")
-    public ResponseEntity<List<TeamRosterDTO>> getByPlayer(@PathVariable Long playerId) {
-        return ResponseEntity.ok(teamRosterService.getByPlayer(playerId));
-    }
-
-    @Operation(summary = "Agregar jugador a equipo")
+    @Operation(summary = "Añadir un jugador al roster del equipo")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Jugador añadido al roster"),
+        @ApiResponse(responseCode = "409", description = "El jugador ya está en el equipo o el número de camiseta está ocupado"),
+        @ApiResponse(responseCode = "404", description = "Equipo o jugador no encontrado"),
+        @ApiResponse(responseCode = "400", description = "Se alcanzó el límite de jugadores")
+    })
     @PostMapping
-    public ResponseEntity<TeamRosterDTO> addPlayerToTeam(@RequestBody TeamRosterDTO dto) {
-        return ResponseEntity.ok(teamRosterService.addPlayerToTeam(dto));
+    public ResponseEntity<TeamRosterDTO> addPlayerToTeam(@PathVariable Long teamId, @RequestBody TeamRosterDTO dto) {
+        dto.setTeamId(teamId); // Aseguramos que el ID del equipo es el de la URL
+        TeamRosterDTO newRosterEntry = teamRosterService.addPlayerToTeam(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(newRosterEntry);
     }
 
-    @Operation(summary = "Remover jugador de equipo")
-    @DeleteMapping("/team/{teamId}/player/{playerId}")
+    @Operation(summary = "Eliminar un jugador del roster del equipo")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Jugador eliminado del roster"),
+        @ApiResponse(responseCode = "404", description = "El jugador no se encontró en el roster de este equipo")
+    })
+    @DeleteMapping("/player/{playerId}")
     public ResponseEntity<Void> removePlayerFromTeam(@PathVariable Long teamId, @PathVariable Long playerId) {
         teamRosterService.removePlayerFromTeam(teamId, playerId);
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Asignar capitán a equipo")
-    @PutMapping("/team/{teamId}/captain/{playerId}")
+    @Operation(summary = "Asignar un jugador como capitán del equipo")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Capitán asignado exitosamente"),
+        @ApiResponse(responseCode = "404", description = "El jugador no se encontró en el roster de este equipo")
+    })
+    @PostMapping("/captain/{playerId}")
     public ResponseEntity<TeamRosterDTO> setCaptain(@PathVariable Long teamId, @PathVariable Long playerId) {
         return ResponseEntity.ok(teamRosterService.setCaptain(teamId, playerId));
-    }
-
-    // Manejo de excepciones personalizadas
-    @ExceptionHandler({ResourceNotFoundException.class, ConflictException.class, BusinessException.class})
-    public ResponseEntity<String> handleCustomExceptions(Exception ex) {
-        return ResponseEntity.badRequest().body(ex.getMessage());
     }
 }

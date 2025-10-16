@@ -4,10 +4,12 @@ import co.edu.uptc.backend_tc.dto.PlayerDTO;
 import co.edu.uptc.backend_tc.dto.filter.PlayerFilterDTO;
 import co.edu.uptc.backend_tc.dto.page.PageResponseDTO;
 import co.edu.uptc.backend_tc.dto.response.PlayerResponseDTO;
-import co.edu.uptc.backend_tc.exception.BusinessException;
-import co.edu.uptc.backend_tc.exception.ConflictException;
-import co.edu.uptc.backend_tc.exception.ResourceNotFoundException;
 import co.edu.uptc.backend_tc.service.PlayerService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -17,54 +19,66 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/players")
 @RequiredArgsConstructor
+@Tag(name = "Jugadores", description = "Operaciones sobre los jugadores")
+@SecurityRequirement(name = "bearerAuth")
 public class PlayerController {
 
     private final PlayerService playerService;
 
+    @Operation(summary = "Obtener todos los jugadores paginados")
     @GetMapping
-    public PageResponseDTO<PlayerDTO> getAll(Pageable pageable) {
-        return playerService.getAll(pageable);
+    public ResponseEntity<PageResponseDTO<PlayerDTO>> getAll(Pageable pageable) {
+        return ResponseEntity.ok(playerService.getAll(pageable));
     }
 
+    @Operation(summary = "Buscar jugadores por criterios de filtro")
     @PostMapping("/search")
-    public PageResponseDTO<PlayerDTO> search(@RequestBody PlayerFilterDTO filter, Pageable pageable) {
-        return playerService.search(filter, pageable);
+    public ResponseEntity<PageResponseDTO<PlayerDTO>> search(@RequestBody PlayerFilterDTO filter, Pageable pageable) {
+        return ResponseEntity.ok(playerService.search(filter, pageable));
     }
 
+    @Operation(summary = "Obtener un jugador por ID con estadísticas")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Jugador encontrado"),
+        @ApiResponse(responseCode = "404", description = "Jugador no encontrado")
+    })
     @GetMapping("/{id}")
-    public PlayerResponseDTO getById(@PathVariable Long id) {
-        return playerService.getById(id);
+    public ResponseEntity<PlayerResponseDTO> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(playerService.getById(id));
     }
 
+    @Operation(summary = "Crear un nuevo jugador")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Jugador creado exitosamente"),
+        @ApiResponse(responseCode = "409", description = "Conflicto: el documento, email o código de estudiante ya existe"),
+        @ApiResponse(responseCode = "400", description = "Regla de negocio no cumplida (ej. edad mínima)")
+    })
     @PostMapping
-    public PlayerDTO create(@RequestBody PlayerDTO dto) {
-        return playerService.create(dto);
+    public ResponseEntity<PlayerDTO> create(@RequestBody PlayerDTO dto) {
+        PlayerDTO createdPlayer = playerService.create(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdPlayer);
     }
 
+    @Operation(summary = "Actualizar un jugador existente")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Jugador actualizado"),
+        @ApiResponse(responseCode = "404", description = "Jugador no encontrado"),
+        @ApiResponse(responseCode = "409", description = "Conflicto con documento o email")
+    })
     @PutMapping("/{id}")
-    public PlayerDTO update(@PathVariable Long id, @RequestBody PlayerDTO dto) {
-        return playerService.update(id, dto);
+    public ResponseEntity<PlayerDTO> update(@PathVariable Long id, @RequestBody PlayerDTO dto) {
+        return ResponseEntity.ok(playerService.update(id, dto));
     }
 
+    @Operation(summary = "Desactivar un jugador (Soft Delete)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Jugador desactivado"),
+        @ApiResponse(responseCode = "404", description = "Jugador no encontrado"),
+        @ApiResponse(responseCode = "400", description = "El jugador pertenece a equipos activos y no puede ser eliminado")
+    })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         playerService.delete(id);
         return ResponseEntity.noContent().build();
-    }
-
-    // Manejo de excepciones
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<String> handleNotFound(ResourceNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
-    }
-
-    @ExceptionHandler(ConflictException.class)
-    public ResponseEntity<String> handleConflict(ConflictException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
-    }
-
-    @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<String> handleBusiness(BusinessException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
 }

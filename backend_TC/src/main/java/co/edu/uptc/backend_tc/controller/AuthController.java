@@ -2,7 +2,10 @@ package co.edu.uptc.backend_tc.controller;
 
 import co.edu.uptc.backend_tc.dto.LoginRequestDTO;
 import co.edu.uptc.backend_tc.dto.LoginResponseDTO;
+import co.edu.uptc.backend_tc.dto.PasswordChangeRequestDTO;
 import co.edu.uptc.backend_tc.service.AuthService;
+
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -19,5 +22,11 @@ public class AuthController {
     @PostMapping("/login")
     public LoginResponseDTO login(@RequestBody LoginRequestDTO request) {
         return authService.login(request);
+    }
+
+    @PostMapping("/force-password-change/{userId}")
+    public ResponseEntity<Void> forcePasswordChange(@PathVariable Long userId, @RequestBody PasswordChangeRequestDTO request) {
+        authService.forcePasswordChange(userId, request.getNewPassword());
+        return ResponseEntity.ok().build();
     }
 }

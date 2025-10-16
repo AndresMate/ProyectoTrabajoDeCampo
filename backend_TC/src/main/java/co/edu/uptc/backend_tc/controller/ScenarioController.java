@@ -1,13 +1,16 @@
-// src/main/java/co/edu/uptc/backend_tc/controller/ScenarioController.java
 package co.edu.uptc.backend_tc.controller;
 
 import co.edu.uptc.backend_tc.dto.ScenarioDTO;
 import co.edu.uptc.backend_tc.dto.page.PageResponseDTO;
-import co.edu.uptc.backend_tc.exception.BusinessException;
-import co.edu.uptc.backend_tc.exception.ResourceNotFoundException;
 import co.edu.uptc.backend_tc.service.ScenarioService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,79 +19,70 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/scenarios")
 @RequiredArgsConstructor
+@Tag(name = "Escenarios", description = "Operaciones sobre los escenarios deportivos")
+@SecurityRequirement(name = "bearerAuth")
 public class ScenarioController {
 
     private final ScenarioService scenarioService;
 
+    @Operation(summary = "Obtener todos los escenarios paginados")
     @GetMapping
-    public ResponseEntity<?> getAll(Pageable pageable) {
-        try {
-            PageResponseDTO<ScenarioDTO> result = scenarioService.getAll(pageable);
-            return ResponseEntity.ok(result);
-        } catch (Exception ex) {
-            return ResponseEntity.badRequest().body("Error al obtener escenarios: " + ex.getMessage());
-        }
+    public ResponseEntity<PageResponseDTO<ScenarioDTO>> getAll(Pageable pageable) {
+        return ResponseEntity.ok(scenarioService.getAll(pageable));
     }
 
+    @Operation(summary = "Obtener escenarios por ID de sede")
     @GetMapping("/venue/{venueId}")
-    public ResponseEntity<?> getByVenue(@PathVariable Long venueId) {
-        try {
-            List<ScenarioDTO> result = scenarioService.getByVenue(venueId);
-            return ResponseEntity.ok(result);
-        } catch (Exception ex) {
-            return ResponseEntity.badRequest().body("Error al obtener escenarios: " + ex.getMessage());
-        }
+    public ResponseEntity<List<ScenarioDTO>> getByVenue(@PathVariable Long venueId) {
+        return ResponseEntity.ok(scenarioService.getByVenue(venueId));
     }
 
-    @GetMapping("/night")
-    public ResponseEntity<?> getScenariosForNightGames() {
-        try {
-            List<ScenarioDTO> result = scenarioService.getScenariosForNightGames();
-            return ResponseEntity.ok(result);
-        } catch (Exception ex) {
-            return ResponseEntity.badRequest().body("Error al obtener escenarios nocturnos: " + ex.getMessage());
-        }
+    @Operation(summary = "Obtener escenarios que soportan partidos nocturnos")
+    @GetMapping("/night-games")
+    public ResponseEntity<List<ScenarioDTO>> getForNightGames() {
+        return ResponseEntity.ok(scenarioService.getScenariosForNightGames());
     }
 
+    @Operation(summary = "Obtener un escenario por ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Escenario encontrado"),
+        @ApiResponse(responseCode = "404", description = "Escenario no encontrado")
+    })
     @GetMapping("/{id}")
-    public ResponseEntity<?> getById(@PathVariable Long id) {
-        try {
-            ScenarioDTO result = scenarioService.getById(id);
-            return ResponseEntity.ok(result);
-        } catch (ResourceNotFoundException ex) {
-            return ResponseEntity.status(404).body(ex.getMessage());
-        } catch (Exception ex) {
-            return ResponseEntity.badRequest().body("Error: " + ex.getMessage());
-        }
+    public ResponseEntity<ScenarioDTO> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(scenarioService.getById(id));
     }
 
+    @Operation(summary = "Crear un nuevo escenario")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Escenario creado"),
+        @ApiResponse(responseCode = "404", description = "Sede no encontrada")
+    })
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody ScenarioDTO dto) {
-        try {
-            ScenarioDTO result = scenarioService.create(dto);
-            return ResponseEntity.ok(result);
-        } catch (ResourceNotFoundException | BusinessException ex) {
-            return ResponseEntity.badRequest().body(ex.getMessage());
-        }
+    public ResponseEntity<ScenarioDTO> create(@RequestBody ScenarioDTO dto) {
+        ScenarioDTO createdScenario = scenarioService.create(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdScenario);
     }
 
+    @Operation(summary = "Actualizar un escenario")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Escenario actualizado"),
+        @ApiResponse(responseCode = "404", description = "Escenario o sede no encontrada")
+    })
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody ScenarioDTO dto) {
-        try {
-            ScenarioDTO result = scenarioService.update(id, dto);
-            return ResponseEntity.ok(result);
-        } catch (ResourceNotFoundException | BusinessException ex) {
-            return ResponseEntity.badRequest().body(ex.getMessage());
-        }
+    public ResponseEntity<ScenarioDTO> update(@PathVariable Long id, @RequestBody ScenarioDTO dto) {
+        return ResponseEntity.ok(scenarioService.update(id, dto));
     }
 
+    @Operation(summary = "Eliminar un escenario")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Escenario eliminado"),
+        @ApiResponse(responseCode = "404", description = "Escenario no encontrado"),
+        @ApiResponse(responseCode = "400", description = "El escenario tiene partidos programados")
+    })
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Long id) {
-        try {
-            scenarioService.delete(id);
-            return ResponseEntity.ok("Escenario eliminado correctamente");
-        } catch (ResourceNotFoundException | BusinessException ex) {
-            return ResponseEntity.badRequest().body(ex.getMessage());
-        }
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        scenarioService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }
