@@ -22,6 +22,7 @@ public class CategoryMapper {
                 .id(entity.getId())
                 .name(entity.getName())
                 .description(entity.getDescription())
+                .membersPerTeam(entity.getMembersPerTeam())
                 .isActive(entity.getIsActive())
                 .sportId(entity.getSport() != null ? entity.getSport().getId() : null)
                 .build();
@@ -42,6 +43,9 @@ public class CategoryMapper {
         }
         if (dto.getDescription() != null) {
             entity.setDescription(dto.getDescription());
+        }
+        if (dto.getMembersPerTeam() != null) {
+            entity.setMembersPerTeam(dto.getMembersPerTeam());
         }
         if (dto.getIsActive() != null) {
             entity.setIsActive(dto.getIsActive());

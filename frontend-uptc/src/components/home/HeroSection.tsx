@@ -6,7 +6,7 @@ export default function HeroSection() {
         Administra, participa y consulta la información de los torneos deportivos de la UPTC.
       </p>
       <a
-        href="#torneos"
+        href="torneos"
         className="bg-yellow-400 text-blue-900 font-semibold px-6 py-3 rounded-lg hover:bg-yellow-500 transition"
       >
         Ver torneos

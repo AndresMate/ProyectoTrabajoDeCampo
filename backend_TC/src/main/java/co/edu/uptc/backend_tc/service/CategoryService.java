@@ -61,9 +61,11 @@ public class CategoryService {
             );
         }
 
+        // Crear la categoría con el nuevo campo
         Category category = Category.builder()
                 .name(dto.getName())
                 .description(dto.getDescription())
+                .membersPerTeam(dto.getMembersPerTeam()) // 👈 nuevo campo
                 .sport(sport)
                 .isActive(true)
                 .build();
@@ -85,8 +87,10 @@ public class CategoryService {
         }
 
         // Validar nombre único si cambió
-        if (!category.getName().equalsIgnoreCase(dto.getName()) &&
-                categoryRepository.existsByNameIgnoreCaseAndSportId(dto.getName(), category.getSport().getId())) {
+        if (dto.getName() != null &&
+                !category.getName().equalsIgnoreCase(dto.getName()) &&
+                categoryRepository.existsByNameIgnoreCaseAndSportId(dto.getName(),
+                        dto.getSportId() != null ? dto.getSportId() : category.getSport().getId())) {
             throw new ConflictException(
                     "Category with this name already exists for this sport",
                     "name",
@@ -94,6 +98,7 @@ public class CategoryService {
             );
         }
 
+        // Actualizar la entidad con los datos nuevos (incluye membersPerTeam)
         categoryMapper.updateEntityFromDTO(dto, category, sport);
         category = categoryRepository.save(category);
         return categoryMapper.toDTO(category);

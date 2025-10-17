@@ -1,9 +1,7 @@
 package co.edu.uptc.backend_tc.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.*;
 
 import java.io.Serializable;
@@ -38,6 +36,11 @@ public class Category implements Serializable {
     @Column(length = 500)
     private String description;
 
+    @NotNull(message = "Members per team is required")
+    @Min(value = 1, message = "Members per team must be at least 1")
+    @Column(name = "members_per_team", nullable = false)
+    private Integer membersPerTeam;
+
     @Column(nullable = false)
     private Boolean isActive = true;
 
@@ -62,7 +65,6 @@ public class Category implements Serializable {
     @Builder.Default
     private List<Standing> standings = new ArrayList<>();
 
-    // Constructor de conveniencia si lo necesitas
     public static Category withId(Long id) {
         Category category = new Category();
         category.setId(id);

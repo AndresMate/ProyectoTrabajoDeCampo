@@ -19,6 +19,9 @@ public class CategoryDTO {
     @Size(max = 500, message = "Description cannot exceed 500 characters")
     private String description;
 
+    @NotNull(message = "Members per team is required")
+    private Integer membersPerTeam;
+
     private Boolean isActive;
 
     @NotNull(message = "Sport ID is required")
