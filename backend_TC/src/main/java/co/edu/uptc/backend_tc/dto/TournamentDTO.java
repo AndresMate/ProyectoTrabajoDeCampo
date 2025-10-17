@@ -36,6 +36,10 @@ public class TournamentDTO {
     @NotNull(message = "Sport ID is required")
     private Long sportId;
 
+    @NotNull(message = "Category ID is required")
+    private Long categoryId;
+
     @NotNull(message = "Creator ID is required")
     private Long createdById;
+
 }

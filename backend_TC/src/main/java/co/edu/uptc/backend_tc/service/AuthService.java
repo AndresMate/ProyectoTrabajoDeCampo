@@ -43,7 +43,8 @@ public class AuthService {
                     .email(user.getEmail())
                     .fullName(user.getFullName())
                     .role(user.getRole())
-                    .forcePasswordChange(user.getForcePasswordChange()) // ✅ Agregado
+                    .forcePasswordChange(user.getForcePasswordChange()) // ✅
+                    .userId(user.getId())
                     .build();
 
         } catch (Exception e) {

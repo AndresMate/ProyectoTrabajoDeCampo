@@ -1,36 +1,43 @@
 import api from "./api";
 
+// ======================
+// Interfaces de datos
+// ======================
+
 export interface Tournament {
   id: number;
   name: string;
-  description: string;
+  maxTeams: number;
   startDate: string;
   endDate: string;
-  registrationDeadline?: string;
-  status: string;
+  modality: "DIURNO" | "NOCTURNO";
+  status: "PLANNING" | "OPEN_FOR_INSCRIPTION" | "IN_PROGRESS" | "FINISHED" | "CANCELLED";
   sport: {
     id: number;
     name: string;
   };
-  category?: {
+  category: {
     id: number;
     name: string;
   };
-  createdBy?: {
+  createdBy: {
     id: number;
     fullName: string;
   };
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface TournamentCreateDTO {
   name: string;
-  description: string;
+  maxTeams: number;
   startDate: string;
   endDate: string;
-  registrationDeadline?: string;
+  modality: "DIURNO" | "NOCTURNO";
+  status: "PLANNING" | "OPEN_FOR_INSCRIPTION" | "IN_PROGRESS" | "FINISHED" | "CANCELLED";
   sportId: number;
-  categoryIds?: number[];
-  rules?: string;
+  categoryId: number;
+  createdById: number;
 }
 
 export interface PageResponse<T> {
@@ -41,8 +48,15 @@ export interface PageResponse<T> {
   number: number;
 }
 
+// ======================
+// Servicio principal
+// ======================
+
 export const tournamentsService = {
-  // Obtener todos los torneos (paginados) - Público
+  // ======================
+  // ENDPOINTS PÚBLICOS
+  // ======================
+
   getAll: async (page = 0, size = 10): Promise<Tournament[]> => {
     try {
       const response = await api.get(`/tournaments/public?page=${page}&size=${size}`);
@@ -53,7 +67,6 @@ export const tournamentsService = {
     }
   },
 
-  // Obtener torneos con paginación completa
   getAllPaginated: async (page = 0, size = 10): Promise<PageResponse<Tournament>> => {
     try {
       const response = await api.get(`/tournaments/public?page=${page}&size=${size}`);
@@ -64,7 +77,6 @@ export const tournamentsService = {
     }
   },
 
-  // Obtener torneo por ID - Público
   getById: async (id: number | string): Promise<Tournament> => {
     try {
       const response = await api.get(`/tournaments/public/${id}`);
@@ -75,7 +87,6 @@ export const tournamentsService = {
     }
   },
 
-  // Obtener torneos activos - Público
   getActive: async (): Promise<Tournament[]> => {
     try {
       const response = await api.get("/tournaments/public/active");
@@ -86,42 +97,33 @@ export const tournamentsService = {
     }
   },
 
-  // Buscar torneos con filtros - Público
-  search: async (filters: any, page = 0, size = 10): Promise<PageResponse<Tournament>> => {
-    try {
-      const response = await api.post(`/tournaments/public/search?page=${page}&size=${size}`, filters);
-      return response.data;
-    } catch (error) {
-      console.error("Error al buscar torneos:", error);
-      throw error;
-    }
-  },
+  // ======================
+  // ENDPOINTS PRIVADOS
+  // ======================
 
-  // === ENDPOINTS PROTEGIDOS (Requieren autenticación) ===
-
-  // Crear nuevo torneo (Admin)
   create: async (data: TournamentCreateDTO): Promise<Tournament> => {
     try {
+      console.log("📤 Enviando torneo al backend:", data);
       const response = await api.post("/tournaments", data);
       return response.data;
-    } catch (error) {
-      console.error("Error al crear torneo:", error);
+    } catch (error: any) {
+      console.error("Error al crear torneo:", error.response?.data || error);
       throw error;
     }
   },
 
-  // Actualizar torneo (Admin)
+  // ⚠️ PATCH para edición parcial
   update: async (id: number | string, data: Partial<TournamentCreateDTO>): Promise<Tournament> => {
     try {
-      const response = await api.put(`/tournaments/${id}`, data);
+      console.log(`✏️ Actualizando torneo ${id} con datos:`, data);
+      const response = await api.patch(`/tournaments/${id}`, data);
       return response.data;
-    } catch (error) {
-      console.error("Error al actualizar torneo:", error);
+    } catch (error: any) {
+      console.error("Error al actualizar torneo:", error.response?.data || error);
       throw error;
     }
   },
 
-  // Eliminar torneo (Admin)
   delete: async (id: number | string): Promise<void> => {
     try {
       await api.delete(`/tournaments/${id}`);
@@ -131,7 +133,10 @@ export const tournamentsService = {
     }
   },
 
-  // Iniciar torneo (Admin)
+  // ======================
+  // CAMBIOS DE ESTADO
+  // ======================
+
   startTournament: async (id: number | string): Promise<Tournament> => {
     try {
       const response = await api.post(`/tournaments/${id}/start`);
@@ -142,7 +147,6 @@ export const tournamentsService = {
     }
   },
 
-  // Completar torneo (Admin)
   completeTournament: async (id: number | string): Promise<Tournament> => {
     try {
       const response = await api.post(`/tournaments/${id}/complete`);
@@ -153,7 +157,6 @@ export const tournamentsService = {
     }
   },
 
-  // Cancelar torneo (Admin)
   cancelTournament: async (id: number | string): Promise<Tournament> => {
     try {
       const response = await api.post(`/tournaments/${id}/cancel`);
@@ -164,7 +167,10 @@ export const tournamentsService = {
     }
   },
 
-  // Obtener inscripciones de un torneo
+  // ======================
+  // RELACIONES
+  // ======================
+
   getInscriptions: async (tournamentId: number | string): Promise<any[]> => {
     try {
       const response = await api.get(`/inscriptions?tournamentId=${tournamentId}`);
@@ -175,7 +181,6 @@ export const tournamentsService = {
     }
   },
 
-  // Obtener partidos de un torneo
   getMatches: async (tournamentId: number | string): Promise<any[]> => {
     try {
       const response = await api.get(`/matches/public?tournamentId=${tournamentId}`);
@@ -186,7 +191,6 @@ export const tournamentsService = {
     }
   },
 
-  // Obtener estadísticas de torneos (Admin)
   getStats: async (): Promise<any> => {
     try {
       const response = await api.get("/tournaments/stats");
@@ -195,5 +199,7 @@ export const tournamentsService = {
       console.error("Error al obtener estadísticas:", error);
       throw error;
     }
-  }
-};export default tournamentsService;
+  },
+};
+
+export default tournamentsService;

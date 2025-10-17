@@ -4,7 +4,7 @@ export interface InscriptionDTO {
   id?: number;
   tournamentId: number;
   categoryId: number;
-  clubId: number;
+  clubId?: number;
   teamName: string;
   delegateName: string;
   delegateEmail: string;
@@ -24,7 +24,7 @@ export interface InscriptionResponseDTO {
     id: number;
     name: string;
   };
-  club: {
+  club?: {
     id: number;
     name: string;
   };
@@ -36,12 +36,6 @@ export interface InscriptionResponseDTO {
   rejectionReason?: string;
   createdAt: string;
   updatedAt?: string;
-}
-
-export interface InscriptionPlayerDTO {
-  inscriptionId: number;
-  playerId: number;
-  playerName?: string;
 }
 
 const inscriptionsService = {
@@ -70,15 +64,15 @@ const inscriptionsService = {
   },
 
   // Verificar disponibilidad de nombre de equipo
-  isTeamNameAvailable: async (tournamentId: number, teamName: string): Promise<boolean> => {
+  checkTeamName: async (tournamentId: number, teamName: string): Promise<{ isAvailable: boolean }> => {
     try {
       const response = await api.get(`/inscriptions/check-team-name`, {
         params: { tournamentId, teamName }
       });
-      return response.data.isAvailable;
+      return response.data;
     } catch (error: any) {
       console.error("Error al verificar nombre de equipo:", error);
-      return false;
+      return { isAvailable: false };
     }
   },
 
@@ -130,7 +124,7 @@ const inscriptionsService = {
   // === GESTIÓN DE JUGADORES ===
 
   // Obtener jugadores de una inscripción
-  getPlayers: async (inscriptionId: number): Promise<InscriptionPlayerDTO[]> => {
+  getPlayers: async (inscriptionId: number): Promise<any[]> => {
     try {
       const response = await api.get(`/inscriptions/${inscriptionId}/players`);
       return response.data;
@@ -141,7 +135,7 @@ const inscriptionsService = {
   },
 
   // Añadir jugador a inscripción
-  addPlayer: async (inscriptionId: number, playerId: number): Promise<InscriptionPlayerDTO> => {
+  addPlayer: async (inscriptionId: number, playerId: number): Promise<any> => {
     try {
       const response = await api.post(`/inscriptions/${inscriptionId}/players`, { playerId });
       return response.data;

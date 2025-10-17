@@ -50,7 +50,7 @@ export default function TorneosPage() {
   const getStatusText = (status: string) => {
     const texts: any = {
       PLANNING: 'Planificación',
-      REGISTRATION: 'Inscripciones Abiertas',
+      OPEN_FOR_INSCRIPTION: 'Inscripciones Abiertas',
       IN_PROGRESS: 'En Curso',
       FINISHED: 'Finalizado',
       CANCELLED: 'Cancelado'
@@ -80,7 +80,7 @@ export default function TorneosPage() {
 
         <div className="bg-white rounded-lg shadow p-4 mb-6">
           <div className="flex flex-wrap gap-2">
-            {['ALL', 'REGISTRATION', 'IN_PROGRESS', 'FINISHED'].map(status => (
+            {['ALL', 'OPEN_FOR_INSCRIPTION', 'IN_PROGRESS', 'FINISHED'].map(status => (
               <button
                 key={status}
                 onClick={() => setFilter(status)}

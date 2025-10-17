@@ -11,14 +11,16 @@ import java.util.List;
 public interface CategoryRepository extends JpaRepository<Category, Long>,
         JpaSpecificationExecutor<Category> {
 
-    // Por deporte
+    // Buscar categorías por deporte
     List<Category> findBySportId(Long sportId);
+
+    // Buscar categorías activas por deporte
     List<Category> findBySportIdAndIsActiveTrue(Long sportId);
 
-    // Existencia
+    // Validar existencia por nombre y deporte
     boolean existsByNameAndSportId(String name, Long sportId);
     boolean existsByNameIgnoreCaseAndSportId(String name, Long sportId);
 
-    // Por estado
+    // Listar todas las categorías activas
     List<Category> findByIsActiveTrue();
 }

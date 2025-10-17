@@ -74,10 +74,14 @@ public class TournamentController {
 
     @Operation(summary = "Actualizar un torneo", description = "Requiere rol ADMIN o SUPER_ADMIN")
     @SecurityRequirement(name = "bearerAuth")
-    @PutMapping("/{id}")
-    public ResponseEntity<TournamentResponseDTO> update(@PathVariable Long id, @RequestBody TournamentDTO dto) {
-        return ResponseEntity.ok(tournamentService.update(id, dto));
+    @PatchMapping("/{id}")
+    public ResponseEntity<TournamentResponseDTO> updateTournament(
+            @PathVariable Long id,
+            @RequestBody TournamentDTO dto) {
+        TournamentResponseDTO updated = tournamentService.update(id, dto);
+        return ResponseEntity.ok(updated);
     }
+
 
     @Operation(summary = "Iniciar un torneo", description = "Cambia el estado de PLANNING a IN_PROGRESS. Requiere rol ADMIN o SUPER_ADMIN")
     @SecurityRequirement(name = "bearerAuth")

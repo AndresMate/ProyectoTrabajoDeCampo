@@ -16,14 +16,14 @@ import java.util.List;
 @Table(name = "tournaments", indexes = {
         @Index(name = "idx_tournament_dates", columnList = "start_date,end_date"),
         @Index(name = "idx_tournament_status", columnList = "status"),
-        @Index(name = "idx_tournament_sport", columnList = "sport_id")
+        @Index(name = "idx_tournament_category", columnList = "category_id")
 })
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"sport", "createdBy", "inscriptions", "teams", "matches", "standings"})
-@EqualsAndHashCode(exclude = {"sport", "createdBy", "inscriptions", "teams", "matches", "standings"})
+@ToString(exclude = {"category", "sport", "createdBy", "inscriptions", "teams", "matches", "standings"})
+@EqualsAndHashCode(exclude = {"category", "sport", "createdBy", "inscriptions", "teams", "matches", "standings"})
 public class Tournament implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -50,9 +50,8 @@ public class Tournament implements Serializable {
     @Column(name = "end_date", nullable = false)
     private LocalDate endDate;
 
-    @NotNull(message = "Modality is required")
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false)
     private Modality modality;
 
     @Enumerated(EnumType.STRING)
@@ -61,6 +60,12 @@ public class Tournament implements Serializable {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
+
+    // ✅ Nueva relación con Category
+    @NotNull(message = "Category is required")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
+    private Category category;
 
     @NotNull(message = "Sport is required")
     @ManyToOne(fetch = FetchType.LAZY)

@@ -6,6 +6,7 @@ import co.edu.uptc.backend_tc.dto.response.TournamentSummaryDTO;
 import co.edu.uptc.backend_tc.entity.Tournament;
 import co.edu.uptc.backend_tc.entity.Sport;
 import co.edu.uptc.backend_tc.entity.User;
+import co.edu.uptc.backend_tc.entity.Category;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -13,10 +14,12 @@ public class TournamentMapper {
 
     private final SportMapper sportMapper;
     private final UserMapper userMapper;
+    private final CategoryMapper categoryMapper;
 
-    public TournamentMapper(SportMapper sportMapper, UserMapper userMapper) {
+    public TournamentMapper(SportMapper sportMapper, UserMapper userMapper, CategoryMapper categoryMapper) {
         this.sportMapper = sportMapper;
         this.userMapper = userMapper;
+        this.categoryMapper = categoryMapper;
     }
 
     public TournamentDTO toDTO(Tournament entity) {
@@ -28,9 +31,10 @@ public class TournamentMapper {
                 .maxTeams(entity.getMaxTeams())
                 .startDate(entity.getStartDate())
                 .endDate(entity.getEndDate())
-                .modality(entity.getModality())
+                .modality(entity.getModality()) // <-- incluido
                 .status(entity.getStatus())
                 .sportId(entity.getSport() != null ? entity.getSport().getId() : null)
+                .categoryId(entity.getCategory() != null ? entity.getCategory().getId() : null)
                 .createdById(entity.getCreatedBy() != null ? entity.getCreatedBy().getId() : null)
                 .build();
     }
@@ -44,12 +48,12 @@ public class TournamentMapper {
                 .maxTeams(entity.getMaxTeams())
                 .startDate(entity.getStartDate())
                 .endDate(entity.getEndDate())
-                .modality(entity.getModality())
+                .modality(entity.getModality()) // <-- incluido
                 .status(entity.getStatus())
                 .createdAt(entity.getCreatedAt())
                 .sport(sportMapper.toSummaryDTO(entity.getSport()))
+                .category(categoryMapper.toSummaryDTO(entity.getCategory()))
                 .createdBy(userMapper.toSummaryDTO(entity.getCreatedBy()))
-                // Las estadísticas se agregan desde el servicio
                 .build();
     }
 
@@ -65,30 +69,16 @@ public class TournamentMapper {
                 .build();
     }
 
-    public void updateEntityFromDTO(TournamentDTO dto, Tournament entity, Sport sport, User creator) {
-        if (dto.getName() != null) {
-            entity.setName(dto.getName());
-        }
-        if (dto.getMaxTeams() != null) {
-            entity.setMaxTeams(dto.getMaxTeams());
-        }
-        if (dto.getStartDate() != null) {
-            entity.setStartDate(dto.getStartDate());
-        }
-        if (dto.getEndDate() != null) {
-            entity.setEndDate(dto.getEndDate());
-        }
-        if (dto.getModality() != null) {
-            entity.setModality(dto.getModality());
-        }
-        if (dto.getStatus() != null) {
-            entity.setStatus(dto.getStatus());
-        }
-        if (sport != null) {
-            entity.setSport(sport);
-        }
-        if (creator != null) {
-            entity.setCreatedBy(creator);
-        }
+    // actualizado para incluir Category y Modality
+    public void updateEntityFromDTO(TournamentDTO dto, Tournament entity, Sport sport, User creator, Category category) {
+        if (dto.getName() != null) entity.setName(dto.getName());
+        if (dto.getMaxTeams() != null) entity.setMaxTeams(dto.getMaxTeams());
+        if (dto.getStartDate() != null) entity.setStartDate(dto.getStartDate());
+        if (dto.getEndDate() != null) entity.setEndDate(dto.getEndDate());
+        if (dto.getModality() != null) entity.setModality(dto.getModality()); // <-- aplicado
+        if (dto.getStatus() != null) entity.setStatus(dto.getStatus());
+        if (sport != null) entity.setSport(sport);
+        if (creator != null) entity.setCreatedBy(creator);
+        if (category != null) entity.setCategory(category);
     }
 }

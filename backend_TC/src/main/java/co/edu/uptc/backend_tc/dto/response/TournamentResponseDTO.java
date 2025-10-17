@@ -23,12 +23,11 @@ public class TournamentResponseDTO {
 
     // Información anidada
     private SportSummaryDTO sport;
+    private CategorySummaryDTO category; // ✅ NUEVO campo
     private UserSummaryDTO createdBy;
 
     // Estadísticas agregadas
     private Integer currentTeamCount;
     private Integer totalMatches;
     private Integer completedMatches;
-
-
 }

@@ -5,6 +5,7 @@ import co.edu.uptc.backend_tc.dto.filter.TournamentFilterDTO;
 import co.edu.uptc.backend_tc.dto.page.PageResponseDTO;
 import co.edu.uptc.backend_tc.dto.response.TournamentResponseDTO;
 import co.edu.uptc.backend_tc.dto.stats.TournamentStatsDTO;
+import co.edu.uptc.backend_tc.entity.Category;
 import co.edu.uptc.backend_tc.entity.Sport;
 import co.edu.uptc.backend_tc.entity.Tournament;
 import co.edu.uptc.backend_tc.entity.User;
@@ -32,6 +33,7 @@ public class TournamentService {
 
     private final TournamentRepository tournamentRepository;
     private final SportRepository sportRepository;
+    private final CategoryRepository categoryRepository; // ✅ agregado
     private final UserRepository userRepository;
     private final TeamRepository teamRepository;
     private final MatchRepository matchRepository;
@@ -59,89 +61,99 @@ public class TournamentService {
 
     @Transactional
     public TournamentResponseDTO create(TournamentDTO dto) {
-        // Validaciones de negocio
         if (dto.getStartDate().isAfter(dto.getEndDate())) {
             throw new BadRequestException("Start date must be before end date");
         }
 
-        if (dto.getStartDate().isBefore(java.time.LocalDate.now())) {
-            throw new BadRequestException("Start date must be in the future");
-        }
-
-        // Obtener entidades relacionadas
         Sport sport = sportRepository.findById(dto.getSportId())
                 .orElseThrow(() -> new ResourceNotFoundException("Sport", "id", dto.getSportId()));
 
-        if (!sport.getIsActive()) {
-            throw new BusinessException(
-                    "Cannot create tournament for inactive sport",
-                    "SPORT_INACTIVE"
-            );
+        Category category = categoryRepository.findById(dto.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Category", "id", dto.getCategoryId()));
+
+        if (!category.getSport().getId().equals(dto.getSportId())) {
+            throw new BusinessException("Category does not belong to the selected sport", "CATEGORY_SPORT_MISMATCH");
         }
 
         User creator = userRepository.findById(dto.getCreatedById())
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", dto.getCreatedById()));
 
-        // Crear torneo
         Tournament tournament = Tournament.builder()
                 .name(dto.getName())
                 .maxTeams(dto.getMaxTeams())
                 .startDate(dto.getStartDate())
                 .endDate(dto.getEndDate())
-                .modality(dto.getModality())
+                .modality(dto.getModality()) // <-- aquí
                 .status(TournamentStatus.PLANNING)
                 .sport(sport)
+                .category(category)
                 .createdBy(creator)
                 .build();
 
         tournament = tournamentRepository.save(tournament);
-        return enrichResponseDTO(tournament);
+        return tournamentMapper.toResponseDTO(tournament);
     }
+
 
     @Transactional
     public TournamentResponseDTO update(Long id, TournamentDTO dto) {
         Tournament tournament = tournamentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tournament", "id", id));
 
-        // Validaciones de estado
-        if (tournament.getStatus() == TournamentStatus.FINISHED) {
-            throw new BusinessException(
-                    "Cannot update completed tournament",
-                    "TOURNAMENT_COMPLETED"
-            );
+        // ⚙️ Solo actualizamos lo que venga en el DTO (no todo)
+        if (dto.getName() != null && !dto.getName().isBlank()) {
+            tournament.setName(dto.getName());
         }
 
-        // Validar fechas
-        if (dto.getStartDate() != null && dto.getEndDate() != null &&
-                dto.getStartDate().isAfter(dto.getEndDate())) {
-            throw new BadRequestException("Start date must be before end date");
+        if (dto.getStartDate() != null) {
+            tournament.setStartDate(dto.getStartDate());
         }
 
-        // Obtener entidades relacionadas si cambiaron
-        Sport sport = null;
-        if (dto.getSportId() != null && !dto.getSportId().equals(tournament.getSport().getId())) {
-            sport = sportRepository.findById(dto.getSportId())
+        if (dto.getEndDate() != null) {
+            tournament.setEndDate(dto.getEndDate());
+        }
+
+        if (dto.getMaxTeams() != null) {
+            tournament.setMaxTeams(dto.getMaxTeams());
+        }
+
+        if (dto.getModality() != null) {
+            tournament.setModality(dto.getModality());
+        }
+
+        if (dto.getStatus() != null) {
+            tournament.setStatus(dto.getStatus());
+        }
+
+        if (dto.getSportId() != null) {
+            Sport sport = sportRepository.findById(dto.getSportId())
                     .orElseThrow(() -> new ResourceNotFoundException("Sport", "id", dto.getSportId()));
+            tournament.setSport(sport);
         }
 
-        User creator = null;
-        if (dto.getCreatedById() != null &&
-                !dto.getCreatedById().equals(tournament.getCreatedBy().getId())) {
-            creator = userRepository.findById(dto.getCreatedById())
+        if (dto.getCategoryId() != null) {
+            Category category = categoryRepository.findById(dto.getCategoryId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Category", "id", dto.getCategoryId()));
+            tournament.setCategory(category);
+        }
+
+        if (dto.getCreatedById() != null) {
+            User creator = userRepository.findById(dto.getCreatedById())
                     .orElseThrow(() -> new ResourceNotFoundException("User", "id", dto.getCreatedById()));
+            tournament.setCreatedBy(creator);
         }
 
-        tournamentMapper.updateEntityFromDTO(dto, tournament, sport, creator);
-        tournament = tournamentRepository.save(tournament);
-        return enrichResponseDTO(tournament);
+        // 💾 Guardar solo los cambios
+        Tournament updated = tournamentRepository.save(tournament);
+        return tournamentMapper.toResponseDTO(updated);
     }
+
 
     @Transactional
     public TournamentResponseDTO startTournament(Long id) {
         Tournament tournament = tournamentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tournament", "id", id));
 
-        // Validar estado actual
         if (tournament.getStatus() != TournamentStatus.PLANNING) {
             throw new BusinessException(
                     "Tournament can only be started from PLANNING status",
@@ -149,7 +161,6 @@ public class TournamentService {
             );
         }
 
-        // Verificar que hay equipos suficientes
         long teamCount = teamRepository.countByTournamentId(id);
         if (teamCount < 2) {
             throw new BusinessException(
@@ -185,7 +196,6 @@ public class TournamentService {
         Tournament tournament = tournamentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tournament", "id", id));
 
-        // Verificar que se puede eliminar
         long matchCount = matchRepository.countByTournamentId(id);
         if (matchCount > 0 && tournament.getStatus() != TournamentStatus.PLANNING) {
             throw new BusinessException(
@@ -197,23 +207,17 @@ public class TournamentService {
         tournamentRepository.delete(tournament);
     }
 
-    // Método privado para enriquecer el DTO con estadísticas
     private TournamentResponseDTO enrichResponseDTO(Tournament tournament) {
         TournamentResponseDTO dto = tournamentMapper.toResponseDTO(tournament);
-
-        // Agregar estadísticas calculadas
         dto.setCurrentTeamCount((int) teamRepository.countByTournamentId(tournament.getId()));
         dto.setTotalMatches((int) matchRepository.countByTournamentId(tournament.getId()));
         dto.setCompletedMatches((int) matchRepository.countByTournamentIdAndStatus(
                 tournament.getId(),
                 co.edu.uptc.backend_tc.model.MatchStatus.FINISHED
         ));
-
-
         return dto;
     }
 
-    // Método helper para construir especificaciones de búsqueda
     private Specification<Tournament> buildSpecification(TournamentFilterDTO filter) {
         return (root, query, cb) -> {
             var predicates = new java.util.ArrayList<jakarta.persistence.criteria.Predicate>();
@@ -239,22 +243,19 @@ public class TournamentService {
 
             if (filter.getStartDateFrom() != null) {
                 predicates.add(cb.greaterThanOrEqualTo(
-                        root.get("startDate"),
-                        filter.getStartDateFrom()
+                        root.get("startDate"), filter.getStartDateFrom()
                 ));
             }
 
             if (filter.getStartDateTo() != null) {
                 predicates.add(cb.lessThanOrEqualTo(
-                        root.get("startDate"),
-                        filter.getStartDateTo()
+                        root.get("startDate"), filter.getStartDateTo()
                 ));
             }
 
             if (filter.getCreatedById() != null) {
                 predicates.add(cb.equal(
-                        root.get("createdBy").get("id"),
-                        filter.getCreatedById()
+                        root.get("createdBy").get("id"), filter.getCreatedById()
                 ));
             }
 
@@ -263,7 +264,6 @@ public class TournamentService {
     }
 
     public List<TournamentResponseDTO> findActiveTournaments() {
-        // Opción 1: Usando findByStatusIn
         List<Tournament> tournaments = tournamentRepository.findByStatusIn(
                 List.of(TournamentStatus.OPEN_FOR_INSCRIPTION, TournamentStatus.IN_PROGRESS)
         );
@@ -272,14 +272,11 @@ public class TournamentService {
                 .collect(Collectors.toList());
     }
 
-    // En TournamentService.java - Agregar estos métodos:
-
     @Transactional
     public TournamentResponseDTO cancelTournament(Long id) {
         Tournament tournament = tournamentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tournament", "id", id));
 
-        // Validar que se puede cancelar
         if (tournament.getStatus() == TournamentStatus.FINISHED) {
             throw new BusinessException(
                     "Cannot cancel completed tournament",
@@ -314,5 +311,4 @@ public class TournamentService {
                 .cancelledCount(cancelledCount)
                 .build();
     }
-
 }

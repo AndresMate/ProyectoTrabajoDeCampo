@@ -1,4 +1,4 @@
-// services/authService.ts - SOLO lógica de auth, SIN interceptores
+// src/services/authService.ts
 import api from "./api";
 
 interface LoginCredentials {
@@ -23,19 +23,22 @@ export const authService = {
 
       if (data.token) {
         localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify({
-          email: data.email,
-          fullName: data.fullName,
-          role: data.role,
-          userId: data.userId,
-          forcePasswordChange: data.forcePasswordChange
-        }));
-        console.log('✅ Login exitoso. Rol:', data.role);
+        localStorage.setItem(
+          "user",
+          JSON.stringify({
+            email: data.email,
+            fullName: data.fullName,
+            role: data.role,
+            userId: data.userId, // ✅ ahora sí lo guardamos
+            forcePasswordChange: data.forcePasswordChange,
+          })
+        );
+        console.log("✅ Login exitoso:", data);
       }
 
       return data;
     } catch (error: any) {
-      console.error('❌ Error en login:', error.response?.data);
+      console.error("❌ Error en login:", error.response?.data);
       throw error;
     }
   },
@@ -68,8 +71,5 @@ export const authService = {
   hasRole: (role: string): boolean => {
     const user = authService.getCurrentUser();
     return user?.role === role;
-  }
+  },
 };
-
-// ⚠️⚠️⚠️ NO pongas interceptores aquí ⚠️⚠️⚠️
-// Los interceptores deben estar SOLO en api.ts

@@ -15,4 +15,5 @@ public class TournamentSummaryDTO {
     private TournamentStatus status;
     private LocalDate startDate;
     private LocalDate endDate;
+    private CategorySummaryDTO category;
 }
