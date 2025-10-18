@@ -16,6 +16,8 @@ public class UserMapper {
                 .fullName(entity.getFullName())
                 .email(entity.getEmail())
                 .role(entity.getRole())
+                .isActive(entity.getIsActive())
+                .createdAt(entity.getCreatedAt())
                 .build();
     }
 
@@ -26,6 +28,7 @@ public class UserMapper {
                 .id(referee.getId())
                 .fullName(referee.getFullName())
                 .email(referee.getEmail())
+                .role(referee.getRole())
                 .build();
     }
 }

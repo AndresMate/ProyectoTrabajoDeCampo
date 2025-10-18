@@ -110,7 +110,9 @@ export default function AdminUsuariosPage() {
     const matchesSearch =
       user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase());
+
     const matchesRole = filterRole === 'ALL' || user.role === filterRole;
+
     return matchesSearch && matchesRole;
   });
 
@@ -195,82 +197,121 @@ export default function AdminUsuariosPage() {
 
       {/* Tabla de usuarios */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full table-auto">
-          <thead className="bg-gray-100 text-gray-700">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-2 text-left">Nombre</th>
-              <th className="px-4 py-2 text-left">Correo</th>
-              <th className="px-4 py-2 text-left">Rol</th>
-              <th className="px-4 py-2 text-center">Estado</th>
-              <th className="px-4 py-2 text-center">Acciones</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Usuario
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Rol
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Estado
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Fecha de registro
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Acciones
+              </th>
             </tr>
           </thead>
-          <tbody>
-            {filteredUsers.length > 0 ? (
-              filteredUsers.map(user => (
-                <tr key={user.id} className="border-t hover:bg-gray-50">
-                  <td className="px-4 py-2">{user.fullName}</td>
-                  <td className="px-4 py-2">{user.email}</td>
-                  <td className="px-4 py-2">
-                    <span className={`px-3 py-1 text-sm rounded-full ${getRoleBadge(user.role)}`}>
-                      {getRoleText(user.role)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2 text-center">
-                    {user.isActive ? (
-                      <span className="text-green-600 font-medium">Activo</span>
-                    ) : (
-                      <span className="text-red-600 font-medium">Inactivo</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-2 text-center space-x-2">
-                    <button
-                      onClick={() => {
-                        setSelectedUser(user.id);
-                        setShowModal(true);
-                      }}
-                      className="text-blue-600 hover:underline"
-                    >
-                      Editar
-                    </button>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {filteredUsers.map((user) => (
+              <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div>
+                    <div className="font-medium text-gray-900">{user.fullName}</div>
+                    <div className="text-sm text-gray-500">{user.email}</div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span
+                    className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getRoleBadge(
+                      user.role
+                    )}`}
+                  >
+                    {getRoleText(user.role)}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span
+                    className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                      user.isActive
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-red-100 text-red-700'
+                    }`}
+                  >
+                    {user.isActive ? 'Activo' : 'Inactivo'}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {new Date(user.createdAt).toLocaleDateString('es-ES')}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button
+                    onClick={() => {
+                      setSelectedUser(user.id);
+                      setShowModal(true);
+                    }}
+                    className="text-indigo-600 hover:text-indigo-900 mr-3 transition-colors"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => handleResetPassword(user.id)}
+                    className="text-blue-600 hover:text-blue-900 mr-3 transition-colors"
+                  >
+                    Resetear
+                  </button>
+                  {user.isActive && (
                     <button
                       onClick={() => handleDeactivate(user.id)}
-                      className="text-yellow-600 hover:underline"
+                      className="text-red-600 hover:text-red-800 transition-colors"
                     >
                       Desactivar
                     </button>
-                    <button
-                      onClick={() => handleResetPassword(user.id)}
-                      className="text-red-600 hover:underline"
-                    >
-                      Resetear contraseña
-                    </button>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-gray-500">
-                  No se encontraron usuarios.
+                  )}
                 </td>
               </tr>
-            )}
+            ))}
           </tbody>
         </table>
       </div>
 
-      {/* Modal */}
-      {showModal && (
-        <Modal onClose={() => setShowModal(false)} title={selectedUser ? 'Editar Usuario' : 'Nuevo Usuario'}>
-          <UserForm
-            userId={selectedUser}
-            onSuccess={() => {
-              setShowModal(false);
-              fetchUsers();
-            }}
-          />
-        </Modal>
+      {filteredUsers.length === 0 && (
+        <div className="bg-white rounded-lg shadow p-8 text-center mt-6">
+          <p className="text-gray-500 text-lg">No se encontraron usuarios</p>
+          <p className="text-gray-400 text-sm mt-2">
+            {users.length === 0 ? 'No hay usuarios en el sistema' : 'No hay coincidencias con tu búsqueda'}
+          </p>
+        </div>
       )}
+
+      {/* Modal para crear/editar usuario */}
+      <Modal
+        isOpen={showModal}
+        onClose={() => {
+          setShowModal(false);
+          setSelectedUser(undefined);
+        }}
+        title={selectedUser ? 'Editar Usuario' : 'Crear Nuevo Usuario'}
+        size="md"
+      >
+        <UserForm
+          userId={selectedUser}
+          onSuccess={() => {
+            setShowModal(false);
+            setSelectedUser(undefined);
+            fetchUsers();
+          }}
+          onCancel={() => {
+            setShowModal(false);
+            setSelectedUser(undefined);
+          }}
+        />
+      </Modal>
     </div>
   );
 }

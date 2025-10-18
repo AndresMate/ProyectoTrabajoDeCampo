@@ -5,10 +5,10 @@ import inscriptionsService from '@/services/inscriptionsService';
 
 interface Inscription {
   id: number;
-  tournamentName?: string;
-  categoryName?: string;
+  tournament: { id: number; name: string };
+  category: { id: number; name: string };
+  club?: { id: number; name: string };
   teamName: string;
-  clubName?: string;
   delegateName: string;
   delegateEmail: string;
   delegatePhone: string;
@@ -47,7 +47,7 @@ export default function AdminInscripcionesPage() {
       await inscriptionsService.approve(id);
       alert('Inscripción aprobada exitosamente');
       fetchInscriptions();
-    } catch (error: unknown) {
+    } catch (error: any) {
       alert(error.response?.data?.message || 'Error al aprobar inscripción');
     }
   };
@@ -65,7 +65,7 @@ export default function AdminInscripcionesPage() {
       setRejectionReason('');
       setSelectedInscription(null);
       fetchInscriptions();
-    } catch (error: unknown) {
+    } catch (error: any) {
       alert(error.response?.data?.message || 'Error al rechazar inscripción');
     }
   };
@@ -169,11 +169,11 @@ export default function AdminInscripcionesPage() {
               <tr key={inscription.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4">
                   <div className="font-medium text-gray-900">{inscription.teamName}</div>
-                  <div className="text-sm text-gray-500">{inscription.clubName || 'Sin club'}</div>
+                  <div className="text-sm text-gray-500">{inscription.club?.name || 'Sin club'}</div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="text-sm text-gray-900">{inscription.tournamentName || 'N/A'}</div>
-                  <div className="text-sm text-gray-500">{inscription.categoryName || 'N/A'}</div>
+                  <div className="text-sm text-gray-900">{inscription.tournament.name}</div>
+                  <div className="text-sm text-gray-500">{inscription.category.name}</div>
                 </td>
                 <td className="px-6 py-4">
                   <div className="text-sm text-gray-900">{inscription.delegateName}</div>

@@ -7,6 +7,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
+import java.time.OffsetDateTime;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -26,4 +28,6 @@ public class UserDTO {
     private UserRole role;
 
     private Boolean isActive;
+
+    private OffsetDateTime createdAt;
 }
