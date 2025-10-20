@@ -82,13 +82,19 @@ public class InscriptionService {
 
     @Transactional
     public InscriptionResponseDTO create(InscriptionDTO dto) {
+        // Validar torneo
         Tournament tournament = tournamentRepository.findById(dto.getTournamentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Tournament", "id", dto.getTournamentId()));
 
-        if (tournament.getStatus() != TournamentStatus.PLANNING) {
-            throw new BusinessException("Inscriptions are only allowed for tournaments in PLANNING status", "INSCRIPTIONS_CLOSED");
+        // ✅ CORRECCIÓN: Verificar estado correcto
+        if (tournament.getStatus() != TournamentStatus.OPEN_FOR_INSCRIPTION) {
+            throw new BusinessException(
+                    "Inscriptions are only allowed for tournaments with open registration",
+                    "INSCRIPTIONS_CLOSED"
+            );
         }
 
+        // Validar límite de equipos
         long currentTeams = inscriptionRepository.countByTournamentIdAndStatus(
                 tournament.getId(),
                 InscriptionStatus.APPROVED
@@ -98,6 +104,7 @@ public class InscriptionService {
             throw new BusinessException("Tournament has reached maximum number of teams", "MAX_TEAMS_REACHED");
         }
 
+        // Validar categoría
         Category category = categoryRepository.findById(dto.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "id", dto.getCategoryId()));
 
@@ -105,38 +112,48 @@ public class InscriptionService {
             throw new BusinessException("Category does not belong to tournament's sport", "CATEGORY_SPORT_MISMATCH");
         }
 
-        Player delegate = playerRepository.findById(dto.getDelegatePlayerId())
-                .orElseThrow(() -> new ResourceNotFoundException("Player", "id", dto.getDelegatePlayerId()));
-
-        if (!delegate.getIsActive()) {
-            throw new BusinessException("Delegate player must be active", "INACTIVE_DELEGATE");
-        }
-
-        if (inscriptionRepository.existsByTournamentIdAndCategoryIdAndDelegateId(
-                tournament.getId(),
-                category.getId(),
-                delegate.getId())) {
-            throw new ConflictException("This player already has an inscription as delegate in this tournament and category");
-        }
-
+        // ✅ CORRECCIÓN: Validar nombre de equipo duplicado
         if (inscriptionRepository.existsByTournamentIdAndCategoryIdAndTeamNameIgnoreCase(
                 tournament.getId(),
                 category.getId(),
                 dto.getTeamName())) {
-            throw new ConflictException("A team with this name already exists in this tournament and category", "teamName", dto.getTeamName());
+            throw new ConflictException(
+                    "A team with this name already exists in this tournament and category",
+                    "teamName",
+                    dto.getTeamName()
+            );
         }
 
+        // ✅ CORRECCIÓN: Validar email de delegado duplicado en la categoría
+        List<Inscription> existingInscriptions = inscriptionRepository
+                .findByTournamentIdAndCategoryId(tournament.getId(), category.getId());
+
+        boolean delegateExists = existingInscriptions.stream()
+                .anyMatch(i -> i.getDelegateEmail() != null &&
+                        i.getDelegateEmail().equalsIgnoreCase(dto.getDelegateEmail()) &&
+                        (i.getStatus() == InscriptionStatus.PENDING ||
+                                i.getStatus() == InscriptionStatus.APPROVED));
+
+        if (delegateExists) {
+            throw new ConflictException(
+                    "This email is already registered as a delegate in this tournament and category"
+            );
+        }
+
+        // Obtener club si se proporcionó
         Club club = null;
         if (dto.getClubId() != null) {
             club = clubRepository.findById(dto.getClubId())
                     .orElseThrow(() -> new ResourceNotFoundException("Club", "id", dto.getClubId()));
         }
 
+        // ✅ Crear inscripción con los campos correctos
         Inscription inscription = Inscription.builder()
                 .tournament(tournament)
                 .category(category)
                 .teamName(dto.getTeamName())
-                .delegate(delegate)
+                .delegateName(dto.getDelegateName())
+                .delegateEmail(dto.getDelegateEmail())
                 .delegatePhone(dto.getDelegatePhone())
                 .club(club)
                 .status(InscriptionStatus.PENDING)
@@ -145,7 +162,6 @@ public class InscriptionService {
         inscription = inscriptionRepository.save(inscription);
         return enrichResponseDTO(inscription);
     }
-
     // Método actualizado sin parámetro User
     @Transactional
     public InscriptionResponseDTO approve(Long id) {

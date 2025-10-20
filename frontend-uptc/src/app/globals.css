@@ -139,6 +139,37 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
 }
 
+/* ⭐ INPUTS CON MEJOR CONTRASTE - CORRECCIÓN PRINCIPAL */
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  background-color: #ffffff !important;
+  color: #1A1A1A !important;
+  border: 2px solid #d1d5db !important;
+  font-weight: 500 !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--uptc-yellow) !important;
+  box-shadow: 0 0 0 3px rgba(255, 204, 41, 0.2) !important;
+  background-color: #ffffff !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #6b7280 !important;
+  font-weight: 400 !important;
+}
+
+/* Labels con mejor contraste */
+label {
+  color: #1f2937 !important;
+  font-weight: 600 !important;
+}
+
 /* Animaciones personalizadas */
 @keyframes slide-in {
   from {
@@ -230,15 +261,6 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--uptc-yellow-dark);
 }
 
-/* Inputs con estilo UPTC */
-input:focus,
-select:focus,
-textarea:focus {
-  outline: none;
-  border-color: var(--uptc-yellow);
-  box-shadow: 0 0 0 3px rgba(255, 204, 41, 0.1);
-}
-
 /* Links institucionales */
 a {
   color: var(--uptc-black);
@@ -278,6 +300,7 @@ tbody tr:hover {
 
 tbody td {
   padding: 1rem;
+  color: #1f2937;
 }
 
 /* Alertas institucionales */

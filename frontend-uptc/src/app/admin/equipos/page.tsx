@@ -1,4 +1,4 @@
-// frontend-uptc/src/app/admin/equipos/page.tsx - VERSIÓN COMPLETA
+// frontend-uptc/src/app/admin/equipos/page.tsx - VERSIÓN CORREGIDA
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -82,7 +82,7 @@ export default function AdminEquiposPage() {
             setSelectedTeam(undefined);
             setShowModal(true);
           }}
-          className="bg-uptc-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition"
+          className="bg-uptc-black text-uptc-yellow px-6 py-2 rounded-lg hover:bg-gray-800 transition font-semibold"
         >
           + Nuevo Equipo
         </button>
@@ -95,30 +95,30 @@ export default function AdminEquiposPage() {
           placeholder="Buscar por nombre de equipo o delegado..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-transparent"
+          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-uptc-yellow bg-white text-gray-900 font-medium"
         />
       </div>
 
       {/* Estadísticas rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-gray-500 text-sm">Total Equipos</div>
+          <div className="text-gray-600 text-sm font-semibold">Total Equipos</div>
           <div className="text-2xl font-bold text-uptc-black">{teams.length}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-gray-500 text-sm">Equipos Activos</div>
+          <div className="text-gray-600 text-sm font-semibold">Equipos Activos</div>
           <div className="text-2xl font-bold text-green-600">
             {teams.filter(t => t.isActive).length}
           </div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-gray-500 text-sm">Equipos Inactivos</div>
+          <div className="text-gray-600 text-sm font-semibold">Equipos Inactivos</div>
           <div className="text-2xl font-bold text-red-600">
             {teams.filter(t => !t.isActive).length}
           </div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-gray-500 text-sm">Sin Torneo</div>
+          <div className="text-gray-600 text-sm font-semibold">Sin Torneo</div>
           <div className="text-2xl font-bold text-gray-600">
             {teams.filter(t => !t.tournamentName).length}
           </div>
@@ -128,24 +128,24 @@ export default function AdminEquiposPage() {
       {/* Lista de equipos */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead className="bg-uptc-black">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Equipo</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Torneo</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-uptc-yellow uppercase">Equipo</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-uptc-yellow uppercase">Torneo</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-uptc-yellow uppercase">Estado</th>
+              <th className="px-6 py-3 text-right text-xs font-semibold text-uptc-yellow uppercase">Acciones</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredTeams.map((team) => (
               <tr key={team.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4">
-                  <div className="font-medium text-gray-900">{team.name}</div>
-                  <div className="text-sm text-gray-500">{team.clubName || 'Sin club'}</div>
+                  <div className="font-semibold text-gray-900">{team.name}</div>
+                  <div className="text-sm text-gray-600 font-medium">{team.clubName || 'Sin club'}</div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="text-sm text-gray-900">{team.tournamentName || 'N/A'}</div>
-                  <div className="text-sm text-gray-500">{team.categoryName || 'N/A'}</div>
+                  <div className="text-sm text-gray-900 font-medium">{team.tournamentName || 'N/A'}</div>
+                  <div className="text-sm text-gray-600">{team.categoryName || 'N/A'}</div>
                 </td>
                 <td className="px-6 py-4">
                   <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
@@ -154,10 +154,10 @@ export default function AdminEquiposPage() {
                     {team.isActive ? 'Activo' : 'Inactivo'}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-right text-sm font-medium">
+                <td className="px-6 py-4 text-right text-sm font-semibold">
                   <button
                     onClick={() => handleViewRoster(team)}
-                    className="text-blue-600 hover:text-uptc-black mr-3"
+                    className="text-blue-600 hover:text-blue-800 mr-3"
                   >
                     👥 Ver Roster
                   </button>
@@ -185,7 +185,7 @@ export default function AdminEquiposPage() {
 
       {filteredTeams.length === 0 && (
         <div className="bg-white rounded-lg shadow p-8 text-center mt-6">
-          <p className="text-gray-500">No se encontraron equipos</p>
+          <p className="text-gray-500 font-medium">No se encontraron equipos</p>
         </div>
       )}
 

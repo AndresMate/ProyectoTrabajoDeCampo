@@ -1,4 +1,4 @@
-// frontend-uptc/src/app/admin/partidos/page.tsx - VERSIÓN COMPLETA
+// frontend-uptc/src/app/admin/partidos/page.tsx - VERSIÓN CORREGIDA
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -92,13 +92,13 @@ export default function AdminPartidosPage() {
         <div className="flex gap-3">
           <button
             onClick={() => setShowFixtureGenerator(true)}
-            className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition"
+            className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition font-semibold"
           >
             ⚡ Generar Fixture
           </button>
           <button
             onClick={() => setShowModal(true)}
-            className="bg-uptc-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition"
+            className="bg-uptc-black text-uptc-yellow px-6 py-2 rounded-lg hover:bg-gray-800 transition font-semibold"
           >
             + Nuevo Partido
           </button>
@@ -108,23 +108,23 @@ export default function AdminPartidosPage() {
       {/* Estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-gray-500 text-sm">Total Partidos</div>
+          <div className="text-gray-600 text-sm font-semibold">Total Partidos</div>
           <div className="text-2xl font-bold text-gray-900">{matches.length}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-gray-500 text-sm">Programados</div>
+          <div className="text-gray-600 text-sm font-semibold">Programados</div>
           <div className="text-2xl font-bold text-blue-600">
             {matches.filter(m => m.status === 'SCHEDULED').length}
           </div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-gray-500 text-sm">En Curso</div>
+          <div className="text-gray-600 text-sm font-semibold">En Curso</div>
           <div className="text-2xl font-bold text-green-600">
             {matches.filter(m => m.status === 'IN_PROGRESS').length}
           </div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-gray-500 text-sm">Finalizados</div>
+          <div className="text-gray-600 text-sm font-semibold">Finalizados</div>
           <div className="text-2xl font-bold text-gray-600">
             {matches.filter(m => m.status === 'FINISHED').length}
           </div>
@@ -138,9 +138,9 @@ export default function AdminPartidosPage() {
             <button
               key={status}
               onClick={() => setFilterStatus(status)}
-              className={`px-4 py-2 rounded-lg transition ${
+              className={`px-4 py-2 rounded-lg transition font-semibold ${
                 filterStatus === status
-                  ? 'bg-uptc-black text-white'
+                  ? 'bg-uptc-black text-uptc-yellow'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -153,14 +153,14 @@ export default function AdminPartidosPage() {
       {/* Lista de partidos */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead className="bg-uptc-black">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Partido</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Torneo</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lugar</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-uptc-yellow uppercase">Partido</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-uptc-yellow uppercase">Torneo</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-uptc-yellow uppercase">Fecha</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-uptc-yellow uppercase">Lugar</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-uptc-yellow uppercase">Estado</th>
+              <th className="px-6 py-3 text-right text-xs font-semibold text-uptc-yellow uppercase">Acciones</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -168,16 +168,16 @@ export default function AdminPartidosPage() {
               <tr key={match.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-gray-900">{match.teamA.name}</span>
-                    <span className="mx-4 text-gray-500">vs</span>
-                    <span className="font-medium text-gray-900">{match.teamB.name}</span>
+                    <span className="font-semibold text-gray-900">{match.teamA.name}</span>
+                    <span className="mx-4 text-gray-600 font-bold">vs</span>
+                    <span className="font-semibold text-gray-900">{match.teamB.name}</span>
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="text-sm text-gray-900">{match.tournament.name}</div>
-                  <div className="text-sm text-gray-500">{match.category.name}</div>
+                  <div className="text-sm text-gray-900 font-medium">{match.tournament.name}</div>
+                  <div className="text-sm text-gray-600">{match.category.name}</div>
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-700">
+                <td className="px-6 py-4 text-sm text-gray-700 font-medium">
                   {new Date(match.matchDate).toLocaleString('es-ES', {
                     day: '2-digit',
                     month: '2-digit',
@@ -186,7 +186,7 @@ export default function AdminPartidosPage() {
                     minute: '2-digit'
                   })}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-700">
+                <td className="px-6 py-4 text-sm text-gray-700 font-medium">
                   <div>{match.venue?.name || 'N/A'}</div>
                   <div className="text-xs text-gray-500">{match.scenario?.name || ''}</div>
                 </td>
@@ -195,7 +195,7 @@ export default function AdminPartidosPage() {
                     {getStatusText(match.status)}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-right text-sm font-medium">
+                <td className="px-6 py-4 text-right text-sm font-semibold">
                   {match.status === 'SCHEDULED' && (
                     <>
                       <button className="text-green-600 hover:text-green-900 mr-3">
@@ -213,7 +213,7 @@ export default function AdminPartidosPage() {
                     </>
                   )}
                   {match.status === 'FINISHED' && (
-                    <button className="text-blue-600 hover:text-uptc-black">
+                    <button className="text-blue-600 hover:text-blue-800 font-semibold">
                       📊 Ver resultado
                     </button>
                   )}
@@ -226,7 +226,7 @@ export default function AdminPartidosPage() {
 
       {filteredMatches.length === 0 && (
         <div className="bg-white rounded-lg shadow p-8 text-center mt-6">
-          <p className="text-gray-500">No hay partidos con este estado</p>
+          <p className="text-gray-500 font-medium">No hay partidos con este estado</p>
         </div>
       )}
 

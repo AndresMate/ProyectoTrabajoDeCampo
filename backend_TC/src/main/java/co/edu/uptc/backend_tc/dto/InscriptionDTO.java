@@ -14,7 +14,7 @@ import lombok.*;
 public class InscriptionDTO {
     private Long id;
 
-    @NotBlank(message = "Team name is required")
+    @NotBlank(message = "El nombre del equipo es requerido")
     @Size(min = 3, max = 150, message = "Team name must be between 3 and 150 characters")
     private String teamName;
 

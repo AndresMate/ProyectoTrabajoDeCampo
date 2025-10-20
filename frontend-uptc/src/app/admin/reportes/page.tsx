@@ -1,4 +1,4 @@
-// frontend-uptc/src/app/admin/reportes/page.tsx
+// frontend-uptc/src/app/admin/reportes/page.tsx - VERSIÓN CORREGIDA
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -141,42 +141,43 @@ export default function AdminReportesPage() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">Reportes y Estadísticas</h1>
+      <h1 className="text-3xl font-bold text-gray-800 mb-2">Reportes y Estadísticas</h1>
+      <p className="text-gray-600 mb-6">Genera reportes en Excel o PDF sobre torneos, inscripciones y más</p>
 
       {/* Estadísticas rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="text-gray-500 text-sm mb-2">Total Torneos</div>
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-uptc-yellow">
+          <div className="text-gray-600 text-sm mb-2 font-semibold">Total Torneos</div>
           <div className="text-3xl font-bold text-uptc-black">{tournaments.length}</div>
-          <div className="text-xs text-green-600 mt-2">Activos en el sistema</div>
+          <div className="text-xs text-green-600 mt-2 font-medium">Activos en el sistema</div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="text-gray-500 text-sm mb-2">Reportes Disponibles</div>
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+          <div className="text-gray-600 text-sm mb-2 font-semibold">Reportes Disponibles</div>
           <div className="text-3xl font-bold text-uptc-black">{reports.length}</div>
-          <div className="text-xs text-blue-600 mt-2">Tipos de reporte</div>
+          <div className="text-xs text-blue-600 mt-2 font-medium">Tipos de reporte</div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="text-gray-500 text-sm mb-2">Formato Excel</div>
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+          <div className="text-gray-600 text-sm mb-2 font-semibold">Formato Excel</div>
           <div className="text-3xl font-bold text-green-600">✓</div>
-          <div className="text-xs text-gray-600 mt-2">Disponible</div>
+          <div className="text-xs text-gray-700 mt-2 font-medium">Disponible</div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="text-gray-500 text-sm mb-2">Formato PDF</div>
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-gray-400">
+          <div className="text-gray-600 text-sm mb-2 font-semibold">Formato PDF</div>
           <div className="text-3xl font-bold text-gray-400">⏳</div>
-          <div className="text-xs text-gray-600 mt-2">Próximamente</div>
+          <div className="text-xs text-gray-700 mt-2 font-medium">Próximamente</div>
         </div>
       </div>
 
       {/* Generador de reportes */}
-      <div className="bg-white rounded-lg shadow p-6 mb-8">
-        <h2 className="text-xl font-semibold text-gray-800 mb-6">Generar Reporte</h2>
+      <div className="bg-white rounded-lg shadow-lg p-6 mb-8 border-t-4 border-uptc-yellow">
+        <h2 className="text-2xl font-semibold text-gray-800 mb-6">Generar Reporte</h2>
 
         {/* Selector de tipo de reporte */}
         <div className="mb-6">
-          <label className="block text-gray-700 font-medium mb-3">
+          <label className="block text-gray-800 font-semibold mb-3 text-lg">
             Tipo de Reporte *
           </label>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -184,19 +185,19 @@ export default function AdminReportesPage() {
               <div
                 key={report.id}
                 onClick={() => setSelectedReport(report.id)}
-                className={`border-2 rounded-lg p-4 cursor-pointer transition ${
+                className={`border-2 rounded-lg p-5 cursor-pointer transition-all ${
                   selectedReport === report.id
-                    ? 'border-uptc-yellow bg-blue-50'
-                    : 'border-gray-200 hover:border-uptc-yellow'
+                    ? 'border-uptc-yellow bg-yellow-50 shadow-md'
+                    : 'border-gray-300 hover:border-uptc-yellow hover:shadow'
                 }`}
               >
                 <div className="flex items-start gap-3">
-                  <span className="text-3xl">{report.icon}</span>
+                  <span className="text-4xl">{report.icon}</span>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-800 mb-1">{report.name}</h3>
-                    <p className="text-sm text-gray-600">{report.description}</p>
+                    <h3 className="font-bold text-gray-900 mb-1 text-lg">{report.name}</h3>
+                    <p className="text-sm text-gray-700 font-medium">{report.description}</p>
                     {report.requiresCategory && (
-                      <span className="inline-block mt-2 text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">
+                      <span className="inline-block mt-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded font-semibold">
                         Requiere categoría
                       </span>
                     )}
@@ -210,7 +211,7 @@ export default function AdminReportesPage() {
         {/* Selector de torneo */}
         {selectedReport && (
           <div className="mb-4">
-            <label className="block text-gray-700 font-medium mb-2">
+            <label className="block text-gray-800 font-semibold mb-2">
               Seleccionar Torneo *
             </label>
             <select
@@ -219,7 +220,7 @@ export default function AdminReportesPage() {
                 setSelectedTournament(Number(e.target.value));
                 setSelectedCategory(null);
               }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow"
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-uptc-yellow bg-white text-gray-900 font-medium"
             >
               <option value="">-- Selecciona un torneo --</option>
               {tournaments.map(t => (
@@ -234,13 +235,13 @@ export default function AdminReportesPage() {
         {/* Selector de categoría */}
         {selectedReport && reports.find(r => r.id === selectedReport)?.requiresCategory && selectedTournament && (
           <div className="mb-4">
-            <label className="block text-gray-700 font-medium mb-2">
+            <label className="block text-gray-800 font-semibold mb-2">
               Seleccionar Categoría *
             </label>
             <select
               value={selectedCategory || ''}
               onChange={(e) => setSelectedCategory(Number(e.target.value))}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow"
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-uptc-yellow bg-white text-gray-900 font-medium"
             >
               <option value="">-- Selecciona una categoría --</option>
               {categories.map(c => (
@@ -258,7 +259,7 @@ export default function AdminReportesPage() {
             <button
               onClick={handleGenerateExcel}
               disabled={loading}
-              className="flex-1 bg-green-700 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
             >
               {loading ? (
                 <>
@@ -271,7 +272,7 @@ export default function AdminReportesPage() {
             </button>
             <button
               onClick={handleGeneratePDF}
-              className="flex-1 bg-red-700 text-white px-6 py-3 rounded-lg hover:bg-red-600 transition font-medium"
+              className="flex-1 bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition font-bold shadow-lg"
             >
               📄 Generar PDF (Próximamente)
             </button>
@@ -280,14 +281,31 @@ export default function AdminReportesPage() {
       </div>
 
       {/* Instrucciones */}
-      <div className="bg-blue-50 border-l-4 border-uptc-yellow p-4 rounded">
-        <h3 className="font-semibold text-uptc-black mb-2">💡 Instrucciones</h3>
-        <ul className="text-sm text-uptc-black space-y-1">
-          <li>1. Selecciona el tipo de reporte que deseas generar</li>
-          <li>2. Elige el torneo correspondiente</li>
-          <li>3. Si el reporte lo requiere, selecciona la categoría</li>
-          <li>4. Haz clic en "Generar Excel" para descargar el archivo</li>
-          <li>5. El archivo se descargará automáticamente en tu navegador</li>
+      <div className="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg shadow">
+        <h3 className="font-bold text-blue-900 mb-3 text-lg flex items-center gap-2">
+          <span>💡</span> Instrucciones
+        </h3>
+        <ul className="text-sm text-blue-900 space-y-2 font-medium">
+          <li className="flex items-start gap-2">
+            <span className="font-bold">1.</span>
+            <span>Selecciona el tipo de reporte que deseas generar</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-bold">2.</span>
+            <span>Elige el torneo correspondiente</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-bold">3.</span>
+            <span>Si el reporte lo requiere, selecciona la categoría</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-bold">4.</span>
+            <span>Haz clic en "Generar Excel" para descargar el archivo</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-bold">5.</span>
+            <span>El archivo se descargará automáticamente en tu navegador</span>
+          </li>
         </ul>
       </div>
     </div>

@@ -103,8 +103,9 @@ public class InscriptionController {
         @ApiResponse(responseCode = "400", description = "La inscripción no está en estado PENDIENTE")
     })
     @PostMapping("/admin/{id}/reject")
-    public ResponseEntity<InscriptionResponseDTO> reject(@PathVariable Long id, @RequestBody InscriptionStatusUpdateDTO updateDTO) {
-        // La lógica en el servicio ya espera un String, así que extraemos el motivo.
+    public ResponseEntity<InscriptionResponseDTO> reject(
+            @PathVariable Long id,
+            @RequestBody InscriptionStatusUpdateDTO updateDTO) {
         return ResponseEntity.ok(inscriptionService.reject(id, updateDTO.getReason()));
     }
 }

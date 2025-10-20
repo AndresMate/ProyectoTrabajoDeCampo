@@ -1,3 +1,4 @@
+// frontend-uptc/src/components/layout/PublicNavbar.tsx - VERSIÓN COMPLETAMENTE CORREGIDA
 'use client';
 
 import Link from 'next/link';
@@ -7,14 +8,13 @@ export default function PublicNavbar() {
   const pathname = usePathname();
 
   return (
-    <nav className="w-full bg-uptc-black text-uptc-yellow shadow-lg">
+    <nav className="w-full bg-uptc-black shadow-lg border-b-4 border-uptc-yellow">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo y título */}
-          <div className="flex items-center gap-4">
+          <Link href="/" className="flex items-center gap-4 hover:opacity-90 transition-opacity">
             <div className="flex-shrink-0">
-              {/* Aquí iría el logosímbolo UPTC */}
-              <div className="w-12 h-12 bg-uptc-yellow rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-uptc-yellow rounded-full flex items-center justify-center shadow-lg">
                 <span className="text-uptc-black font-bold text-xl">U</span>
               </div>
             </div>
@@ -22,46 +22,45 @@ export default function PublicNavbar() {
               <h1 className="text-xl font-bold text-uptc-yellow">
                 Sistema de Torneos
               </h1>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-gray-300">
                 Universidad Pedagógica y Tecnológica de Colombia
               </p>
             </div>
-          </div>
+          </Link>
 
-          {/* Navegación */}
-          <div className="flex items-center gap-6">
+          {/* Navegación - COMPLETAMENTE VISIBLE */}
+          <div className="flex items-center gap-8">
             <Link
               href="/"
-              className={`font-semibold transition-colors duration-200 ${
+              className={`font-bold transition-all duration-200 text-lg px-4 py-2 rounded-lg ${
                 pathname === '/' 
-                  ? 'text-uptc-yellow' 
-                  : 'text-gray-400 hover:text-uptc-yellow'
+                  ? 'text-uptc-black bg-uptc-yellow shadow-lg' 
+                  : 'text-uptc-yellow hover:bg-uptc-yellow hover:text-uptc-black'
               }`}
             >
               Inicio
             </Link>
+
             <Link
               href="/torneos"
-              className={`font-semibold transition-colors duration-200 ${
+              className={`font-bold transition-all duration-200 text-lg px-4 py-2 rounded-lg ${
                 pathname.startsWith('/torneos') 
-                  ? 'text-uptc-yellow' 
-                  : 'text-gray-400 hover:text-uptc-yellow'
+                  ? 'text-uptc-black bg-uptc-yellow shadow-lg' 
+                  : 'text-uptc-yellow hover:bg-uptc-yellow hover:text-uptc-black'
               }`}
             >
               Torneos
             </Link>
+
             <Link
               href="/login"
-              className="btn-uptc-secondary text-sm"
+              className="bg-uptc-yellow text-uptc-black font-bold px-6 py-2.5 rounded-lg hover:bg-yellow-400 transition-all shadow-lg hover:shadow-xl hover:scale-105"
             >
               Iniciar sesión
             </Link>
           </div>
         </div>
       </div>
-
-      {/* Línea decorativa inferior */}
-      <div className="h-1 bg-gradient-to-r from-uptc-yellow via-uptc-yellow to-transparent"></div>
     </nav>
   );
 }

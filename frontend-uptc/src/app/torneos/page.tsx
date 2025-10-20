@@ -1,4 +1,4 @@
-// File: src/app/torneos/page.tsx
+// frontend-uptc/src/app/torneos/page.tsx - VERSIÓN CORREGIDA CON MEJOR CONTRASTE
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -122,26 +122,25 @@ export default function TorneosPage() {
                 key={torneo.id}
                 className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 border-2 border-gray-200 hover:border-uptc-yellow group"
               >
-                {/* Header de la card */}
-                <div className="bg-gradient-to-br from-uptc-black to-gray-800 p-6 text-white border-b-4 border-uptc-yellow">
-                  <h2 className="text-xl font-bold mb-2 group-hover:text-uptc-yellow transition-colors">
+                {/* Header de la card - CORREGIDO CON MEJOR CONTRASTE */}
+                <div className="bg-uptc-black p-6 text-white border-b-4 border-uptc-yellow">
+                  <h2 className="text-xl font-bold mb-2 text-uptc-yellow group-hover:text-white transition-colors">
                     {torneo.name}
                   </h2>
-                  <p className="text-sm text-gray-300">
-                    {/* ✅ CORRECCIÓN: Acceder a .name de los objetos */}
+                  <p className="text-sm text-white font-medium">
                     {torneo.sport?.name || 'Deporte'} • {torneo.category?.name || 'Categoría'}
                   </p>
                 </div>
 
                 {/* Contenido */}
                 <div className="p-6">
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                  <p className="text-gray-700 text-sm mb-4 line-clamp-3 font-medium">
                     {torneo.description}
                   </p>
 
-                  <div className="space-y-2 text-sm text-gray-600 mb-4">
+                  <div className="space-y-2 text-sm text-gray-700 mb-4 font-medium">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-uptc-black">📅 Inicio:</span>
+                      <span className="font-bold text-uptc-black">📅 Inicio:</span>
                       {new Date(torneo.startDate).toLocaleDateString('es-ES', {
                         day: 'numeric',
                         month: 'long',
@@ -149,7 +148,7 @@ export default function TorneosPage() {
                       })}
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-uptc-black">🏁 Fin:</span>
+                      <span className="font-bold text-uptc-black">🏁 Fin:</span>
                       {new Date(torneo.endDate).toLocaleDateString('es-ES', {
                         day: 'numeric',
                         month: 'long',
@@ -197,25 +196,25 @@ export default function TorneosPage() {
         <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-xl shadow-lg p-6 text-center border-2 border-uptc-yellow">
             <div className="text-3xl font-bold text-uptc-black mb-1">{torneos.length}</div>
-            <div className="text-sm text-gray-600 font-semibold">Total Torneos</div>
+            <div className="text-sm text-gray-700 font-semibold">Total Torneos</div>
           </div>
           <div className="bg-white rounded-xl shadow-lg p-6 text-center border-2 border-gray-200">
             <div className="text-3xl font-bold text-uptc-yellow mb-1">
               {torneos.filter(t => t.status === 'OPEN_FOR_INSCRIPTION').length}
             </div>
-            <div className="text-sm text-gray-600 font-semibold">Inscripciones Abiertas</div>
+            <div className="text-sm text-gray-700 font-semibold">Inscripciones Abiertas</div>
           </div>
           <div className="bg-white rounded-xl shadow-lg p-6 text-center border-2 border-gray-200">
             <div className="text-3xl font-bold text-green-600 mb-1">
               {torneos.filter(t => t.status === 'IN_PROGRESS').length}
             </div>
-            <div className="text-sm text-gray-600 font-semibold">En Curso</div>
+            <div className="text-sm text-gray-700 font-semibold">En Curso</div>
           </div>
           <div className="bg-white rounded-xl shadow-lg p-6 text-center border-2 border-gray-200">
             <div className="text-3xl font-bold text-purple-600 mb-1">
               {torneos.filter(t => t.status === 'FINISHED').length}
             </div>
-            <div className="text-sm text-gray-600 font-semibold">Finalizados</div>
+            <div className="text-sm text-gray-700 font-semibold">Finalizados</div>
           </div>
         </div>
       </div>

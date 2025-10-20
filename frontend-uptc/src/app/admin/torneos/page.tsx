@@ -1,3 +1,4 @@
+// frontend-uptc/src/app/admin/torneos/page.tsx - VERSIÓN CORREGIDA CON MEJOR CONTRASTE
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -80,6 +81,7 @@ export default function AdminTorneosPage() {
     const colors = {
       PLANNING: 'bg-gray-200 text-gray-700',
       REGISTRATION: 'bg-blue-200 text-blue-700',
+      OPEN_FOR_INSCRIPTION: 'bg-blue-200 text-blue-700',
       IN_PROGRESS: 'bg-green-200 text-green-700',
       FINISHED: 'bg-purple-200 text-purple-700',
       CANCELLED: 'bg-red-200 text-red-700'
@@ -119,7 +121,7 @@ export default function AdminTorneosPage() {
             setSelectedTournament(undefined);
             setShowModal(true);
           }}
-          className="bg-uptc-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition"
+          className="bg-uptc-black text-uptc-yellow px-6 py-2 rounded-lg hover:bg-gray-800 transition font-semibold"
         >
           + Nuevo Torneo
         </button>
@@ -128,29 +130,29 @@ export default function AdminTorneosPage() {
       {/* Estadísticas */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-gray-500 text-sm">Total</div>
+          <div className="text-gray-600 text-sm font-semibold">Total</div>
           <div className="text-2xl font-bold text-gray-900">{tournaments.length}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-gray-500 text-sm">Planificación</div>
+          <div className="text-gray-600 text-sm font-semibold">Planificación</div>
           <div className="text-2xl font-bold text-gray-600">
             {tournaments.filter(t => t.status === 'PLANNING').length}
           </div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-gray-500 text-sm">Inscripción</div>
+          <div className="text-gray-600 text-sm font-semibold">Inscripción</div>
           <div className="text-2xl font-bold text-blue-600">
             {tournaments.filter(t => t.status === 'OPEN_FOR_INSCRIPTION').length}
           </div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-gray-500 text-sm">En Curso</div>
+          <div className="text-gray-600 text-sm font-semibold">En Curso</div>
           <div className="text-2xl font-bold text-green-600">
             {tournaments.filter(t => t.status === 'IN_PROGRESS').length}
           </div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-gray-500 text-sm">Finalizados</div>
+          <div className="text-gray-600 text-sm font-semibold">Finalizados</div>
           <div className="text-2xl font-bold text-purple-600">
             {tournaments.filter(t => t.status === 'FINISHED').length}
           </div>
@@ -164,9 +166,9 @@ export default function AdminTorneosPage() {
             <button
               key={status}
               onClick={() => setFilterStatus(status)}
-              className={`px-4 py-2 rounded-lg transition ${
+              className={`px-4 py-2 rounded-lg transition font-semibold ${
                 filterStatus === status
-                  ? 'bg-uptc-black text-white'
+                  ? 'bg-uptc-black text-uptc-yellow'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -194,7 +196,7 @@ export default function AdminTorneosPage() {
                     {tournament.name}
                   </h3>
                   <span
-                    className={`text-xs px-3 py-1 rounded-full ${getStatusBadge(
+                    className={`text-xs px-3 py-1 rounded-full font-semibold ${getStatusBadge(
                       tournament.status
                     )}`}
                   >
@@ -206,16 +208,16 @@ export default function AdminTorneosPage() {
                   {tournament.description}
                 </p>
 
-                <div className="space-y-2 text-sm text-gray-600 mb-4">
+                <div className="space-y-2 text-sm text-gray-700 mb-4 font-medium">
                   <p>
-                    <strong>Deporte:</strong> {tournament.sport?.name || 'N/A'}
+                    <strong className="text-gray-900">Deporte:</strong> {tournament.sport?.name || 'N/A'}
                   </p>
                   <p>
-                    <strong>Inicio:</strong>{' '}
+                    <strong className="text-gray-900">Inicio:</strong>{' '}
                     {new Date(tournament.startDate).toLocaleDateString('es-ES')}
                   </p>
                   <p>
-                    <strong>Fin:</strong>{' '}
+                    <strong className="text-gray-900">Fin:</strong>{' '}
                     {new Date(tournament.endDate).toLocaleDateString('es-ES')}
                   </p>
                 </div>
@@ -225,7 +227,7 @@ export default function AdminTorneosPage() {
                   {tournament.status === 'PLANNING' && (
                     <button
                       onClick={() => handleChangeStatus(tournament.id, 'start')}
-                      className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition text-sm"
+                      className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition text-sm font-semibold"
                     >
                       Iniciar Torneo
                     </button>
@@ -234,7 +236,7 @@ export default function AdminTorneosPage() {
                   {tournament.status === 'IN_PROGRESS' && (
                     <button
                       onClick={() => handleChangeStatus(tournament.id, 'complete')}
-                      className="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700 transition text-sm"
+                      className="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700 transition text-sm font-semibold"
                     >
                       Finalizar Torneo
                     </button>
@@ -243,7 +245,7 @@ export default function AdminTorneosPage() {
                   <div className="flex gap-2">
                     <Link
                       href={`/torneos/${tournament.id}`}
-                      className="flex-1 bg-uptc-black text-white text-center py-2 rounded hover:bg-gray-800 transition text-sm"
+                      className="flex-1 bg-uptc-black text-uptc-yellow text-center py-2 rounded hover:bg-gray-800 transition text-sm font-semibold"
                     >
                       Ver detalles
                     </Link>
@@ -253,7 +255,7 @@ export default function AdminTorneosPage() {
                         setSelectedTournament(tournament.id);
                         setShowModal(true);
                       }}
-                      className="px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition"
+                      className="px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition font-semibold"
                       title="Editar"
                     >
                       ✏️
@@ -262,7 +264,7 @@ export default function AdminTorneosPage() {
                     {tournament.status === 'PLANNING' && (
                       <button
                         onClick={() => handleDelete(tournament.id)}
-                        className="px-4 bg-red-600 text-white rounded hover:bg-red-700 transition"
+                        className="px-4 bg-red-600 text-white rounded hover:bg-red-700 transition font-semibold"
                         title="Eliminar"
                       >
                         🗑️
@@ -272,7 +274,7 @@ export default function AdminTorneosPage() {
                     {(tournament.status === 'PLANNING' || tournament.status === 'REGISTRATION') && (
                       <button
                         onClick={() => handleChangeStatus(tournament.id, 'cancel')}
-                        className="px-4 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
+                        className="px-4 bg-gray-600 text-white rounded hover:bg-gray-700 transition font-semibold"
                         title="Cancelar"
                       >
                         ✖️

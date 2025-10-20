@@ -1,3 +1,4 @@
+// frontend-uptc/src/app/admin/usuarios/page.tsx - VERSIÓN CORREGIDA
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -133,7 +134,7 @@ export default function AdminUsuariosPage() {
             setSelectedUser(undefined);
             setShowModal(true);
           }}
-          className="bg-uptc-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition"
+          className="bg-uptc-black text-uptc-yellow px-6 py-2 rounded-lg hover:bg-gray-800 transition font-semibold"
         >
           + Nuevo Usuario
         </button>
@@ -142,29 +143,29 @@ export default function AdminUsuariosPage() {
       {/* Estadísticas */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-gray-500 text-sm">Total</div>
+          <div className="text-gray-600 text-sm font-semibold">Total</div>
           <div className="text-2xl font-bold text-gray-900">{users.length}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-gray-500 text-sm">Activos</div>
+          <div className="text-gray-600 text-sm font-semibold">Activos</div>
           <div className="text-2xl font-bold text-green-600">
             {users.filter(u => u.isActive).length}
           </div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-gray-500 text-sm">Administradores</div>
+          <div className="text-gray-600 text-sm font-semibold">Administradores</div>
           <div className="text-2xl font-bold text-blue-600">
             {users.filter(u => u.role === 'ADMIN' || u.role === 'SUPER_ADMIN').length}
           </div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-gray-500 text-sm">Árbitros</div>
+          <div className="text-gray-600 text-sm font-semibold">Árbitros</div>
           <div className="text-2xl font-bold text-green-600">
             {users.filter(u => u.role === 'REFEREE').length}
           </div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-gray-500 text-sm">Usuarios</div>
+          <div className="text-gray-600 text-sm font-semibold">Usuarios</div>
           <div className="text-2xl font-bold text-gray-600">
             {users.filter(u => u.role === 'USER').length}
           </div>
@@ -179,12 +180,12 @@ export default function AdminUsuariosPage() {
             placeholder="Buscar por nombre o correo..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-transparent"
+            className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-uptc-yellow bg-white text-gray-900 font-medium"
           />
           <select
             value={filterRole}
             onChange={(e) => setFilterRole(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-transparent"
+            className="px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow bg-white text-gray-900 font-medium"
           >
             <option value="ALL">Todos los roles</option>
             <option value="SUPER_ADMIN">Super Admin</option>
@@ -198,21 +199,21 @@ export default function AdminUsuariosPage() {
       {/* Tabla de usuarios */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead className="bg-uptc-black">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-uptc-yellow uppercase tracking-wider">
                 Usuario
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-uptc-yellow uppercase tracking-wider">
                 Rol
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-uptc-yellow uppercase tracking-wider">
                 Estado
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-uptc-yellow uppercase tracking-wider">
                 Fecha de registro
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-semibold text-uptc-yellow uppercase tracking-wider">
                 Acciones
               </th>
             </tr>
@@ -222,8 +223,8 @@ export default function AdminUsuariosPage() {
               <tr key={user.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div>
-                    <div className="font-medium text-gray-900">{user.fullName}</div>
-                    <div className="text-sm text-gray-500">{user.email}</div>
+                    <div className="font-semibold text-gray-900">{user.fullName}</div>
+                    <div className="text-sm text-gray-600">{user.email}</div>
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -246,10 +247,10 @@ export default function AdminUsuariosPage() {
                     {user.isActive ? 'Activo' : 'Inactivo'}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">
                   {new Date(user.createdAt).toLocaleDateString('es-ES')}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold">
                   <button
                     onClick={() => {
                       setSelectedUser(user.id);
@@ -261,7 +262,7 @@ export default function AdminUsuariosPage() {
                   </button>
                   <button
                     onClick={() => handleResetPassword(user.id)}
-                    className="text-blue-600 hover:text-uptc-black mr-3 transition-colors"
+                    className="text-blue-600 hover:text-blue-800 mr-3 transition-colors"
                   >
                     Resetear
                   </button>
@@ -282,7 +283,7 @@ export default function AdminUsuariosPage() {
 
       {filteredUsers.length === 0 && (
         <div className="bg-white rounded-lg shadow p-8 text-center mt-6">
-          <p className="text-gray-500 text-lg">No se encontraron usuarios</p>
+          <p className="text-gray-500 text-lg font-medium">No se encontraron usuarios</p>
           <p className="text-gray-400 text-sm mt-2">
             {users.length === 0 ? 'No hay usuarios en el sistema' : 'No hay coincidencias con tu búsqueda'}
           </p>
