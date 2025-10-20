@@ -4,15 +4,29 @@
 @import 'swiper/css/pagination';
 
 :root {
+  /* Colores institucionales UPTC */
+  --uptc-yellow: #FFCC29;
+  --uptc-black: #1A1A1A;
+  --uptc-yellow-dark: #E6B824;
+  --uptc-yellow-light: #FFD84D;
+
+  /* Variaciones de negro */
+  --uptc-gray-dark: #333333;
+  --uptc-gray-medium: #666666;
+  --uptc-gray-light: #999999;
+
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #1A1A1A;
 }
 
 @theme inline {
+  --color-uptc-yellow: var(--uptc-yellow);
+  --color-uptc-black: var(--uptc-black);
+  --color-uptc-yellow-dark: var(--uptc-yellow-dark);
+  --color-uptc-yellow-light: var(--uptc-yellow-light);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: Georgia, 'Times New Roman', serif;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -25,7 +39,104 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Georgia, 'Times New Roman', serif;
+  line-height: 1.6;
+}
+
+/* Clases de utilidad UPTC */
+.bg-uptc-yellow {
+  background-color: var(--uptc-yellow);
+}
+
+.bg-uptc-black {
+  background-color: var(--uptc-black);
+}
+
+.text-uptc-yellow {
+  color: var(--uptc-yellow);
+}
+
+.text-uptc-black {
+  color: var(--uptc-black);
+}
+
+.border-uptc-yellow {
+  border-color: var(--uptc-yellow);
+}
+
+.border-uptc-black {
+  border-color: var(--uptc-black);
+}
+
+/* Botones institucionales */
+.btn-uptc-primary {
+  background-color: var(--uptc-black);
+  color: var(--uptc-yellow);
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.btn-uptc-primary:hover {
+  background-color: var(--uptc-gray-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(26, 26, 26, 0.2);
+}
+
+.btn-uptc-secondary {
+  background-color: var(--uptc-yellow);
+  color: var(--uptc-black);
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.btn-uptc-secondary:hover {
+  background-color: var(--uptc-yellow-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 204, 41, 0.3);
+}
+
+/* Headings con identidad UPTC */
+h1, h2, h3, h4, h5, h6 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  color: var(--uptc-black);
+  line-height: 1.2;
+}
+
+/* Cards institucionales */
+.card-uptc {
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.75rem;
+  transition: all 0.3s ease;
+}
+
+.card-uptc:hover {
+  border-color: var(--uptc-yellow);
+  box-shadow: 0 8px 24px rgba(255, 204, 41, 0.15);
+}
+
+/* Badges institucionales */
+.badge-uptc-yellow {
+  background-color: var(--uptc-yellow);
+  color: var(--uptc-black);
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.badge-uptc-black {
+  background-color: var(--uptc-black);
+  color: var(--uptc-yellow);
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
 }
 
 /* Animaciones personalizadas */
@@ -60,6 +171,15 @@ body {
   }
 }
 
+@keyframes pulse-uptc {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
 }
@@ -70,6 +190,10 @@ body {
 
 .animate-scale-in {
   animation: scale-in 0.2s ease-out;
+}
+
+.animate-pulse-uptc {
+  animation: pulse-uptc 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /* Utilidades adicionales */
@@ -87,10 +211,10 @@ body {
   overflow: hidden;
 }
 
-/* Scrollbar personalizado */
+/* Scrollbar personalizado con colores UPTC */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
@@ -98,10 +222,117 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 4px;
+  background: var(--uptc-yellow);
+  border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: var(--uptc-yellow-dark);
+}
+
+/* Inputs con estilo UPTC */
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--uptc-yellow);
+  box-shadow: 0 0 0 3px rgba(255, 204, 41, 0.1);
+}
+
+/* Links institucionales */
+a {
+  color: var(--uptc-black);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--uptc-yellow-dark);
+}
+
+/* Tablas institucionales */
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+thead {
+  background-color: var(--uptc-black);
+  color: var(--uptc-yellow);
+}
+
+thead th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+}
+
+tbody tr {
+  border-bottom: 1px solid #e5e7eb;
+  transition: background-color 0.2s ease;
+}
+
+tbody tr:hover {
+  background-color: rgba(255, 204, 41, 0.05);
+}
+
+tbody td {
+  padding: 1rem;
+}
+
+/* Alertas institucionales */
+.alert-uptc-info {
+  background-color: rgba(255, 204, 41, 0.1);
+  border-left: 4px solid var(--uptc-yellow);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  color: var(--uptc-black);
+}
+
+.alert-uptc-warning {
+  background-color: rgba(230, 184, 36, 0.1);
+  border-left: 4px solid var(--uptc-yellow-dark);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  color: var(--uptc-black);
+}
+
+/* Sidebar y Navigation con identidad UPTC */
+.sidebar-uptc {
+  background-color: var(--uptc-black);
+  color: var(--uptc-yellow);
+}
+
+.sidebar-uptc a {
+  color: rgba(255, 204, 41, 0.8);
+  transition: all 0.2s ease;
+}
+
+.sidebar-uptc a:hover,
+.sidebar-uptc a.active {
+  color: var(--uptc-yellow);
+  background-color: rgba(255, 204, 41, 0.1);
+}
+
+/* Header institucional */
+.header-uptc {
+  background-color: var(--uptc-black);
+  color: var(--uptc-yellow);
+  border-bottom: 3px solid var(--uptc-yellow);
+}
+
+/* Footer institucional */
+.footer-uptc {
+  background-color: var(--uptc-black);
+  color: var(--uptc-yellow);
+  border-top: 3px solid var(--uptc-yellow);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .btn-uptc-primary,
+  .btn-uptc-secondary {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
 }

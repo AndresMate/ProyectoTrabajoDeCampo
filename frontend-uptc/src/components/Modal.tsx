@@ -21,21 +21,34 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className={`bg-white rounded-lg shadow-xl w-full ${sizeClasses[size]} max-h-[90vh] overflow-y-auto`}>
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 animate-fade-in">
+      <div
+        className={`bg-white rounded-2xl shadow-2xl w-full ${sizeClasses[size]} max-h-[90vh] overflow-hidden animate-scale-in`}
+      >
+        {/* Header del modal con identidad UPTC */}
+        <div className="sticky top-0 bg-uptc-black border-b-4 border-uptc-yellow px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-uptc-yellow rounded-full flex items-center justify-center">
+              <span className="text-uptc-black font-bold text-lg">U</span>
+            </div>
+            <h2 className="text-xl font-bold text-uptc-yellow">{title}</h2>
+          </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition text-2xl"
-            aria-label="Cerrar"
+            className="text-gray-400 hover:text-uptc-yellow transition-colors text-3xl font-bold leading-none w-8 h-8 flex items-center justify-center"
+            aria-label="Cerrar modal"
           >
             ×
           </button>
         </div>
-        <div className="p-6">
+
+        {/* Contenido del modal */}
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-100px)]">
           {children}
         </div>
+
+        {/* Footer decorativo */}
+        <div className="sticky bottom-0 h-1 bg-gradient-to-r from-transparent via-uptc-yellow to-transparent"></div>
       </div>
     </div>
   );
