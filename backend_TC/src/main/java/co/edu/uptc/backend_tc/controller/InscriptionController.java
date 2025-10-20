@@ -1,8 +1,7 @@
 package co.edu.uptc.backend_tc.controller;
 
 import co.edu.uptc.backend_tc.dto.InscriptionDTO;
-// Importamos el DTO correcto
-import co.edu.uptc.backend_tc.dto.InscriptionStatusUpdateDTO; 
+import co.edu.uptc.backend_tc.dto.InscriptionStatusUpdateDTO;
 import co.edu.uptc.backend_tc.dto.response.InscriptionResponseDTO;
 import co.edu.uptc.backend_tc.service.InscriptionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,13 +25,13 @@ public class InscriptionController {
 
     private final InscriptionService inscriptionService;
 
-    // --- Endpoints públicos (sin cambios) ---
-
-    @Operation(summary = "Crear una nueva inscripción", description = "Endpoint público para que los delegados inscriban a sus equipos.")
+    // ✅ ENDPOINT NUEVO: Crear inscripción completa con jugadores y fotos
+    @Operation(summary = "Crear inscripción completa con jugadores",
+            description = "Endpoint público para inscribir equipo con todos sus jugadores e imágenes de carnets")
     @ApiResponses({
-        @ApiResponse(responseCode = "201", description = "Inscripción creada exitosamente, pendiente de aprobación"),
-        @ApiResponse(responseCode = "400", description = "Datos inválidos (ej. el torneo no acepta inscripciones)"),
-        @ApiResponse(responseCode = "409", description = "El nombre del equipo o el delegado ya están registrados en esta categoría")
+            @ApiResponse(responseCode = "201", description = "Inscripción creada exitosamente"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos"),
+            @ApiResponse(responseCode = "409", description = "Nombre de equipo o datos de jugadores duplicados")
     })
     @PostMapping
     public ResponseEntity<InscriptionResponseDTO> create(@RequestBody InscriptionDTO dto) {
@@ -41,30 +40,21 @@ public class InscriptionController {
     }
 
     @Operation(summary = "Obtener inscripciones aprobadas por torneo")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Lista de inscripciones aprobadas"),
-            @ApiResponse(responseCode = "404", description = "Torneo no encontrado")
-    })
     @GetMapping("/tournament/{tournamentId}/approved")
     public ResponseEntity<List<InscriptionResponseDTO>> getApprovedByTournament(@PathVariable Long tournamentId) {
         return ResponseEntity.ok(inscriptionService.getApprovedByTournament(tournamentId));
     }
 
-    
     @Operation(summary = "Obtener una inscripción por su ID")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Inscripción encontrada"),
-        @ApiResponse(responseCode = "404", description = "Inscripción no encontrada")
-    })
     @GetMapping("/{id}")
     public ResponseEntity<InscriptionResponseDTO> getById(@PathVariable Long id) {
         return ResponseEntity.ok(inscriptionService.getById(id));
     }
-    
-    // ... (los demás endpoints públicos se mantienen igual) ...
 
     @GetMapping("/check-team-name")
-    public ResponseEntity<Map<String, Boolean>> isTeamNameAvailable(@RequestParam Long tournamentId, @RequestParam String teamName) {
+    public ResponseEntity<Map<String, Boolean>> isTeamNameAvailable(
+            @RequestParam Long tournamentId,
+            @RequestParam String teamName) {
         boolean isAvailable = inscriptionService.isTeamNameAvailable(tournamentId, teamName);
         return ResponseEntity.ok(Map.of("isAvailable", isAvailable));
     }
@@ -75,33 +65,24 @@ public class InscriptionController {
         return ResponseEntity.noContent().build();
     }
 
+    // === ENDPOINTS DE ADMINISTRACIÓN ===
 
-    // --- Endpoints de administración (sección con el cambio) ---
-
-    @Operation(summary = "Obtener todas las inscripciones (Admin)", description = "Requiere rol ADMIN o SUPER_ADMIN")
+    @Operation(summary = "Obtener todas las inscripciones (Admin)")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/admin")
     public ResponseEntity<List<InscriptionResponseDTO>> getAll() {
         return ResponseEntity.ok(inscriptionService.getAll());
     }
 
-    @Operation(summary = "Aprobar una inscripción (Admin)", description = "Requiere rol ADMIN o SUPER_ADMIN")
+    @Operation(summary = "Aprobar una inscripción (Admin)")
     @SecurityRequirement(name = "bearerAuth")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Inscripción aprobada"),
-        @ApiResponse(responseCode = "400", description = "La inscripción no está en estado PENDIENTE")
-    })
     @PostMapping("/admin/{id}/approve")
     public ResponseEntity<InscriptionResponseDTO> approve(@PathVariable Long id) {
         return ResponseEntity.ok(inscriptionService.approve(id));
     }
 
-    @Operation(summary = "Rechazar una inscripción (Admin)", description = "Requiere rol ADMIN o SUPER_ADMIN")
+    @Operation(summary = "Rechazar una inscripción (Admin)")
     @SecurityRequirement(name = "bearerAuth")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Inscripción rechazada"),
-        @ApiResponse(responseCode = "400", description = "La inscripción no está en estado PENDIENTE")
-    })
     @PostMapping("/admin/{id}/reject")
     public ResponseEntity<InscriptionResponseDTO> reject(
             @PathVariable Long id,

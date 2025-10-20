@@ -52,6 +52,10 @@ public class Player implements Serializable {
     @Column(name = "birth_date")
     private LocalDate birthDate;
 
+    // ✅ NUEVO CAMPO: URL de la foto del carnet
+    @Column(name = "id_card_photo_url", length = 500)
+    private String idCardPhotoUrl;
+
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 

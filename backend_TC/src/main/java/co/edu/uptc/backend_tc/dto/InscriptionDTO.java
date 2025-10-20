@@ -4,6 +4,8 @@ import co.edu.uptc.backend_tc.model.InscriptionStatus;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -24,20 +26,18 @@ public class InscriptionDTO {
     @Size(min = 3, max = 100, message = "Team name must be between 3 and 100 characters")
     private String teamName;
 
-    @NotBlank(message = "Delegate name is required")
-    @Size(min = 3, max = 100, message = "Delegate name must be between 3 and 100 characters")
-    private String delegateName;
+    // ✅ NUEVA LISTA DE JUGADORES
+    @NotEmpty(message = "At least one player is required")
+    private List<PlayerInscriptionDTO> players;
 
-    @NotBlank(message = "Delegate email is required")
-    @Email(message = "Invalid email format")
-    @Size(max = 100)
-    private String delegateEmail;
+    // ✅ ÍNDICE DEL DELEGADO EN LA LISTA
+    @NotNull(message = "Delegate index is required")
+    @Min(value = 0, message = "Delegate index must be >= 0")
+    private Integer delegateIndex;
 
-    @NotBlank(message = "Delegate phone is required")
+    // ✅ TELÉFONO DEL DELEGADO (opcional)
     @Pattern(regexp = "^[0-9]{10}$", message = "Phone must be 10 digits")
     private String delegatePhone;
-    @NotNull(message = "Delegate player ID is required")
-    private Long delegatePlayerId;
 
     private InscriptionStatus status;
 }

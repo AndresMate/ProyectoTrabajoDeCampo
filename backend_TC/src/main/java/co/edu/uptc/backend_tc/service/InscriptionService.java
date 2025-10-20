@@ -1,28 +1,26 @@
 package co.edu.uptc.backend_tc.service;
 
 import co.edu.uptc.backend_tc.dto.InscriptionDTO;
+import co.edu.uptc.backend_tc.dto.PlayerInscriptionDTO;
 import co.edu.uptc.backend_tc.dto.response.InscriptionResponseDTO;
-import co.edu.uptc.backend_tc.dto.stats.InscriptionStatsDTO;
 import co.edu.uptc.backend_tc.dto.response.CategorySummaryDTO;
 import co.edu.uptc.backend_tc.dto.response.ClubSummaryDTO;
 import co.edu.uptc.backend_tc.dto.response.TournamentSummaryDTO;
 import co.edu.uptc.backend_tc.entity.*;
 import co.edu.uptc.backend_tc.exception.BusinessException;
 import co.edu.uptc.backend_tc.exception.ConflictException;
-import co.edu.uptc.backend_tc.exception.ForbiddenException;
 import co.edu.uptc.backend_tc.exception.ResourceNotFoundException;
 import co.edu.uptc.backend_tc.mapper.InscriptionMapper;
 import co.edu.uptc.backend_tc.mapper.PlayerMapper;
 import co.edu.uptc.backend_tc.model.InscriptionStatus;
 import co.edu.uptc.backend_tc.model.TournamentStatus;
-import co.edu.uptc.backend_tc.model.UserRole;
 import co.edu.uptc.backend_tc.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,6 +33,7 @@ public class InscriptionService {
     private final CategoryRepository categoryRepository;
     private final PlayerRepository playerRepository;
     private final ClubRepository clubRepository;
+    private final InscriptionPlayerRepository inscriptionPlayerRepository;
     private final InscriptionMapper inscriptionMapper;
     private final PlayerMapper playerMapper;
 
@@ -58,7 +57,6 @@ public class InscriptionService {
         return enrichResponseDTO(inscription);
     }
 
-    // Nuevo método para obtener inscripciones por email del delegado
     public List<InscriptionResponseDTO> getByDelegateEmail(String delegateEmail) {
         return inscriptionRepository.findByDelegateEmail(delegateEmail)
                 .stream()
@@ -66,7 +64,6 @@ public class InscriptionService {
                 .collect(Collectors.toList());
     }
 
-    // Nuevo método para obtener inscripciones aprobadas por torneo
     public List<InscriptionResponseDTO> getApprovedByTournament(Long tournamentId) {
         return inscriptionRepository.findByTournamentIdAndStatus(tournamentId, InscriptionStatus.APPROVED)
                 .stream()
@@ -74,7 +71,6 @@ public class InscriptionService {
                 .collect(Collectors.toList());
     }
 
-    // Nuevo método para verificar disponibilidad de nombre de equipo
     public boolean isTeamNameAvailable(Long tournamentId, String teamName) {
         return !inscriptionRepository.existsByTournamentIdAndTeamNameIgnoreCaseAndStatusNot(
                 tournamentId, teamName, InscriptionStatus.REJECTED);
@@ -86,7 +82,6 @@ public class InscriptionService {
         Tournament tournament = tournamentRepository.findById(dto.getTournamentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Tournament", "id", dto.getTournamentId()));
 
-        // ✅ CORRECCIÓN: Verificar estado correcto
         if (tournament.getStatus() != TournamentStatus.OPEN_FOR_INSCRIPTION) {
             throw new BusinessException(
                     "Inscriptions are only allowed for tournaments with open registration",
@@ -112,7 +107,7 @@ public class InscriptionService {
             throw new BusinessException("Category does not belong to tournament's sport", "CATEGORY_SPORT_MISMATCH");
         }
 
-        // ✅ CORRECCIÓN: Validar nombre de equipo duplicado
+        // Validar nombre de equipo
         if (inscriptionRepository.existsByTournamentIdAndCategoryIdAndTeamNameIgnoreCase(
                 tournament.getId(),
                 category.getId(),
@@ -124,45 +119,110 @@ public class InscriptionService {
             );
         }
 
-        // ✅ CORRECCIÓN: Validar email de delegado duplicado en la categoría
-        List<Inscription> existingInscriptions = inscriptionRepository
-                .findByTournamentIdAndCategoryId(tournament.getId(), category.getId());
+        // ✅ VALIDAR ÍNDICE DEL DELEGADO
+        if (dto.getDelegateIndex() == null || dto.getDelegateIndex() >= dto.getPlayers().size()) {
+            throw new BusinessException("Invalid delegate index", "INVALID_DELEGATE_INDEX");
+        }
 
-        boolean delegateExists = existingInscriptions.stream()
-                .anyMatch(i -> i.getDelegateEmail() != null &&
-                        i.getDelegateEmail().equalsIgnoreCase(dto.getDelegateEmail()) &&
-                        (i.getStatus() == InscriptionStatus.PENDING ||
-                                i.getStatus() == InscriptionStatus.APPROVED));
-
-        if (delegateExists) {
-            throw new ConflictException(
-                    "This email is already registered as a delegate in this tournament and category"
+        // ✅ VALIDAR LÍMITE DE JUGADORES
+        Integer maxPlayers = category.getMembersPerTeam();
+        if (maxPlayers != null && dto.getPlayers().size() > maxPlayers) {
+            throw new BusinessException(
+                    String.format("Category allows maximum %d players, but %d were provided",
+                            maxPlayers, dto.getPlayers().size()),
+                    "EXCEEDED_MAX_PLAYERS"
             );
         }
 
-        // Obtener club si se proporcionó
+        if (maxPlayers != null && dto.getPlayers().size() < 1) {
+            throw new BusinessException(
+                    "At least one player is required",
+                    "INSUFFICIENT_PLAYERS"
+            );
+        }
+
+        // ✅ PROCESAR JUGADORES
+        List<Player> players = new ArrayList<>();
+        PlayerInscriptionDTO delegateData = dto.getPlayers().get(dto.getDelegateIndex());
+        Player delegate = null;
+
+        for (int i = 0; i < dto.getPlayers().size(); i++) {
+            PlayerInscriptionDTO playerDTO = dto.getPlayers().get(i);
+
+            // Buscar o crear jugador
+            Player player = playerRepository.findByDocumentNumber(playerDTO.getDocumentNumber())
+                    .orElseGet(() -> {
+                        // Validar email único
+                        if (playerRepository.existsByInstitutionalEmail(playerDTO.getInstitutionalEmail())) {
+                            throw new ConflictException(
+                                    "A player with this email already exists",
+                                    "institutionalEmail",
+                                    playerDTO.getInstitutionalEmail()
+                            );
+                        }
+
+                        // Validar código único
+                        if (playerRepository.existsByStudentCode(playerDTO.getStudentCode())) {
+                            throw new ConflictException(
+                                    "A player with this student code already exists",
+                                    "studentCode",
+                                    playerDTO.getStudentCode()
+                            );
+                        }
+
+                        // Crear nuevo jugador
+                        Player newPlayer = Player.builder()
+                                .documentNumber(playerDTO.getDocumentNumber())
+                                .studentCode(playerDTO.getStudentCode())
+                                .fullName(playerDTO.getFullName())
+                                .institutionalEmail(playerDTO.getInstitutionalEmail())
+                                .idCardPhotoUrl(playerDTO.getIdCardPhotoUrl()) // ✅ URL de la foto
+                                .isActive(true)
+                                .build();
+                        return playerRepository.save(newPlayer);
+                    });
+
+            players.add(player);
+
+            if (i == dto.getDelegateIndex()) {
+                delegate = player;
+            }
+        }
+
+        // Obtener club
         Club club = null;
         if (dto.getClubId() != null) {
             club = clubRepository.findById(dto.getClubId())
                     .orElseThrow(() -> new ResourceNotFoundException("Club", "id", dto.getClubId()));
         }
 
-        // ✅ Crear inscripción con los campos correctos
+        // ✅ CREAR INSCRIPCIÓN
         Inscription inscription = Inscription.builder()
                 .tournament(tournament)
                 .category(category)
                 .teamName(dto.getTeamName())
-                .delegateName(dto.getDelegateName())
-                .delegateEmail(dto.getDelegateEmail())
-                .delegatePhone(dto.getDelegatePhone())
+                .delegate(delegate)
+                .delegateName(delegate.getFullName())
+                .delegateEmail(delegate.getInstitutionalEmail())
+                .delegatePhone(dto.getDelegatePhone() != null ? dto.getDelegatePhone() : "")
                 .club(club)
                 .status(InscriptionStatus.PENDING)
                 .build();
 
         inscription = inscriptionRepository.save(inscription);
+
+        // ✅ ASOCIAR JUGADORES
+        for (Player player : players) {
+            InscriptionPlayer inscriptionPlayer = InscriptionPlayer.builder()
+                    .inscription(inscription)
+                    .player(player)
+                    .build();
+            inscriptionPlayerRepository.save(inscriptionPlayer);
+        }
+
         return enrichResponseDTO(inscription);
     }
-    // Método actualizado sin parámetro User
+
     @Transactional
     public InscriptionResponseDTO approve(Long id) {
         Inscription inscription = inscriptionRepository.findById(id)
@@ -177,7 +237,6 @@ public class InscriptionService {
         return enrichResponseDTO(inscription);
     }
 
-    // Método actualizado con parámetro reason
     @Transactional
     public InscriptionResponseDTO reject(Long id, String reason) {
         Inscription inscription = inscriptionRepository.findById(id)
@@ -188,18 +247,16 @@ public class InscriptionService {
         }
 
         inscription.setStatus(InscriptionStatus.REJECTED);
-        // Puedes agregar un campo para guardar el motivo del rechazo si lo necesitas
+        inscription.setRejectionReason(reason);
         inscription = inscriptionRepository.save(inscription);
         return enrichResponseDTO(inscription);
     }
 
-    // Método actualizado sin parámetro User
     @Transactional
     public void delete(Long id) {
         Inscription inscription = inscriptionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Inscription", "id", id));
 
-        // No permitir eliminar inscripciones ya aprobadas
         if (inscription.getStatus() == InscriptionStatus.APPROVED) {
             throw new BusinessException("Approved inscriptions cannot be deleted", "APPROVED_INSCRIPTION_DELETE_FORBIDDEN");
         }
@@ -207,8 +264,6 @@ public class InscriptionService {
         inscriptionRepository.delete(inscription);
     }
 
-
-    // Método auxiliar para armar correctamente el DTO de respuesta
     private InscriptionResponseDTO enrichResponseDTO(Inscription inscription) {
         InscriptionResponseDTO response = InscriptionResponseDTO.builder()
                 .id(inscription.getId())
@@ -222,7 +277,6 @@ public class InscriptionService {
                 .updatedAt(inscription.getUpdatedAt())
                 .build();
 
-        // Tournament info
         response.setTournament(
                 TournamentSummaryDTO.builder()
                         .id(inscription.getTournament().getId())
@@ -231,7 +285,6 @@ public class InscriptionService {
                         .build()
         );
 
-        // Category info
         response.setCategory(
                 CategorySummaryDTO.builder()
                         .id(inscription.getCategory().getId())
@@ -240,7 +293,6 @@ public class InscriptionService {
                         .build()
         );
 
-        // Club info (opcional)
         if (inscription.getClub() != null) {
             response.setClub(
                     ClubSummaryDTO.builder()
@@ -250,7 +302,6 @@ public class InscriptionService {
             );
         }
 
-        // Jugadores inscritos
         if (inscription.getPlayers() != null) {
             response.setPlayers(
                     inscription.getPlayers().stream()
