@@ -1,6 +1,7 @@
 package co.edu.uptc.backend_tc.service;
 
 import co.edu.uptc.backend_tc.dto.InscriptionPlayerDTO;
+import co.edu.uptc.backend_tc.entity.Category;
 import co.edu.uptc.backend_tc.entity.Inscription;
 import co.edu.uptc.backend_tc.entity.InscriptionPlayer;
 import co.edu.uptc.backend_tc.entity.Player;
@@ -32,6 +33,9 @@ public class InscriptionPlayerService {
                 .map(this::toDTO)
                 .toList();
     }
+
+    // backend_TC/src/main/java/co/edu/uptc/backend_tc/service/InscriptionPlayerService.java
+// ACTUALIZACIÓN: Agregar validación del límite de jugadores
 
     @Transactional
     public InscriptionPlayerDTO addPlayerToInscription(InscriptionPlayerDTO dto) {
@@ -68,13 +72,19 @@ public class InscriptionPlayerService {
             );
         }
 
-        // Verificar límite de jugadores (por ejemplo, máximo 25)
-        long currentPlayers = inscriptionPlayerRepository.countByInscriptionId(inscription.getId());
-        if (currentPlayers >= 25) {
-            throw new BusinessException(
-                    "Inscription has reached maximum number of players",
-                    "MAX_PLAYERS_REACHED"
-            );
+        // 🔥 VERIFICAR LÍMITE DE JUGADORES SEGÚN LA CATEGORÍA
+        Category category = inscription.getCategory();
+        Integer maxPlayers = category.getMembersPerTeam();
+
+        if (maxPlayers != null && maxPlayers > 0) {
+            long currentPlayers = inscriptionPlayerRepository.countByInscriptionId(inscription.getId());
+
+            if (currentPlayers >= maxPlayers) {
+                throw new BusinessException(
+                        String.format("Inscription has reached maximum number of players for this category (%d players)", maxPlayers),
+                        "MAX_PLAYERS_REACHED"
+                );
+            }
         }
 
         InscriptionPlayer inscriptionPlayer = InscriptionPlayer.builder()

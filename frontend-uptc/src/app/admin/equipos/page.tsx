@@ -1,7 +1,11 @@
+// frontend-uptc/src/app/admin/equipos/page.tsx - VERSIÓN COMPLETA
 'use client';
 
 import { useEffect, useState } from 'react';
 import teamsService from '@/services/teamsService';
+import Modal from '@/components/Modal';
+import TeamForm from '@/components/forms/TeamForm';
+import TeamRosterModal from '@/components/TeamRosterModal';
 
 interface Team {
   id: number;
@@ -19,7 +23,9 @@ export default function AdminEquiposPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<number | undefined>();
+  const [showRosterModal, setShowRosterModal] = useState(false);
+  const [rosterTeam, setRosterTeam] = useState<{ id: number; name: string } | null>(null);
 
   useEffect(() => {
     fetchTeams();
@@ -36,13 +42,9 @@ export default function AdminEquiposPage() {
     }
   };
 
-  const handleViewRoster = async (teamId: number) => {
-    try {
-      const roster = await teamsService.getRoster(teamId);
-      alert(`Jugadores: ${JSON.stringify(roster, null, 2)}`);
-    } catch (error) {
-      console.error('Error al cargar roster:', error);
-    }
+  const handleViewRoster = (team: Team) => {
+    setRosterTeam({ id: team.id, name: team.name });
+    setShowRosterModal(true);
   };
 
   const handleDelete = async (id: number) => {
@@ -60,7 +62,7 @@ export default function AdminEquiposPage() {
   const filteredTeams = teams.filter(
     (team) =>
       team.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      team.delegateName.toLowerCase().includes(searchTerm.toLowerCase())
+      (team.delegateName && team.delegateName.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   if (loading) {
@@ -76,7 +78,10 @@ export default function AdminEquiposPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Gestión de Equipos</h1>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => {
+            setSelectedTeam(undefined);
+            setShowModal(true);
+          }}
           className="bg-blue-900 text-white px-6 py-2 rounded-lg hover:bg-blue-800 transition"
         >
           + Nuevo Equipo
@@ -127,7 +132,6 @@ export default function AdminEquiposPage() {
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Equipo</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Torneo</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Delegado</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
             </tr>
@@ -144,10 +148,6 @@ export default function AdminEquiposPage() {
                   <div className="text-sm text-gray-500">{team.categoryName || 'N/A'}</div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="text-sm text-gray-900">{team.delegateName}</div>
-                  <div className="text-sm text-gray-500">{team.delegateEmail}</div>
-                </td>
-                <td className="px-6 py-4">
                   <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
                     team.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                   }`}>
@@ -156,22 +156,25 @@ export default function AdminEquiposPage() {
                 </td>
                 <td className="px-6 py-4 text-right text-sm font-medium">
                   <button
-                    onClick={() => handleViewRoster(team.id)}
+                    onClick={() => handleViewRoster(team)}
                     className="text-blue-600 hover:text-blue-900 mr-3"
                   >
-                    Ver Roster
+                    👥 Ver Roster
                   </button>
                   <button
-                    onClick={() => setSelectedTeam(team)}
+                    onClick={() => {
+                      setSelectedTeam(team.id);
+                      setShowModal(true);
+                    }}
                     className="text-indigo-600 hover:text-indigo-900 mr-3"
                   >
-                    Editar
+                    ✏️ Editar
                   </button>
                   <button
                     onClick={() => handleDelete(team.id)}
                     className="text-red-600 hover:text-red-900"
                   >
-                    Eliminar
+                    🗑️ Eliminar
                   </button>
                 </td>
               </tr>
@@ -186,25 +189,40 @@ export default function AdminEquiposPage() {
         </div>
       )}
 
-      {/* Modal crear/editar (placeholder) */}
-      {(showModal || selectedTeam) && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-2xl w-full">
-            <h2 className="text-2xl font-bold mb-4">
-              {selectedTeam ? 'Editar Equipo' : 'Crear Nuevo Equipo'}
-            </h2>
-            <p className="text-gray-600 mb-4">Formulario por implementar</p>
-            <button
-              onClick={() => {
-                setShowModal(false);
-                setSelectedTeam(null);
-              }}
-              className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
-            >
-              Cerrar
-            </button>
-          </div>
-        </div>
+      {/* Modal crear/editar equipo */}
+      <Modal
+        isOpen={showModal}
+        onClose={() => {
+          setShowModal(false);
+          setSelectedTeam(undefined);
+        }}
+        title={selectedTeam ? 'Editar Equipo' : 'Crear Nuevo Equipo'}
+        size="lg"
+      >
+        <TeamForm
+          teamId={selectedTeam}
+          onSuccess={() => {
+            setShowModal(false);
+            setSelectedTeam(undefined);
+            fetchTeams();
+          }}
+          onCancel={() => {
+            setShowModal(false);
+            setSelectedTeam(undefined);
+          }}
+        />
+      </Modal>
+
+      {/* Modal ver roster */}
+      {showRosterModal && rosterTeam && (
+        <TeamRosterModal
+          teamId={rosterTeam.id}
+          teamName={rosterTeam.name}
+          onClose={() => {
+            setShowRosterModal(false);
+            setRosterTeam(null);
+          }}
+        />
       )}
     </div>
   );

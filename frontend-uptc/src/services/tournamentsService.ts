@@ -171,15 +171,16 @@ export const tournamentsService = {
   // RELACIONES
   // ======================
 
-  getInscriptions: async (tournamentId: number | string): Promise<any[]> => {
-    try {
-      const response = await api.get(`/inscriptions?tournamentId=${tournamentId}`);
-      return response.data;
-    } catch (error) {
-      console.error("Error al obtener inscripciones:", error);
-      return [];
-    }
-  },
+  async getInscriptions(tournamentId: number | string): Promise<any[]> {
+  try {
+    const response = await api.get(`/inscriptions/tournament/${tournamentId}/approved`);
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener inscripciones:", error);
+    return [];
+  }
+},
+
 
   getMatches: async (tournamentId: number | string): Promise<any[]> => {
     try {

@@ -1,3 +1,4 @@
+// frontend-uptc/src/services/inscriptionsService.ts
 import api from "./api";
 
 export interface InscriptionDTO {

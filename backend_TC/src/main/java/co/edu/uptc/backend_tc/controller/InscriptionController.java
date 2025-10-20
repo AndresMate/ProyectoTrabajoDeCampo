@@ -39,6 +39,17 @@ public class InscriptionController {
         InscriptionResponseDTO createdInscription = inscriptionService.create(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdInscription);
     }
+
+    @Operation(summary = "Obtener inscripciones aprobadas por torneo")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista de inscripciones aprobadas"),
+            @ApiResponse(responseCode = "404", description = "Torneo no encontrado")
+    })
+    @GetMapping("/tournament/{tournamentId}/approved")
+    public ResponseEntity<List<InscriptionResponseDTO>> getApprovedByTournament(@PathVariable Long tournamentId) {
+        return ResponseEntity.ok(inscriptionService.getApprovedByTournament(tournamentId));
+    }
+
     
     @Operation(summary = "Obtener una inscripción por su ID")
     @ApiResponses({

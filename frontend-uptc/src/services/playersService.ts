@@ -53,6 +53,16 @@ const playersService = {
     }
   },
 
+    getAvailablePlayers: async (): Promise<any[]> => {
+    try {
+      const response = await api.get("/players/available");
+      return response.data;
+    } catch (error) {
+      console.error("Error al obtener jugadores disponibles:", error);
+      return [];
+    }
+  },
+
   // Buscar jugadores con filtros
   search: async (filters: PlayerFilterDTO, page = 0, size = 50): Promise<any> => {
     try {

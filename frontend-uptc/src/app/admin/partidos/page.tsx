@@ -1,7 +1,11 @@
+// frontend-uptc/src/app/admin/partidos/page.tsx - VERSIÓN COMPLETA
 'use client';
 
 import { useEffect, useState } from 'react';
 import matchesService from '@/services/matchesService';
+import Modal from '@/components/Modal';
+import MatchForm from '@/components/forms/MatchForm';
+import FixtureGenerator from '@/components/FixtureGenerator';
 
 interface Match {
   id: number;
@@ -20,6 +24,7 @@ export default function AdminPartidosPage() {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [showModal, setShowModal] = useState(false);
+  const [showFixtureGenerator, setShowFixtureGenerator] = useState(false);
 
   useEffect(() => {
     fetchMatches();
@@ -84,12 +89,20 @@ export default function AdminPartidosPage() {
     <div className="max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Gestión de Partidos</h1>
-        <button
-          onClick={() => setShowModal(true)}
-          className="bg-blue-900 text-white px-6 py-2 rounded-lg hover:bg-blue-800 transition"
-        >
-          + Nuevo Partido
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowFixtureGenerator(true)}
+            className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition"
+          >
+            ⚡ Generar Fixture
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-blue-900 text-white px-6 py-2 rounded-lg hover:bg-blue-800 transition"
+          >
+            + Nuevo Partido
+          </button>
+        </div>
       </div>
 
       {/* Estadísticas */}
@@ -186,22 +199,22 @@ export default function AdminPartidosPage() {
                   {match.status === 'SCHEDULED' && (
                     <>
                       <button className="text-green-600 hover:text-green-900 mr-3">
-                        Iniciar
+                        ▶️ Iniciar
                       </button>
                       <button className="text-indigo-600 hover:text-indigo-900 mr-3">
-                        Editar
+                        ✏️ Editar
                       </button>
                       <button
                         onClick={() => handleDelete(match.id)}
                         className="text-red-600 hover:text-red-900"
                       >
-                        Eliminar
+                        🗑️ Eliminar
                       </button>
                     </>
                   )}
                   {match.status === 'FINISHED' && (
                     <button className="text-blue-600 hover:text-blue-900">
-                      Ver resultado
+                      📊 Ver resultado
                     </button>
                   )}
                 </td>
@@ -217,20 +230,31 @@ export default function AdminPartidosPage() {
         </div>
       )}
 
-      {/* Modal crear partido (placeholder) */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-2xl w-full">
-            <h2 className="text-2xl font-bold mb-4">Crear Nuevo Partido</h2>
-            <p className="text-gray-600 mb-4">Formulario por implementar</p>
-            <button
-              onClick={() => setShowModal(false)}
-              className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
-            >
-              Cerrar
-            </button>
-          </div>
-        </div>
+      {/* Modal crear partido */}
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title="Crear Nuevo Partido"
+        size="lg"
+      >
+        <MatchForm
+          onSuccess={() => {
+            setShowModal(false);
+            fetchMatches();
+          }}
+          onCancel={() => setShowModal(false)}
+        />
+      </Modal>
+
+      {/* Modal generador de fixture */}
+      {showFixtureGenerator && (
+        <FixtureGenerator
+          onClose={() => setShowFixtureGenerator(false)}
+          onSuccess={() => {
+            setShowFixtureGenerator(false);
+            fetchMatches();
+          }}
+        />
       )}
     </div>
   );

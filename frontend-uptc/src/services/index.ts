@@ -4,7 +4,7 @@
 export { authService } from './authService';
 export { tournamentsService } from './tournamentsService';
 export { default as usersService } from './usersService';
-export { default as inscriptionService } from './inscriptionService';
+export { default as inscriptionService } from './inscriptionsService';
 export { default as sportsService } from './sportsService';
 export { default as categoriesService } from './categoriesService';
 export { default as matchesService } from './matchesService';
@@ -34,7 +34,7 @@ export type {
   InscriptionDTO,
   InscriptionResponseDTO,
   InscriptionPlayerDTO
-} from './inscriptionService';
+} from './inscriptionsService';
 
 export type {
   Sport,
