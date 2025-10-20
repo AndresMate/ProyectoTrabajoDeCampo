@@ -36,7 +36,8 @@ public class SecurityConfig {
                                 "/api/inscriptions/**",
                                 "/api/sports/public/**",
                                 "/api/venues/public/**",
-                                "/api/clubs/**"
+                                "/api/clubs/**",
+                                "/api/files/upload/**"
                                 ).permitAll()
                         .requestMatchers("/api/users/**").hasRole("SUPER_ADMIN")
                         .requestMatchers(
