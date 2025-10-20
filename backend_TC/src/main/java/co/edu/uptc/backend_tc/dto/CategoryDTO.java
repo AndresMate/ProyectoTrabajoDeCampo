@@ -26,4 +26,5 @@ public class CategoryDTO {
 
     @NotNull(message = "Sport ID is required")
     private Long sportId;
+
 }

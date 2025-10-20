@@ -210,9 +210,19 @@ public class InscriptionService {
 
     // Método auxiliar para armar correctamente el DTO de respuesta
     private InscriptionResponseDTO enrichResponseDTO(Inscription inscription) {
-        InscriptionResponseDTO response = inscriptionMapper.toResponseDTO(inscription);
+        InscriptionResponseDTO response = InscriptionResponseDTO.builder()
+                .id(inscription.getId())
+                .teamName(inscription.getTeamName())
+                .delegateName(inscription.getDelegateName())
+                .delegateEmail(inscription.getDelegateEmail())
+                .delegatePhone(inscription.getDelegatePhone())
+                .status(inscription.getStatus())
+                .rejectionReason(inscription.getRejectionReason())
+                .createdAt(inscription.getCreatedAt())
+                .updatedAt(inscription.getUpdatedAt())
+                .build();
 
-        // Asignar información anidada
+        // Tournament info
         response.setTournament(
                 TournamentSummaryDTO.builder()
                         .id(inscription.getTournament().getId())
@@ -221,15 +231,16 @@ public class InscriptionService {
                         .build()
         );
 
+        // Category info
         response.setCategory(
                 CategorySummaryDTO.builder()
                         .id(inscription.getCategory().getId())
                         .name(inscription.getCategory().getName())
+                        .membersPerTeam(inscription.getCategory().getMembersPerTeam())
                         .build()
         );
 
-        response.setDelegate(playerMapper.toSummaryDTO(inscription.getDelegate()));
-
+        // Club info (opcional)
         if (inscription.getClub() != null) {
             response.setClub(
                     ClubSummaryDTO.builder()
@@ -239,7 +250,7 @@ public class InscriptionService {
             );
         }
 
-        // Lista de jugadores inscritos (si tu entidad Inscription tiene relación con Player)
+        // Jugadores inscritos
         if (inscription.getPlayers() != null) {
             response.setPlayers(
                     inscription.getPlayers().stream()

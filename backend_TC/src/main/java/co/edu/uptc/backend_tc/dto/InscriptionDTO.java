@@ -1,28 +1,16 @@
 package co.edu.uptc.backend_tc.dto;
 
 import co.edu.uptc.backend_tc.model.InscriptionStatus;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.*;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class InscriptionDTO {
+
     private Long id;
-
-    @NotBlank(message = "El nombre del equipo es requerido")
-    @Size(min = 3, max = 150, message = "Team name must be between 3 and 150 characters")
-    private String teamName;
-
-    @NotBlank(message = "Delegate phone is required")
-    @Pattern(regexp = "^[+]?[0-9]{10,15}$", message = "Invalid phone number format")
-    private String delegatePhone;
-
-    private InscriptionStatus status;
 
     @NotNull(message = "Tournament ID is required")
     private Long tournamentId;
@@ -30,8 +18,26 @@ public class InscriptionDTO {
     @NotNull(message = "Category ID is required")
     private Long categoryId;
 
+    private Long clubId;
+
+    @NotBlank(message = "Team name is required")
+    @Size(min = 3, max = 100, message = "Team name must be between 3 and 100 characters")
+    private String teamName;
+
+    @NotBlank(message = "Delegate name is required")
+    @Size(min = 3, max = 100, message = "Delegate name must be between 3 and 100 characters")
+    private String delegateName;
+
+    @NotBlank(message = "Delegate email is required")
+    @Email(message = "Invalid email format")
+    @Size(max = 100)
+    private String delegateEmail;
+
+    @NotBlank(message = "Delegate phone is required")
+    @Pattern(regexp = "^[0-9]{10}$", message = "Phone must be 10 digits")
+    private String delegatePhone;
     @NotNull(message = "Delegate player ID is required")
     private Long delegatePlayerId;
 
-    private Long clubId; // opcional según modalidad
+    private InscriptionStatus status;
 }

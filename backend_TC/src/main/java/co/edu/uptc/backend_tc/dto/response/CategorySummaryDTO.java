@@ -9,4 +9,5 @@ import lombok.*;
 public class CategorySummaryDTO {
     private Long id;
     private String name;
+    private Integer membersPerTeam;
 }

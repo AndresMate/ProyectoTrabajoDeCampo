@@ -34,23 +34,6 @@ public class Inscription implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Team name is required")
-    @Size(min = 3, max = 150, message = "Team name must be between 3 and 150 characters")
-    @Column(name = "team_name", nullable = false, length = 150)
-    private String teamName;
-
-    @NotBlank(message = "Delegate phone is required")
-    @Pattern(regexp = "^[+]?[0-9]{10,15}$", message = "Invalid phone number format")
-    @Column(name = "delegate_phone", nullable = false, length = 20)
-    private String delegatePhone;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
-    private InscriptionStatus status = InscriptionStatus.PENDING;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
-
     @NotNull(message = "Tournament is required")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tournament_id", nullable = false)
@@ -61,25 +44,59 @@ public class Inscription implements Serializable {
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    @NotNull(message = "Delegate player is required")
+    @NotBlank(message = "Team name is required")
+    @Size(min = 3, max = 150, message = "Team name must be between 3 and 150 characters")
+    @Column(name = "team_name", nullable = false, length = 150)
+    private String teamName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 50)
+    private InscriptionStatus status = InscriptionStatus.PENDING;
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "delegate_player_id", nullable = false)
+    @JoinColumn(name = "delegate_player_id")
     private Player delegate;
 
-    @NotNull(message = "Club is required")
+    @Column(nullable = false, length = 100)
+    private String delegateName;
+
+    @Column(nullable = false, length = 100)
+    private String delegateEmail;
+
+    @Column(nullable = false, length = 20)
+    private String delegatePhone;
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "club_id", nullable = false)
+    @JoinColumn(name = "club_id")
     private Club club;
 
+
+    @Column(length = 500)
+    private String rejectionReason;
+
+    // Relación con jugadores inscritos
     @OneToMany(mappedBy = "inscription", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<InscriptionPlayer> players = new ArrayList<>();
+    private List<InscriptionPlayer> players;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private OffsetDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private OffsetDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = OffsetDateTime.now();
+        updatedAt = OffsetDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = OffsetDateTime.now();
+    }
 
     @OneToOne(mappedBy = "originInscription")
     private Team originatedTeam;
 
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = OffsetDateTime.now();
-    }
+
 }

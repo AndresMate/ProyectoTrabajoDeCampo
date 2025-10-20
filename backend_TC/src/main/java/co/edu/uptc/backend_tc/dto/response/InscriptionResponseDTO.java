@@ -16,6 +16,12 @@ public class InscriptionResponseDTO {
     private String delegatePhone;
     private InscriptionStatus status;
     private OffsetDateTime createdAt;
+    private OffsetDateTime updatedAt;
+
+    private String delegateName;
+    private String delegateEmail;
+
+    private String rejectionReason;
 
     // Información anidada
     private TournamentSummaryDTO tournament;
