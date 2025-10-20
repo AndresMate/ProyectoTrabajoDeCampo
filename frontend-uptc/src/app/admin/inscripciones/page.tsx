@@ -38,11 +38,11 @@ export default function InscripcionesAdminPage() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-6 text-blue-900">Gestión de Inscripciones</h1>
+      <h1 className="text-2xl font-semibold mb-6 text-uptc-black">Gestión de Inscripciones</h1>
 
       <div className="overflow-x-auto">
         <table className="min-w-full border rounded-lg bg-white shadow">
-          <thead className="bg-blue-900 text-white">
+          <thead className="bg-uptc-black text-white">
             <tr>
               <th className="px-6 py-3 text-left text-sm font-semibold">Equipo</th>
               <th className="px-6 py-3 text-left text-sm font-semibold">Torneo</th>
@@ -81,7 +81,7 @@ export default function InscripcionesAdminPage() {
 
                         <button
                           onClick={() => handleViewPlayers(inscription.id)}
-                          className="text-blue-900 hover:underline ml-2 text-xs"
+                          className="text-uptc-black hover:underline ml-2 text-xs"
                         >
                           Ver jugadores
                         </button>
@@ -98,7 +98,7 @@ export default function InscripcionesAdminPage() {
                   <td className="px-6 py-4 text-center">
                     <button
                       onClick={() => alert('Funcionalidad pendiente')}
-                      className="text-blue-800 hover:underline"
+                      className="text-uptc-black hover:underline"
                     >
                       Ver detalles
                     </button>

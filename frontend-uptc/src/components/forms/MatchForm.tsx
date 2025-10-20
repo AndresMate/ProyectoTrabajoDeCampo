@@ -171,7 +171,7 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
             name="tournamentId"
             value={formData.tournamentId}
             onChange={handleChange}
-            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-uptc-yellow ${
               errors.tournamentId ? 'border-red-500' : 'border-gray-300'
             }`}
             required
@@ -197,7 +197,7 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
             name="categoryId"
             value={formData.categoryId}
             onChange={handleChange}
-            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-uptc-yellow ${
               errors.categoryId ? 'border-red-500' : 'border-gray-300'
             }`}
             required
@@ -226,7 +226,7 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
             name="homeTeamId"
             value={formData.homeTeamId}
             onChange={handleChange}
-            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-uptc-yellow ${
               errors.homeTeamId ? 'border-red-500' : 'border-gray-300'
             }`}
             required
@@ -255,7 +255,7 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
             name="awayTeamId"
             value={formData.awayTeamId}
             onChange={handleChange}
-            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-uptc-yellow ${
               errors.awayTeamId ? 'border-red-500' : 'border-gray-300'
             }`}
             required
@@ -285,7 +285,7 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
             name="matchDate"
             value={formData.matchDate}
             onChange={handleChange}
-            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-uptc-yellow ${
               errors.matchDate ? 'border-red-500' : 'border-gray-300'
             }`}
             required
@@ -304,7 +304,7 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
             name="venueId"
             value={formData.venueId}
             onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow"
           >
             <option value="0">Sin sede específica</option>
             {venues.map(v => (
@@ -325,7 +325,7 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
               name="scenarioId"
               value={formData.scenarioId}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow"
             >
               <option value="0">Sin escenario específico</option>
               {scenarios.map(s => (
@@ -350,7 +350,7 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
         <button
           type="submit"
           disabled={loading}
-          className="px-6 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition disabled:opacity-50"
+          className="px-6 py-2 bg-uptc-black text-white rounded-lg hover:bg-gray-800 transition disabled:opacity-50"
         >
           {loading ? 'Creando...' : 'Crear Partido'}
         </button>

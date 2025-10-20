@@ -147,13 +147,13 @@ export default function AdminReportesPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow p-6">
           <div className="text-gray-500 text-sm mb-2">Total Torneos</div>
-          <div className="text-3xl font-bold text-blue-900">{tournaments.length}</div>
+          <div className="text-3xl font-bold text-uptc-black">{tournaments.length}</div>
           <div className="text-xs text-green-600 mt-2">Activos en el sistema</div>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
           <div className="text-gray-500 text-sm mb-2">Reportes Disponibles</div>
-          <div className="text-3xl font-bold text-blue-900">{reports.length}</div>
+          <div className="text-3xl font-bold text-uptc-black">{reports.length}</div>
           <div className="text-xs text-blue-600 mt-2">Tipos de reporte</div>
         </div>
 
@@ -186,8 +186,8 @@ export default function AdminReportesPage() {
                 onClick={() => setSelectedReport(report.id)}
                 className={`border-2 rounded-lg p-4 cursor-pointer transition ${
                   selectedReport === report.id
-                    ? 'border-blue-900 bg-blue-50'
-                    : 'border-gray-200 hover:border-blue-400'
+                    ? 'border-uptc-yellow bg-blue-50'
+                    : 'border-gray-200 hover:border-uptc-yellow'
                 }`}
               >
                 <div className="flex items-start gap-3">
@@ -219,7 +219,7 @@ export default function AdminReportesPage() {
                 setSelectedTournament(Number(e.target.value));
                 setSelectedCategory(null);
               }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow"
             >
               <option value="">-- Selecciona un torneo --</option>
               {tournaments.map(t => (
@@ -240,7 +240,7 @@ export default function AdminReportesPage() {
             <select
               value={selectedCategory || ''}
               onChange={(e) => setSelectedCategory(Number(e.target.value))}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow"
             >
               <option value="">-- Selecciona una categoría --</option>
               {categories.map(c => (
@@ -280,9 +280,9 @@ export default function AdminReportesPage() {
       </div>
 
       {/* Instrucciones */}
-      <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-        <h3 className="font-semibold text-blue-900 mb-2">💡 Instrucciones</h3>
-        <ul className="text-sm text-blue-800 space-y-1">
+      <div className="bg-blue-50 border-l-4 border-uptc-yellow p-4 rounded">
+        <h3 className="font-semibold text-uptc-black mb-2">💡 Instrucciones</h3>
+        <ul className="text-sm text-uptc-black space-y-1">
           <li>1. Selecciona el tipo de reporte que deseas generar</li>
           <li>2. Elige el torneo correspondiente</li>
           <li>3. Si el reporte lo requiere, selecciona la categoría</li>

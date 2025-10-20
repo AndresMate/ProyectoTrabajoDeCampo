@@ -80,7 +80,7 @@ export default function AdminPartidosPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-uptc-yellow"></div>
       </div>
     );
   }
@@ -98,7 +98,7 @@ export default function AdminPartidosPage() {
           </button>
           <button
             onClick={() => setShowModal(true)}
-            className="bg-blue-900 text-white px-6 py-2 rounded-lg hover:bg-blue-800 transition"
+            className="bg-uptc-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition"
           >
             + Nuevo Partido
           </button>
@@ -140,7 +140,7 @@ export default function AdminPartidosPage() {
               onClick={() => setFilterStatus(status)}
               className={`px-4 py-2 rounded-lg transition ${
                 filterStatus === status
-                  ? 'bg-blue-900 text-white'
+                  ? 'bg-uptc-black text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -213,7 +213,7 @@ export default function AdminPartidosPage() {
                     </>
                   )}
                   {match.status === 'FINISHED' && (
-                    <button className="text-blue-600 hover:text-blue-900">
+                    <button className="text-blue-600 hover:text-uptc-black">
                       📊 Ver resultado
                     </button>
                   )}

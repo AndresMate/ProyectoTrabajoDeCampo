@@ -121,7 +121,7 @@ export default function SanctionsManager({ entityType, entityId, onClose }: Sanc
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-uptc-yellow mx-auto"></div>
         </div>
       </div>
     );
@@ -253,7 +253,7 @@ export default function SanctionsManager({ entityType, entityId, onClose }: Sanc
         <div className="border-t p-6 flex justify-end">
           <button
             onClick={onClose}
-            className="px-6 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800"
+            className="px-6 py-2 bg-uptc-black text-white rounded-lg hover:bg-gray-800"
           >
             Cerrar
           </button>

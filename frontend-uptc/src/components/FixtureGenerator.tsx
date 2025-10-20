@@ -127,9 +127,9 @@ export default function FixtureGenerator({ onClose, onSuccess }: FixtureGenerato
 
         <div className="p-6 space-y-6">
           {/* Información */}
-          <div className="bg-blue-50 border-l-4 border-blue-500 p-4">
-            <h3 className="font-semibold text-blue-900 mb-2">ℹ️ ¿Qué es un fixture?</h3>
-            <p className="text-sm text-blue-800">
+          <div className="bg-blue-50 border-l-4 border-uptc-yellow p-4">
+            <h3 className="font-semibold text-uptc-black mb-2">ℹ️ ¿Qué es un fixture?</h3>
+            <p className="text-sm text-uptc-black">
               El fixture es el calendario de partidos del torneo. El sistema genera automáticamente
               todos los enfrentamientos según el modo seleccionado, considerando la disponibilidad
               horaria de cada equipo.
@@ -147,7 +147,7 @@ export default function FixtureGenerator({ onClose, onSuccess }: FixtureGenerato
                 setSelectedTournament(Number(e.target.value));
                 setSelectedCategory(null);
               }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow"
             >
               <option value="">-- Selecciona un torneo --</option>
               {tournaments.map(t => (
@@ -167,7 +167,7 @@ export default function FixtureGenerator({ onClose, onSuccess }: FixtureGenerato
               <select
                 value={selectedCategory || ''}
                 onChange={(e) => setSelectedCategory(Number(e.target.value))}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow"
               >
                 <option value="">-- Selecciona una categoría --</option>
                 {categories.map(c => (
@@ -192,8 +192,8 @@ export default function FixtureGenerator({ onClose, onSuccess }: FixtureGenerato
                     onClick={() => setSelectedMode(mode.value)}
                     className={`border-2 rounded-lg p-4 cursor-pointer transition ${
                       selectedMode === mode.value
-                        ? 'border-blue-900 bg-blue-50'
-                        : 'border-gray-200 hover:border-blue-400'
+                        ? 'border-uptc-yellow bg-blue-50'
+                        : 'border-gray-200 hover:border-uptc-yellow'
                     }`}
                   >
                     <div className="flex items-start gap-3">

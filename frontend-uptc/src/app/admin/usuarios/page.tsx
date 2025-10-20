@@ -119,7 +119,7 @@ export default function AdminUsuariosPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-uptc-yellow"></div>
       </div>
     );
   }
@@ -133,7 +133,7 @@ export default function AdminUsuariosPage() {
             setSelectedUser(undefined);
             setShowModal(true);
           }}
-          className="bg-blue-900 text-white px-6 py-2 rounded-lg hover:bg-blue-800 transition"
+          className="bg-uptc-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition"
         >
           + Nuevo Usuario
         </button>
@@ -179,12 +179,12 @@ export default function AdminUsuariosPage() {
             placeholder="Buscar por nombre o correo..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-transparent"
           />
           <select
             value={filterRole}
             onChange={(e) => setFilterRole(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-transparent"
           >
             <option value="ALL">Todos los roles</option>
             <option value="SUPER_ADMIN">Super Admin</option>
@@ -261,7 +261,7 @@ export default function AdminUsuariosPage() {
                   </button>
                   <button
                     onClick={() => handleResetPassword(user.id)}
-                    className="text-blue-600 hover:text-blue-900 mr-3 transition-colors"
+                    className="text-blue-600 hover:text-uptc-black mr-3 transition-colors"
                   >
                     Resetear
                   </button>

@@ -82,7 +82,7 @@ export default function TeamRosterModal({ teamId, teamName, onClose }: TeamRoste
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mx-auto" />
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-uptc-yellow mx-auto" />
           <p className="text-center mt-4 text-gray-600">Cargando roster...</p>
         </div>
       </div>
@@ -130,7 +130,7 @@ export default function TeamRosterModal({ teamId, teamName, onClose }: TeamRoste
                     )}
                     <button
                       onClick={() => handleSetCaptain(player.id)}
-                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-uptc-black text-sm"
                     >
                       Asignar cap.
                     </button>

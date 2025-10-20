@@ -165,7 +165,7 @@ export default function TeamForm({ teamId, onSuccess, onCancel }: TeamFormProps)
           name="name"
           value={formData.name}
           onChange={handleChange}
-          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-uptc-yellow ${
             errors.name ? 'border-red-500' : 'border-gray-300'
           }`}
           placeholder="Ej: Los Tigres"
@@ -183,7 +183,7 @@ export default function TeamForm({ teamId, onSuccess, onCancel }: TeamFormProps)
           name="tournamentId"
           value={formData.tournamentId}
           onChange={handleChange}
-          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-uptc-yellow ${
             errors.tournamentId ? 'border-red-500' : 'border-gray-300'
           }`}
           required
@@ -209,7 +209,7 @@ export default function TeamForm({ teamId, onSuccess, onCancel }: TeamFormProps)
           name="categoryId"
           value={formData.categoryId}
           onChange={handleChange}
-          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-uptc-yellow ${
             errors.categoryId ? 'border-red-500' : 'border-gray-300'
           }`}
           required
@@ -238,7 +238,7 @@ export default function TeamForm({ teamId, onSuccess, onCancel }: TeamFormProps)
           name="clubId"
           value={formData.clubId}
           onChange={handleChange}
-          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-uptc-yellow ${
             errors.clubId ? 'border-red-500' : 'border-gray-300'
           }`}
           required
@@ -265,7 +265,7 @@ export default function TeamForm({ teamId, onSuccess, onCancel }: TeamFormProps)
         <button
           type="submit"
           disabled={loading}
-          className="px-6 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition disabled:opacity-50"
+          className="px-6 py-2 bg-uptc-black text-white rounded-lg hover:bg-gray-800 transition disabled:opacity-50"
         >
           {loading ? 'Guardando...' : teamId ? 'Actualizar' : 'Crear'}
         </button>

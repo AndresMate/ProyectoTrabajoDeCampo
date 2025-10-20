@@ -125,8 +125,8 @@ export default function TeamAvailabilityForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
-        <p className="text-sm text-blue-800">
+      <div className="bg-blue-50 border-l-4 border-uptc-yellow p-4 mb-6">
+        <p className="text-sm text-uptc-black">
           <strong>Modalidad {isNocturno ? 'Nocturna' : 'Diurna'}:</strong>
           Los horarios deben estar entre {minTime} y {maxTime}
         </p>
@@ -144,7 +144,7 @@ export default function TeamAvailabilityForm({
               <button
                 type="button"
                 onClick={() => handleAddSlot(day.value)}
-                className="text-blue-600 hover:text-blue-800 text-sm"
+                className="text-blue-600 hover:text-uptc-black text-sm"
               >
                 + Agregar horario
               </button>
@@ -162,7 +162,7 @@ export default function TeamAvailabilityForm({
                         onChange={(e) => handleSlotChange(index, 'startTime', e.target.value)}
                         min={minTime}
                         max={maxTime}
-                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-uptc-yellow"
                         required
                       />
                     </div>
@@ -174,7 +174,7 @@ export default function TeamAvailabilityForm({
                         onChange={(e) => handleSlotChange(index, 'endTime', e.target.value)}
                         min={minTime}
                         max={maxTime}
-                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-uptc-yellow"
                         required
                       />
                     </div>
@@ -217,7 +217,7 @@ export default function TeamAvailabilityForm({
         <button
           type="submit"
           disabled={loading}
-          className="px-6 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition disabled:opacity-50"
+          className="px-6 py-2 bg-uptc-black text-white rounded-lg hover:bg-gray-800 transition disabled:opacity-50"
         >
           {loading ? 'Guardando...' : 'Guardar Disponibilidad'}
         </button>

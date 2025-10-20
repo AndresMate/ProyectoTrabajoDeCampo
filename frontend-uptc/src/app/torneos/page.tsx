@@ -65,7 +65,7 @@ export default function TorneosPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-uptc-yellow"></div>
       </div>
     );
   }
@@ -174,7 +174,7 @@ export default function TorneosPage() {
                       Ver detalles
                     </button>
                     {torneo.status === 'OPEN_FOR_INSCRIPTION' && (
-                      <button className="px-4 bg-uptc-yellow text-uptc-black rounded-lg font-semibold hover:bg-yellow-400 transition-colors flex items-center justify-center">
+                      <button className="px-4 bg-uptc-yellow text-uptc-black rounded-lg font-semibold hover:bg-uptc-yellow transition-colors flex items-center justify-center">
                         📝
                       </button>
                     )}

@@ -68,7 +68,7 @@ export default function AdminEquiposPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-uptc-yellow"></div>
       </div>
     );
   }
@@ -82,7 +82,7 @@ export default function AdminEquiposPage() {
             setSelectedTeam(undefined);
             setShowModal(true);
           }}
-          className="bg-blue-900 text-white px-6 py-2 rounded-lg hover:bg-blue-800 transition"
+          className="bg-uptc-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition"
         >
           + Nuevo Equipo
         </button>
@@ -95,7 +95,7 @@ export default function AdminEquiposPage() {
           placeholder="Buscar por nombre de equipo o delegado..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-transparent"
         />
       </div>
 
@@ -103,7 +103,7 @@ export default function AdminEquiposPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-4">
           <div className="text-gray-500 text-sm">Total Equipos</div>
-          <div className="text-2xl font-bold text-blue-900">{teams.length}</div>
+          <div className="text-2xl font-bold text-uptc-black">{teams.length}</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
           <div className="text-gray-500 text-sm">Equipos Activos</div>
@@ -157,7 +157,7 @@ export default function AdminEquiposPage() {
                 <td className="px-6 py-4 text-right text-sm font-medium">
                   <button
                     onClick={() => handleViewRoster(team)}
-                    className="text-blue-600 hover:text-blue-900 mr-3"
+                    className="text-blue-600 hover:text-uptc-black mr-3"
                   >
                     👥 Ver Roster
                   </button>

@@ -306,7 +306,7 @@ export default function TournamentForm({ tournamentId, onSuccess, onCancel }: an
         <button
           type="submit"
           disabled={loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-uptc-black"
         >
           {loading ? 'Guardando...' : tournamentId ? 'Actualizar' : 'Crear'}
         </button>

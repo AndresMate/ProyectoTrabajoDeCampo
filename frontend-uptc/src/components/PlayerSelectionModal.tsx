@@ -70,7 +70,7 @@ export default function PlayerSelectionModal({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl p-6 relative">
-        <h2 className="text-xl font-semibold mb-4 text-blue-900">Gestión de Jugadores</h2>
+        <h2 className="text-xl font-semibold mb-4 text-uptc-black">Gestión de Jugadores</h2>
 
         {loading ? (
           <p>Cargando jugadores...</p>
@@ -85,7 +85,7 @@ export default function PlayerSelectionModal({
                     <span>{p.fullName}</span>
                     <button
                       onClick={() => handleAddPlayer(p.id)}
-                      className="text-sm bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
+                      className="text-sm bg-blue-600 text-white px-2 py-1 rounded hover:bg-uptc-black"
                     >
                       Agregar
                     </button>

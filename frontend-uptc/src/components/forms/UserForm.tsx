@@ -139,7 +139,7 @@ export default function UserForm({ userId, onSuccess, onCancel }: UserFormProps)
           name="fullName"
           value={formData.fullName}
           onChange={handleChange}
-          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-transparent ${
             errors.fullName ? 'border-red-500' : 'border-gray-300'
           }`}
           placeholder="Juan Pérez García"
@@ -158,7 +158,7 @@ export default function UserForm({ userId, onSuccess, onCancel }: UserFormProps)
           name="email"
           value={formData.email}
           onChange={handleChange}
-          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-transparent ${
             errors.email ? 'border-red-500' : 'border-gray-300'
           }`}
           placeholder="usuario@uptc.edu.co"
@@ -178,7 +178,7 @@ export default function UserForm({ userId, onSuccess, onCancel }: UserFormProps)
           name="role"
           value={formData.role}
           onChange={handleChange}
-          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-transparent ${
             errors.role ? 'border-red-500' : 'border-gray-300'
           }`}
           required
@@ -203,7 +203,7 @@ export default function UserForm({ userId, onSuccess, onCancel }: UserFormProps)
             name="password"
             value={formData.password}
             onChange={handleChange}
-            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-transparent ${
               errors.password ? 'border-red-500' : 'border-gray-300'
             }`}
             placeholder="Mínimo 8 caracteres"
@@ -217,7 +217,7 @@ export default function UserForm({ userId, onSuccess, onCancel }: UserFormProps)
       )}
 
       {isEdit && (
-        <div className="bg-blue-50 border-l-4 border-blue-500 p-4">
+        <div className="bg-blue-50 border-l-4 border-uptc-yellow p-4">
           <p className="text-sm text-blue-700">
             <strong>Nota:</strong> Para cambiar la contraseña, usa la opción "Resetear contraseña"
             desde la lista de usuarios.
@@ -230,7 +230,7 @@ export default function UserForm({ userId, onSuccess, onCancel }: UserFormProps)
         <button
           type="submit"
           disabled={loading}
-          className="flex-1 bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 bg-uptc-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? 'Guardando...' : isEdit ? 'Actualizar Usuario' : 'Crear Usuario'}
         </button>
