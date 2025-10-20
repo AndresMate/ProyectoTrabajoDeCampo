@@ -36,8 +36,8 @@ export default function TorneosPage() {
     }
   };
 
-   const getStatusBadge = (status) => {
-    const colors = {
+  const getStatusBadge = (status: string) => {
+    const colors: Record<string, string> = {
       PLANNING: 'bg-gray-200 text-gray-700',
       OPEN_FOR_INSCRIPTION: 'bg-uptc-yellow text-uptc-black',
       IN_PROGRESS: 'bg-green-200 text-green-700',
@@ -48,7 +48,7 @@ export default function TorneosPage() {
   };
 
   const getStatusText = (status: string) => {
-    const texts: any = {
+    const texts: Record<string, string> = {
       PLANNING: 'Planificación',
       OPEN_FOR_INSCRIPTION: 'Inscripciones Abiertas',
       IN_PROGRESS: 'En Curso',
@@ -71,7 +71,7 @@ export default function TorneosPage() {
   }
 
   return (
-     <main className="min-h-screen py-10 bg-gray-50">
+    <main className="min-h-screen py-10 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
         <div className="mb-8 text-center">
@@ -128,7 +128,8 @@ export default function TorneosPage() {
                     {torneo.name}
                   </h2>
                   <p className="text-sm text-gray-300">
-                    {torneo.sport} • {torneo.category}
+                    {/* ✅ CORRECCIÓN: Acceder a .name de los objetos */}
+                    {torneo.sport?.name || 'Deporte'} • {torneo.category?.name || 'Categoría'}
                   </p>
                 </div>
 
@@ -170,13 +171,20 @@ export default function TorneosPage() {
 
                   {/* Botones */}
                   <div className="flex gap-2">
-                    <button className="flex-1 bg-uptc-black text-uptc-yellow py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors">
+                    <Link
+                      href={`/torneos/${torneo.id}`}
+                      className="flex-1 bg-uptc-black text-uptc-yellow py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors text-center"
+                    >
                       Ver detalles
-                    </button>
+                    </Link>
                     {torneo.status === 'OPEN_FOR_INSCRIPTION' && (
-                      <button className="px-4 bg-uptc-yellow text-uptc-black rounded-lg font-semibold hover:bg-uptc-yellow transition-colors flex items-center justify-center">
+                      <Link
+                        href={`/torneos/${torneo.id}/inscribirse`}
+                        className="px-4 bg-uptc-yellow text-uptc-black rounded-lg font-semibold hover:bg-yellow-400 transition-colors flex items-center justify-center"
+                        title="Inscribirse"
+                      >
                         📝
-                      </button>
+                      </Link>
                     )}
                   </div>
                 </div>
