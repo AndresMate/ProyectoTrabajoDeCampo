@@ -1,53 +1,71 @@
-// backend_TC/src/main/java/co/edu/uptc/backend_tc/controller/FileUploadController.java
 package co.edu.uptc.backend_tc.controller;
 
-import co.edu.uptc.backend_tc.dto.FileUploadResponseDTO;
-import co.edu.uptc.backend_tc.service.GoogleDriveService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import co.edu.uptc.backend_tc.service.FileUploadService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/files")
 @RequiredArgsConstructor
-@Tag(name = "Archivos", description = "Operaciones para subir archivos (carnets)")
 public class FileUploadController {
 
-    private final GoogleDriveService googleDriveService;
+    private final FileUploadService fileUploadService;
 
-    @Operation(summary = "Subir foto de carnet",
-            description = "Sube una imagen del carnet de estudiante a Google Drive. Formatos permitidos: JPG, JPEG, PNG. Tamaño máximo: 5MB")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Archivo subido exitosamente"),
-            @ApiResponse(responseCode = "400", description = "Archivo inválido (formato o tamaño)"),
-            @ApiResponse(responseCode = "500", description = "Error al subir el archivo")
-    })
-    @PostMapping(value = "/upload/id-card", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<FileUploadResponseDTO> uploadIdCard(
-            @RequestParam("file") MultipartFile file) {
+    @PostMapping("/upload/id-card")
+    public ResponseEntity<?> uploadIdCard(@RequestParam("file") MultipartFile file) {
         try {
-            String fileUrl = googleDriveService.uploadFile(file);
+            // Validaciones básicas
+            if (file.isEmpty()) {
+                log.error("Archivo vacío recibido");
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "El archivo está vacío"));
+            }
 
-            FileUploadResponseDTO response = FileUploadResponseDTO.builder()
-                    .fileUrl(fileUrl)
-                    .fileName(file.getOriginalFilename())
-                    .fileSize(file.getSize())
-                    .contentType(file.getContentType())
-                    .uploadedAt(OffsetDateTime.now().toString())
-                    .build();
+            // Validar tipo de archivo
+            String contentType = file.getContentType();
+            if (contentType == null ||
+                    (!contentType.equals("image/jpeg") &&
+                            !contentType.equals("image/jpg") &&
+                            !contentType.equals("image/png"))) {
+                log.error("Tipo de archivo no permitido: {}", contentType);
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Solo se permiten archivos JPG, JPEG o PNG"));
+            }
+
+            // Validar tamaño (5MB máximo)
+            if (file.getSize() > 5 * 1024 * 1024) {
+                log.error("Archivo muy grande: {} bytes", file.getSize());
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "El archivo no debe superar 5MB"));
+            }
+
+            log.info("Subiendo archivo: {} - Tamaño: {} bytes - Tipo: {}",
+                    file.getOriginalFilename(), file.getSize(), contentType);
+
+            // Subir archivo
+            String fileUrl = fileUploadService.uploadIdCard(file);
+
+            log.info("Archivo subido exitosamente: {}", fileUrl);
+
+            // Retornar respuesta
+            Map<String, String> response = new HashMap<>();
+            response.put("fileUrl", fileUrl);
+            response.put("message", "Archivo subido exitosamente");
 
             return ResponseEntity.ok(response);
+
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            log.error("Error al subir archivo: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error al procesar el archivo: " + e.getMessage()));
         }
     }
 }

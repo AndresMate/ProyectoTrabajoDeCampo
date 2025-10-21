@@ -36,7 +36,7 @@ public class InscriptionMapper {
                 .status(entity.getStatus())
                 .tournamentId(entity.getTournament() != null ? entity.getTournament().getId() : null)
                 .categoryId(entity.getCategory() != null ? entity.getCategory().getId() : null)
-                .delegatePlayerId(entity.getDelegate() != null ? entity.getDelegate().getId() : null)
+                .delegateIndex(Math.toIntExact(entity.getDelegate() != null ? entity.getDelegate().getId() : null))
                 .clubId(entity.getClub() != null ? entity.getClub().getId() : null)
                 .build();
     }
