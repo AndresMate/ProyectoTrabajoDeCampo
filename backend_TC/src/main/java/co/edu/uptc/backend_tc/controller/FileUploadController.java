@@ -1,9 +1,9 @@
 package co.edu.uptc.backend_tc.controller;
 
 import co.edu.uptc.backend_tc.service.FileUploadService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,58 +14,64 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/api/files")
-@RequiredArgsConstructor
+@CrossOrigin(origins = "*") // Ajusta según tu frontend
 public class FileUploadController {
 
     private final FileUploadService fileUploadService;
 
-    @PostMapping("/upload/id-card")
-    public ResponseEntity<?> uploadIdCard(@RequestParam("file") MultipartFile file) {
+    public FileUploadController(FileUploadService fileUploadService) {
+        this.fileUploadService = fileUploadService;
+    }
+
+    @PostMapping(value = "/upload/id-card", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadIdCard(@RequestPart("file") MultipartFile file) {
+        log.info("=== PETICIÓN RECIBIDA ===");
+        log.info("📨 Endpoint: /api/files/upload/id-card");
+        log.info("📄 Archivo: {}", file != null ? file.getOriginalFilename() : "NULL");
+
+        Map<String, Object> response = new HashMap<>();
+
         try {
-            // Validaciones básicas
-            if (file.isEmpty()) {
-                log.error("Archivo vacío recibido");
-                return ResponseEntity.badRequest()
-                        .body(Map.of("error", "El archivo está vacío"));
+            // Validación básica
+            if (file == null || file.isEmpty()) {
+                log.warn("⚠️  Archivo vacío o nulo");
+                response.put("success", false);
+                response.put("error", "El archivo es requerido");
+                return ResponseEntity.badRequest().body(response);
             }
-
-            // Validar tipo de archivo
-            String contentType = file.getContentType();
-            if (contentType == null ||
-                    (!contentType.equals("image/jpeg") &&
-                            !contentType.equals("image/jpg") &&
-                            !contentType.equals("image/png"))) {
-                log.error("Tipo de archivo no permitido: {}", contentType);
-                return ResponseEntity.badRequest()
-                        .body(Map.of("error", "Solo se permiten archivos JPG, JPEG o PNG"));
-            }
-
-            // Validar tamaño (5MB máximo)
-            if (file.getSize() > 5 * 1024 * 1024) {
-                log.error("Archivo muy grande: {} bytes", file.getSize());
-                return ResponseEntity.badRequest()
-                        .body(Map.of("error", "El archivo no debe superar 5MB"));
-            }
-
-            log.info("Subiendo archivo: {} - Tamaño: {} bytes - Tipo: {}",
-                    file.getOriginalFilename(), file.getSize(), contentType);
 
             // Subir archivo
-            String fileUrl = fileUploadService.uploadIdCard(file);
+            String url = fileUploadService.uploadIdCard(file);
 
-            log.info("Archivo subido exitosamente: {}", fileUrl);
-
-            // Retornar respuesta
-            Map<String, String> response = new HashMap<>();
-            response.put("fileUrl", fileUrl);
+            // Respuesta exitosa
+            response.put("success", true);
+            response.put("url", url);
+            response.put("fileName", file.getOriginalFilename());
+            response.put("fileSize", file.getSize());
             response.put("message", "Archivo subido exitosamente");
 
+            log.info("✅ RESPUESTA EXITOSA");
             return ResponseEntity.ok(response);
 
+        } catch (IllegalArgumentException e) {
+            log.warn("⚠️  Validación fallida: {}", e.getMessage());
+            response.put("success", false);
+            response.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+
         } catch (Exception e) {
-            log.error("Error al subir archivo: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error al procesar el archivo: " + e.getMessage()));
+            log.error("❌ ERROR EN CONTROLLER: {}", e.getMessage(), e);
+            response.put("success", false);
+            response.put("error", "Error al procesar el archivo: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
+    }
+
+    @GetMapping("/health")
+    public ResponseEntity<?> healthCheck() {
+        Map<String, String> response = new HashMap<>();
+        response.put("status", "OK");
+        response.put("service", "File Upload Service");
+        return ResponseEntity.ok(response);
     }
 }

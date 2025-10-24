@@ -34,6 +34,7 @@ public class CategoryMapper {
         return CategorySummaryDTO.builder()
                 .id(entity.getId())
                 .name(entity.getName())
+                .membersPerTeam(entity.getMembersPerTeam())
                 .build();
     }
 

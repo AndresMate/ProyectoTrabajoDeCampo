@@ -97,7 +97,12 @@ const InscriptionCompleteForm: FC<Props> = ({ tournamentId, onSuccess, onCancel 
   };
 
   const handleFileUpload = async (index: number, file: File | null) => {
-    if (!file) return;
+    if (!file) {
+      console.log('No hay archivo seleccionado');
+      return;
+    }
+
+    console.log('📤 Archivo seleccionado:', file.name, file.type, file.size);
 
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     if (!validTypes.includes(file.type)) {
@@ -110,28 +115,45 @@ const InscriptionCompleteForm: FC<Props> = ({ tournamentId, onSuccess, onCancel 
       return;
     }
 
+    // Mostrar indicador de carga
+    handlePlayerChange(index, 'idCardPhotoUrl', 'UPLOADING...');
+
     try {
       const data = new FormData();
       data.append('file', file);
+
+      console.log('⬆️  Enviando archivo al servidor...');
 
       const response = await fetch('http://localhost:8080/api/files/upload/id-card', {
         method: 'POST',
         body: data
       });
 
-      if (!response.ok) throw new Error('Error al subir archivo');
+      console.log('📥 Respuesta del servidor:', response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ Error del servidor:', errorData);
+        throw new Error(errorData.error || 'Error al subir archivo');
+      }
 
       const json = await response.json();
-      const fileUrl = json.fileUrl as string | undefined;
+      console.log('✅ JSON completo de respuesta:', json);
+
+      // ✅ CORRECCIÓN: Usar json.url en lugar de json.fileUrl
+      const fileUrl = json.url as string | undefined;
+
       if (fileUrl) {
         handlePlayerChange(index, 'idCardPhotoUrl', fileUrl);
-        alert('✅ Foto cargada exitosamente');
+        alert(`✅ Foto del jugador ${index + 1} cargada exitosamente`);
+        console.log(`🔗 URL guardada para jugador ${index + 1}:`, fileUrl);
       } else {
-        throw new Error('Respuesta de upload sin fileUrl');
+        throw new Error('Respuesta de upload sin URL');
       }
     } catch (error) {
-      console.error('Error:', error);
-      alert('❌ Error al cargar la foto');
+      console.error('❌ Error completo al subir:', error);
+      handlePlayerChange(index, 'idCardPhotoUrl', ''); // Limpiar el estado
+      alert(`❌ Error al cargar la foto del jugador ${index + 1}: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   };
 
@@ -148,9 +170,16 @@ const InscriptionCompleteForm: FC<Props> = ({ tournamentId, onSuccess, onCancel 
 
     for (let i = 0; i < players.length; i++) {
       const player = players[i];
+
       if (!player.fullName || !player.documentNumber || !player.studentCode ||
           !player.institutionalEmail || !player.idCardPhotoUrl) {
         alert(`Falta completar datos del jugador ${i + 1}`);
+        console.log('❌ Jugador incompleto:', player);
+        return false;
+      }
+
+      if (player.idCardPhotoUrl === 'UPLOADING...') {
+        alert(`La foto del jugador ${i + 1} aún se está subiendo. Por favor espera.`);
         return false;
       }
 
@@ -183,25 +212,30 @@ const InscriptionCompleteForm: FC<Props> = ({ tournamentId, onSuccess, onCancel 
         players
       };
 
+      console.log('📤 Payload a enviar:', payload);
+
       const response = await fetch('http://localhost:8080/api/inscriptions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
-      if (!response.ok) throw new Error('Error al crear inscripción');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error al crear inscripción');
+      }
 
       alert('✅ Inscripción creada exitosamente');
       onSuccess();
     } catch (error) {
-      console.error('Error:', error);
-      alert('❌ Error al crear la inscripción');
+      console.error('❌ Error completo:', error);
+      alert(`❌ Error al crear la inscripción: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     } finally {
       setLoading(false);
     }
   };
 
-  if (!tournament) return <div className="text-center">Cargando...</div>;
+  if (!tournament) return <div className="text-center p-8">Cargando...</div>;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 p-6 bg-white rounded-lg shadow">
@@ -304,16 +338,47 @@ const InscriptionCompleteForm: FC<Props> = ({ tournamentId, onSuccess, onCancel 
 
               <div className="mt-3">
                 <label className="block text-sm font-semibold mb-2">
-                  📷 Foto del Carnet *
+                  📷 Foto del Carnet Estudiantil *
                 </label>
                 <input
                   type="file"
                   accept="image/jpeg,image/jpg,image/png"
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFileUpload(index, e.target.files?.[0] ?? null)}
-                  className="w-full"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    const file = e.target.files?.[0] ?? null;
+                    if (file) {
+                      handleFileUpload(index, file);
+                    }
+                  }}
+                  className="w-full border p-2 rounded"
+                  disabled={player.idCardPhotoUrl === 'UPLOADING...'}
                 />
-                {player.idCardPhotoUrl && (
-                  <p className="text-green-600 text-sm mt-1">✅ Foto cargada</p>
+
+                {/* Estados visuales */}
+                {player.idCardPhotoUrl === 'UPLOADING...' && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                    <p className="text-blue-600 text-sm">⏳ Subiendo foto...</p>
+                  </div>
+                )}
+
+                {player.idCardPhotoUrl && player.idCardPhotoUrl !== 'UPLOADING...' && (
+                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+                    <p className="text-green-700 font-semibold text-sm">✅ Foto cargada correctamente</p>
+                    <a
+                      href={player.idCardPhotoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-600 hover:underline break-all"
+                    >
+                      Ver foto subida
+                    </a>
+                  </div>
+                )}
+
+                {!player.idCardPhotoUrl && (
+                  <p className="text-gray-500 text-xs mt-1">
+                    Formatos: JPG, JPEG, PNG • Máximo: 5MB
+                  </p>
                 )}
               </div>
             </div>
@@ -324,15 +389,16 @@ const InscriptionCompleteForm: FC<Props> = ({ tournamentId, onSuccess, onCancel 
       <div className="flex gap-3 pt-4 border-t">
         <button
           type="submit"
-          disabled={loading}
-          className="flex-1 bg-black text-yellow-400 py-3 rounded-lg font-bold disabled:opacity-50"
+          disabled={loading || players.some(p => p.idCardPhotoUrl === 'UPLOADING...')}
+          className="flex-1 bg-black text-yellow-400 py-3 rounded-lg font-bold disabled:opacity-50 hover:bg-gray-800 transition"
         >
           {loading ? 'Enviando...' : '✅ Crear Inscripción'}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="px-6 py-3 bg-gray-300 rounded-lg"
+          disabled={loading}
+          className="px-6 py-3 bg-gray-300 rounded-lg hover:bg-gray-400 transition disabled:opacity-50"
         >
           Cancelar
         </button>

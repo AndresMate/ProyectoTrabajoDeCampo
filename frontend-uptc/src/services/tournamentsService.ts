@@ -17,8 +17,9 @@ export interface Tournament {
     name: string;
   };
   category: {
-    id: number;
-    name: string;
+      membersPerTeam: number;
+      id: number;
+      name: string;
   };
   createdBy: {
     id: number;

@@ -44,12 +44,12 @@ public class SecurityConfig {
                                 "/api/sports/public/**",
                                 "/api/venues/public/**",
                                 "/api/clubs/**",
-                                "/api/files/**"
-                        ).permitAll()
+                                "/api/files/**",
+                                "/api/categories/**"
+                                ).permitAll()
                         .requestMatchers("/api/users/**").hasRole("SUPER_ADMIN")
                         .requestMatchers(
                                 "/api/tournaments/**",
-                                "/api/categories/**",
                                 "/api/sports/**",
                                 "/api/venues/**",
                                 "/api/scenarios/**",
