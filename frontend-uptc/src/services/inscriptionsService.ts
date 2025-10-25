@@ -1,4 +1,4 @@
-// frontend-uptc/src/services/inscriptionsService.ts
+// frontend-uptc/src/services/inscriptionsService.ts - VERSIÓN ACTUALIZADA
 import api from "./api";
 
 export interface InscriptionDTO {
@@ -15,20 +15,17 @@ export interface InscriptionDTO {
   createdAt?: string;
 }
 
+export interface PlayerSummaryDTO {
+  id: number;
+  fullName: string;
+  documentNumber: string;
+  studentCode: string;
+  institutionalEmail: string;
+  idCardImageUrl?: string;
+}
+
 export interface InscriptionResponseDTO {
   id: number;
-  tournament: {
-    id: number;
-    name: string;
-  };
-  category: {
-    id: number;
-    name: string;
-  };
-  club?: {
-    id: number;
-    name: string;
-  };
   teamName: string;
   delegateName: string;
   delegateEmail: string;
@@ -37,6 +34,22 @@ export interface InscriptionResponseDTO {
   rejectionReason?: string;
   createdAt: string;
   updatedAt?: string;
+  tournament: {
+    id: number;
+    name: string;
+    status?: string;
+  };
+  category: {
+    id: number;
+    name: string;
+    membersPerTeam: number;
+  };
+  club?: {
+    id: number;
+    name: string;
+  };
+  players: PlayerSummaryDTO[];
+  playerCount: number;
 }
 
 const inscriptionsService = {
@@ -56,7 +69,9 @@ const inscriptionsService = {
   // Obtener inscripción por ID
   getById: async (id: number): Promise<InscriptionResponseDTO> => {
     try {
+      console.log(`📤 Solicitando inscripción ${id}...`);
       const response = await api.get(`/inscriptions/${id}`);
+      console.log(`📥 Inscripción recibida:`, response.data);
       return response.data;
     } catch (error: any) {
       console.error("Error al obtener inscripción:", error);
@@ -92,10 +107,22 @@ const inscriptionsService = {
   // Obtener todas las inscripciones (Admin)
   getAll: async (): Promise<InscriptionResponseDTO[]> => {
     try {
+      console.log('📤 Solicitando todas las inscripciones...');
       const response = await api.get("/inscriptions/admin");
-      return response.data;
+      console.log('📥 Respuesta completa:', response);
+      console.log('📥 Data recibida:', response.data);
+      console.log('📥 Número de inscripciones:', response.data?.length);
+
+      if (response.data && Array.isArray(response.data)) {
+        console.log('✅ Primera inscripción:', response.data[0]);
+        return response.data;
+      }
+
+      console.warn('⚠️ La respuesta no es un array:', response.data);
+      return [];
     } catch (error: any) {
-      console.error("Error al obtener inscripciones:", error);
+      console.error("❌ Error al obtener inscripciones:", error);
+      console.error("❌ Error response:", error.response?.data);
       throw error;
     }
   },
@@ -125,12 +152,20 @@ const inscriptionsService = {
   // === GESTIÓN DE JUGADORES ===
 
   // Obtener jugadores de una inscripción
-  getPlayers: async (inscriptionId: number): Promise<any[]> => {
+  getPlayers: async (inscriptionId: number): Promise<PlayerSummaryDTO[]> => {
     try {
+      console.log(`📤 Solicitando jugadores para inscripción ${inscriptionId}...`);
       const response = await api.get(`/inscriptions/${inscriptionId}/players`);
-      return response.data;
+      console.log(`📥 Jugadores recibidos:`, response.data);
+
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+
+      console.warn('⚠️ Los jugadores no son un array:', response.data);
+      return [];
     } catch (error: any) {
-      console.error("Error al obtener jugadores:", error);
+      console.error("❌ Error al obtener jugadores:", error);
       throw error;
     }
   },

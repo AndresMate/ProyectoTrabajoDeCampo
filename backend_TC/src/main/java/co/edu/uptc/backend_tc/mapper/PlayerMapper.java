@@ -54,13 +54,16 @@ public class PlayerMapper {
                 .build();
     }
 
-    public PlayerSummaryDTO toSummaryDTO(Player entity) {
-        if (entity == null) return null;
+// En tu PlayerService o donde construyas el PlayerSummaryDTO
 
+    public PlayerSummaryDTO toSummaryDTO(Player player) {
         return PlayerSummaryDTO.builder()
-                .id(entity.getId())
-                .fullName(entity.getFullName())
-                .documentNumber(entity.getDocumentNumber())
+                .id(player.getId())
+                .fullName(player.getFullName())
+                .documentNumber(player.getDocumentNumber())
+                .studentCode(player.getStudentCode())                    // ✅ AGREGADO
+                .institutionalEmail(player.getInstitutionalEmail())
+                .idCardImageUrl(player.getIdCardPhotoUrl())              // ✅ AGREGADO
                 .build();
     }
 

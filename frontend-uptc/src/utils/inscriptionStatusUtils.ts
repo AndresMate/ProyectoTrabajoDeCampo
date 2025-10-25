@@ -1,7 +1,23 @@
-// src/utils/inscriptionStatusUtils.ts
+// frontend-uptc/src/utils/inscriptionStatusUtils.ts
 
 /**
- * Traduce el código de estado de inscripción al texto legible.
+ * Retorna las clases CSS para el badge según el estado
+ */
+export function getStatusBadge(status: string): string {
+  switch (status) {
+    case 'PENDING':
+      return 'bg-yellow-100 text-yellow-800 border border-yellow-300';
+    case 'APPROVED':
+      return 'bg-green-100 text-green-800 border border-green-300';
+    case 'REJECTED':
+      return 'bg-red-100 text-red-800 border border-red-300';
+    default:
+      return 'bg-gray-100 text-gray-800 border border-gray-300';
+  }
+}
+
+/**
+ * Retorna el texto legible del estado
  */
 export function getStatusText(status: string): string {
   switch (status) {
@@ -11,27 +27,23 @@ export function getStatusText(status: string): string {
       return 'Aprobada';
     case 'REJECTED':
       return 'Rechazada';
-    case 'CANCELLED':
-      return 'Cancelada';
     default:
-      return 'Desconocido';
+      return status;
   }
 }
 
 /**
- * Devuelve la clase de color Tailwind para el badge del estado.
+ * Retorna el color del estado para gráficos
  */
-export function getStatusBadge(status: string): string {
+export function getStatusColor(status: string): string {
   switch (status) {
     case 'PENDING':
-      return 'bg-yellow-100 text-yellow-800';
+      return '#f59e0b'; // yellow-500
     case 'APPROVED':
-      return 'bg-green-100 text-green-800';
+      return '#10b981'; // green-500
     case 'REJECTED':
-      return 'bg-red-100 text-red-800';
-    case 'CANCELLED':
-      return 'bg-gray-200 text-gray-800';
+      return '#ef4444'; // red-500
     default:
-      return 'bg-gray-100 text-gray-700';
+      return '#6b7280'; // gray-500
   }
 }

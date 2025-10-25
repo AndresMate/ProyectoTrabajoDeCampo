@@ -8,6 +8,8 @@ import co.edu.uptc.backend_tc.entity.Player;
 import co.edu.uptc.backend_tc.entity.Tournament;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
+
 @Component
 public class InscriptionMapper {
 
@@ -54,7 +56,7 @@ public class InscriptionMapper {
                 .category(categoryMapper.toSummaryDTO(entity.getCategory()))
                 .delegate(playerMapper.toSummaryDTO(entity.getDelegate()))
                 .club(clubMapper.toSummaryDTO(entity.getClub()))
-                // players se agregarían desde el servicio
+                .players(Collections.singletonList(playerMapper.toSummaryDTO((Player) entity.getPlayers())))  // ✅ Lista de jugadores
                 .build();
     }
 }
