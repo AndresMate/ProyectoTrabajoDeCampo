@@ -56,7 +56,13 @@ public class InscriptionMapper {
                 .category(categoryMapper.toSummaryDTO(entity.getCategory()))
                 .delegate(playerMapper.toSummaryDTO(entity.getDelegate()))
                 .club(clubMapper.toSummaryDTO(entity.getClub()))
-                .players(Collections.singletonList(playerMapper.toSummaryDTO((Player) entity.getPlayers())))  // ✅ Lista de jugadores
+                .players(
+                        entity.getPlayers() != null
+                                ? entity.getPlayers().stream()
+                                .map(ip -> playerMapper.toSummaryDTO(ip.getPlayer()))
+                                .toList()
+                                : Collections.emptyList()
+                )
                 .build();
     }
 }

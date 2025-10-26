@@ -1,34 +1,34 @@
 package co.edu.uptc.backend_tc.exception;
 
+import lombok.Getter;
+
+@Getter
 public class ResourceNotFoundException extends RuntimeException {
 
-    private final String resourceName;
-    private final String fieldName;
-    private final Object fieldValue;
+    private final String resource;
+    private final String field;
+    private final Object value;
 
     public ResourceNotFoundException(String message) {
         super(message);
-        this.resourceName = null;
-        this.fieldName = null;
-        this.fieldValue = null;
+        this.resource = null;
+        this.field = null;
+        this.value = null;
     }
 
-    public ResourceNotFoundException(String resourceName, String fieldName, Object fieldValue) {
-        super(String.format("%s not found with %s: '%s'", resourceName, fieldName, fieldValue));
-        this.resourceName = resourceName;
-        this.fieldName = fieldName;
-        this.fieldValue = fieldValue;
+    public ResourceNotFoundException(String resource, String field, Object value) {
+        super(String.format("%s no encontrado con %s : '%s'", resource, field, value));
+        this.resource = resource;
+        this.field = field;
+        this.value = value;
     }
 
-    public String getResourceName() {
-        return resourceName;
+    // ✅ Agregar este constructor para compatibilidad con EntityNotFoundException
+    public ResourceNotFoundException(String message, Throwable cause) {
+        super(message, cause);
+        this.resource = null;
+        this.field = null;
+        this.value = null;
     }
 
-    public String getFieldName() {
-        return fieldName;
-    }
-
-    public Object getFieldValue() {
-        return fieldValue;
-    }
 }

@@ -21,5 +21,6 @@ public class TeamRosterDTO {
     @Max(value = 99, message = "Jersey number cannot exceed 99")
     private Integer jerseyNumber;
 
-    private Boolean isCaptain; // 🔹 corregido a isCaptain
+    @Builder.Default
+    private Boolean isCaptain = false; // ✅ valor por defecto para evitar null
 }

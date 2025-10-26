@@ -9,6 +9,7 @@ import co.edu.uptc.backend_tc.dto.response.TournamentSummaryDTO;
 import co.edu.uptc.backend_tc.entity.*;
 import co.edu.uptc.backend_tc.exception.BusinessException;
 import co.edu.uptc.backend_tc.exception.ConflictException;
+import co.edu.uptc.backend_tc.exception.EntityNotFoundException;
 import co.edu.uptc.backend_tc.exception.ResourceNotFoundException;
 import co.edu.uptc.backend_tc.mapper.InscriptionMapper;
 import co.edu.uptc.backend_tc.mapper.PlayerMapper;
@@ -36,6 +37,8 @@ public class InscriptionService {
     private final InscriptionPlayerRepository inscriptionPlayerRepository;
     private final InscriptionMapper inscriptionMapper;
     private final PlayerMapper playerMapper;
+    private final TeamRepository teamRepository;
+    private final TeamRosterRepository teamRosterRepository;
 
     public List<InscriptionResponseDTO> getAll() {
         return inscriptionRepository.findAll()
@@ -224,18 +227,51 @@ public class InscriptionService {
     }
 
     @Transactional
-    public InscriptionResponseDTO approve(Long id) {
-        Inscription inscription = inscriptionRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Inscription", "id", id));
+    public InscriptionResponseDTO approve(Long inscriptionId) {
+        // 1️⃣ Buscar inscripción
+        Inscription inscription = inscriptionRepository.findById(inscriptionId)
+                .orElseThrow(() -> new EntityNotFoundException("Inscripción", inscriptionId));
 
-        if (inscription.getStatus() != InscriptionStatus.PENDING) {
-            throw new BusinessException("Only PENDING inscriptions can be approved", "INVALID_STATUS_FOR_APPROVAL");
+        if (inscription.getStatus() == InscriptionStatus.APPROVED) {
+            throw new BusinessException("La inscripción ya fue aprobada");
         }
 
+        // 2️⃣ Validar duplicado de nombre de equipo
+        if (teamRepository.existsByTournamentAndName(inscription.getTournament(), inscription.getTeamName())) {
+            throw new ConflictException("Ya existe un equipo con ese nombre en este torneo");
+        }
+
+        // 3️⃣ Crear el equipo oficial
+        Team team = Team.builder()
+                .name(inscription.getTeamName())
+                .tournament(inscription.getTournament())
+                .category(inscription.getCategory())
+                .club(inscription.getClub())
+                .originInscription(inscription)
+                .isActive(true)
+                .build();
+
+        teamRepository.save(team);
+
+        // 4️⃣ Migrar jugadores de inscripción a roster
+        for (InscriptionPlayer inscriptionPlayer : inscription.getPlayers()) {
+            TeamRoster roster = TeamRoster.builder()
+                    .team(team)
+                    .player(inscriptionPlayer.getPlayer())
+                    .build();
+            teamRosterRepository.save(roster);
+        }
+
+        // 5️⃣ Marcar inscripción como aprobada
         inscription.setStatus(InscriptionStatus.APPROVED);
-        inscription = inscriptionRepository.save(inscription);
-        return enrichResponseDTO(inscription);
+        inscription.setOriginatedTeam(team);
+        inscriptionRepository.save(inscription);
+
+        // 6️⃣ Retornar DTO
+        return inscriptionMapper.toResponseDTO(inscription);
     }
+
+
 
     @Transactional
     public InscriptionResponseDTO reject(Long id, String reason) {

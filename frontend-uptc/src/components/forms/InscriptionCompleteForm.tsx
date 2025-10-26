@@ -1,5 +1,6 @@
 import React, { useState, useEffect, FC } from 'react';
 
+// ================== Tipos ==================
 type Player = {
   fullName: string;
   documentNumber: string;
@@ -18,6 +19,7 @@ type Tournament = {
   id: number;
   name: string;
   category: Category;
+  modalidad: 'diurna' | 'nocturna';
 } | null;
 
 type Club = {
@@ -31,6 +33,7 @@ type Props = {
   onCancel: () => void;
 };
 
+// ================== Datos base ==================
 const defaultPlayer = (): Player => ({
   fullName: '',
   documentNumber: '',
@@ -39,12 +42,31 @@ const defaultPlayer = (): Player => ({
   idCardPhotoUrl: ''
 });
 
+const days = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'];
+
+const diurnalSlots = [
+  { start: '11:00', end: '12:00' },
+  { start: '12:00', end: '13:00' },
+  { start: '13:00', end: '14:00' },
+  { start: '14:00', end: '15:00' },
+  { start: '15:00', end: '16:00' }
+];
+
+const nocturnalSlots = [
+  { start: '17:00', end: '18:00' },
+  { start: '18:00', end: '19:00' },
+  { start: '19:00', end: '20:00' },
+  { start: '20:00', end: '21:00' }
+];
+
+// ================== Formulario principal ==================
 const InscriptionCompleteForm: FC<Props> = ({ tournamentId, onSuccess, onCancel }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [tournament, setTournament] = useState<Tournament>(null);
   const [clubs, setClubs] = useState<Club[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [delegateIndex, setDelegateIndex] = useState<number>(0);
+  const [availability, setAvailability] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
     teamName: '',
@@ -52,7 +74,7 @@ const InscriptionCompleteForm: FC<Props> = ({ tournamentId, onSuccess, onCancel 
     delegatePhone: ''
   });
 
-  // Cargar datos básicos (tournament y clubs)
+  // ================== Cargar datos del torneo y clubes ==================
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -79,7 +101,7 @@ const InscriptionCompleteForm: FC<Props> = ({ tournamentId, onSuccess, onCancel 
     fetchData();
   }, [tournamentId]);
 
-  // Inicializar jugadores según categoría
+  // ================== Inicializar jugadores según categoría ==================
   useEffect(() => {
     const members = tournament?.category?.membersPerTeam;
     if (typeof members === 'number' && members > 0) {
@@ -88,6 +110,7 @@ const InscriptionCompleteForm: FC<Props> = ({ tournamentId, onSuccess, onCancel 
     }
   }, [tournament]);
 
+  // ================== Funciones auxiliares ==================
   const handlePlayerChange = (index: number, field: keyof Player, value: string) => {
     setPlayers(prev => {
       const updated = [...prev];
@@ -97,12 +120,7 @@ const InscriptionCompleteForm: FC<Props> = ({ tournamentId, onSuccess, onCancel 
   };
 
   const handleFileUpload = async (index: number, file: File | null) => {
-    if (!file) {
-      console.log('No hay archivo seleccionado');
-      return;
-    }
-
-    console.log('📤 Archivo seleccionado:', file.name, file.type, file.size);
+    if (!file) return;
 
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     if (!validTypes.includes(file.type)) {
@@ -115,48 +133,36 @@ const InscriptionCompleteForm: FC<Props> = ({ tournamentId, onSuccess, onCancel 
       return;
     }
 
-    // Mostrar indicador de carga
     handlePlayerChange(index, 'idCardPhotoUrl', 'UPLOADING...');
 
     try {
       const data = new FormData();
       data.append('file', file);
 
-      console.log('⬆️  Enviando archivo al servidor...');
-
       const response = await fetch('http://localhost:8080/api/files/upload/id-card', {
         method: 'POST',
         body: data
       });
 
-      console.log('📥 Respuesta del servidor:', response.status, response.statusText);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('❌ Error del servidor:', errorData);
-        throw new Error(errorData.error || 'Error al subir archivo');
-      }
+      if (!response.ok) throw new Error('Error al subir archivo');
 
       const json = await response.json();
-      console.log('✅ JSON completo de respuesta:', json);
-
-      // ✅ CORRECCIÓN: Usar json.url en lugar de json.fileUrl
       const fileUrl = json.url as string | undefined;
 
       if (fileUrl) {
         handlePlayerChange(index, 'idCardPhotoUrl', fileUrl);
         alert(`✅ Foto del jugador ${index + 1} cargada exitosamente`);
-        console.log(`🔗 URL guardada para jugador ${index + 1}:`, fileUrl);
       } else {
-        throw new Error('Respuesta de upload sin URL');
+        throw new Error('Respuesta sin URL');
       }
     } catch (error) {
-      console.error('❌ Error completo al subir:', error);
-      handlePlayerChange(index, 'idCardPhotoUrl', ''); // Limpiar el estado
-      alert(`❌ Error al cargar la foto del jugador ${index + 1}: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      console.error('❌ Error al subir:', error);
+      handlePlayerChange(index, 'idCardPhotoUrl', '');
+      alert(`❌ Error al cargar la foto del jugador ${index + 1}`);
     }
   };
 
+  // ================== Validaciones ==================
   const validateForm = (): boolean => {
     if (!formData.teamName.trim()) {
       alert('El nombre del equipo es requerido');
@@ -168,35 +174,31 @@ const InscriptionCompleteForm: FC<Props> = ({ tournamentId, onSuccess, onCancel 
       return false;
     }
 
+    // Validar jugadores
     for (let i = 0; i < players.length; i++) {
       const player = players[i];
-
       if (!player.fullName || !player.documentNumber || !player.studentCode ||
           !player.institutionalEmail || !player.idCardPhotoUrl) {
-        alert(`Falta completar datos del jugador ${i + 1}`);
-        console.log('❌ Jugador incompleto:', player);
+        alert(`Faltan datos del jugador ${i + 1}`);
         return false;
       }
+    }
 
-      if (player.idCardPhotoUrl === 'UPLOADING...') {
-        alert(`La foto del jugador ${i + 1} aún se está subiendo. Por favor espera.`);
-        return false;
-      }
-
-      if (!/\S+@\S+\.\S+/.test(player.institutionalEmail)) {
-        alert(`Email inválido para jugador ${i + 1}`);
-        return false;
-      }
+    // Validar disponibilidad
+    const selectedDays = new Set(availability.map(a => a.dayOfWeek));
+    if (selectedDays.size < 5) {
+      alert('Debes seleccionar al menos una franja horaria por cada día (lunes a viernes)');
+      return false;
     }
 
     return true;
   };
 
+  // ================== Envío del formulario ==================
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!validateForm()) return;
-
     setLoading(true);
 
     try {
@@ -209,10 +211,9 @@ const InscriptionCompleteForm: FC<Props> = ({ tournamentId, onSuccess, onCancel 
         teamName: formData.teamName,
         delegatePhone: formData.delegatePhone,
         delegateIndex,
-        players
+        players,
+        availability
       };
-
-      console.log('📤 Payload a enviar:', payload);
 
       const response = await fetch('http://localhost:8080/api/inscriptions', {
         method: 'POST',
@@ -228,20 +229,88 @@ const InscriptionCompleteForm: FC<Props> = ({ tournamentId, onSuccess, onCancel 
       alert('✅ Inscripción creada exitosamente');
       onSuccess();
     } catch (error) {
-      console.error('❌ Error completo:', error);
-      alert(`❌ Error al crear la inscripción: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      alert(`❌ Error al crear inscripción: ${error instanceof Error ? error.message : 'Desconocido'}`);
     } finally {
       setLoading(false);
     }
   };
 
+  // ================== Subcomponente de horarios ==================
+  const TeamAvailabilitySelector = ({
+    modalidad,
+    onChange
+  }: {
+    modalidad: 'diurna' | 'nocturna';
+    onChange: (selection: any[]) => void;
+  }) => {
+    const slots = modalidad === 'diurna' ? diurnalSlots : nocturnalSlots;
+    const [selection, setSelection] = useState<Record<string, string[]>>({});
+
+    useEffect(() => {
+      const formatted = Object.entries(selection).flatMap(([day, starts]) =>
+        starts.map(start => {
+          const slot = slots.find(s => s.start === start);
+          return { dayOfWeek: day, startTime: slot?.start, endTime: slot?.end };
+        })
+      );
+      onChange(formatted);
+    }, [selection]);
+
+    const toggleSlot = (day: string, start: string) => {
+      setSelection(prev => {
+        const updated = { ...prev };
+        const list = new Set(updated[day] || []);
+        list.has(start) ? list.delete(start) : list.add(start);
+        updated[day] = Array.from(list);
+        return updated;
+      });
+    };
+
+    return (
+      <div className="mt-8">
+        <h3 className="text-lg font-bold mb-4">🕒 Disponibilidad del equipo</h3>
+        <p className="text-sm text-gray-600 mb-2">
+          Selecciona al menos una franja por día ({modalidad.toUpperCase()}).
+        </p>
+
+        <table className="w-full border text-center">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="p-2 border">Hora</th>
+              {days.map(day => (
+                <th key={day} className="p-2 border">{day}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {slots.map(slot => (
+              <tr key={slot.start}>
+                <td className="border p-2">{`${slot.start} - ${slot.end}`}</td>
+                {days.map(day => (
+                  <td key={day} className="border p-2">
+                    <input
+                      type="checkbox"
+                      checked={selection[day]?.includes(slot.start) || false}
+                      onChange={() => toggleSlot(day, slot.start)}
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  // ================== Render ==================
   if (!tournament) return <div className="text-center p-8">Cargando...</div>;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 p-6 bg-white rounded-lg shadow">
+      {/* Datos del equipo */}
       <div className="border-b pb-4">
         <h3 className="text-lg font-bold mb-4">📋 Datos del Equipo</h3>
-
         <div className="grid gap-4">
           <div>
             <label className="block font-semibold mb-2">Nombre del Equipo *</label>
@@ -280,6 +349,7 @@ const InscriptionCompleteForm: FC<Props> = ({ tournamentId, onSuccess, onCancel 
         </div>
       </div>
 
+      {/* Jugadores */}
       <div>
         <h3 className="text-lg font-bold mb-4">
           👥 Jugadores ({tournament.category.membersPerTeam} requeridos)
@@ -335,57 +405,20 @@ const InscriptionCompleteForm: FC<Props> = ({ tournamentId, onSuccess, onCancel 
                   required
                 />
               </div>
-
-              <div className="mt-3">
-                <label className="block text-sm font-semibold mb-2">
-                  📷 Foto del Carnet Estudiantil *
-                </label>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png"
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    const file = e.target.files?.[0] ?? null;
-                    if (file) {
-                      handleFileUpload(index, file);
-                    }
-                  }}
-                  className="w-full border p-2 rounded"
-                  disabled={player.idCardPhotoUrl === 'UPLOADING...'}
-                />
-
-                {/* Estados visuales */}
-                {player.idCardPhotoUrl === 'UPLOADING...' && (
-                  <div className="mt-2 flex items-center gap-2">
-                    <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-                    <p className="text-blue-600 text-sm">⏳ Subiendo foto...</p>
-                  </div>
-                )}
-
-                {player.idCardPhotoUrl && player.idCardPhotoUrl !== 'UPLOADING...' && (
-                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-                    <p className="text-green-700 font-semibold text-sm">✅ Foto cargada correctamente</p>
-                    <a
-                      href={player.idCardPhotoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-blue-600 hover:underline break-all"
-                    >
-                      Ver foto subida
-                    </a>
-                  </div>
-                )}
-
-                {!player.idCardPhotoUrl && (
-                  <p className="text-gray-500 text-xs mt-1">
-                    Formatos: JPG, JPEG, PNG • Máximo: 5MB
-                  </p>
-                )}
-              </div>
             </div>
           ))}
         </div>
       </div>
 
+      {/* Disponibilidad */}
+      {tournament.modalidad && (
+        <TeamAvailabilitySelector
+          modalidad={tournament.modalidad}
+          onChange={setAvailability}
+        />
+      )}
+
+      {/* Botones */}
       <div className="flex gap-3 pt-4 border-t">
         <button
           type="submit"

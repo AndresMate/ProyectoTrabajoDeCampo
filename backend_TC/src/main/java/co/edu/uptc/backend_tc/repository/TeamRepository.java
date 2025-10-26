@@ -1,6 +1,7 @@
 package co.edu.uptc.backend_tc.repository;
 
 import co.edu.uptc.backend_tc.entity.Team;
+import co.edu.uptc.backend_tc.entity.Tournament;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -14,10 +15,10 @@ import java.util.Optional;
 public interface TeamRepository extends JpaRepository<Team, Long>,
         JpaSpecificationExecutor<Team> {
 
-    // Por torneo
+    // 🔹 Por torneo
     List<Team> findByTournamentId(Long tournamentId);
 
-    // Por torneo y categoría
+    // 🔹 Por torneo y categoría
     @Query("SELECT t FROM Team t " +
             "WHERE t.tournament.id = :tournamentId " +
             "AND t.category.id = :categoryId")
@@ -26,24 +27,33 @@ public interface TeamRepository extends JpaRepository<Team, Long>,
             @Param("categoryId") Long categoryId
     );
 
-    // Por club
+    // 🔹 Por club
     List<Team> findByClubId(Long clubId);
     List<Team> findByClubIdAndIsActiveTrue(Long clubId);
 
-    // Conteos
+    // 🔹 Conteos
     long countByTournamentId(Long tournamentId);
     long countByTournamentIdAndCategoryId(Long tournamentId, Long categoryId);
 
-    // Existencia
+    // 🔹 Existencia
     boolean existsByClubIdAndIsActiveTrue(Long clubId);
     boolean existsByTournamentIdAndNameIgnoreCase(Long tournamentId, String name);
 
-    // Por estado
+    // 🔹 Por estado
     List<Team> findByIsActiveTrue();
 
-    // Con roster
+    // 🔹 Con roster
     @Query("SELECT t FROM Team t " +
             "LEFT JOIN FETCH t.roster " +
             "WHERE t.id = :teamId")
     Optional<Team> findByIdWithRoster(@Param("teamId") Long teamId);
+
+    /**
+     * 🔹 Verifica si ya existe un equipo con el mismo nombre en un torneo.
+     *
+     * @param tournament Torneo en el que buscar
+     * @param name Nombre del equipo
+     * @return true si existe, false si no
+     */
+    boolean existsByTournamentAndName(Tournament tournament, String name);
 }

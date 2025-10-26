@@ -41,6 +41,7 @@ public class TeamRoster implements Serializable {
     @Column(name = "jersey_number")
     private Integer jerseyNumber;
 
+    @Builder.Default
     @Column(name = "is_captain", nullable = false)
     private Boolean isCaptain = false;
 }

@@ -23,7 +23,8 @@ public class TeamRosterMapper {
                 .teamId(entity.getTeam() != null ? entity.getTeam().getId() : null)
                 .playerId(entity.getPlayer() != null ? entity.getPlayer().getId() : null)
                 .jerseyNumber(entity.getJerseyNumber())
-                .isCaptain(entity.getIsCaptain())
+                // ✅ evita nulos si por alguna razón isCaptain no está inicializado
+                .isCaptain(entity.getIsCaptain() != null ? entity.getIsCaptain() : false)
                 .build();
     }
 
@@ -33,7 +34,24 @@ public class TeamRosterMapper {
         return TeamRosterResponseDTO.builder()
                 .player(playerMapper.toSummaryDTO(entity.getPlayer()))
                 .jerseyNumber(entity.getJerseyNumber())
-                .isCaptain(entity.getIsCaptain())
+                // ✅ protege contra nulls
+                .isCaptain(entity.getIsCaptain() != null ? entity.getIsCaptain() : false)
+                .build();
+    }
+
+    /**
+     * Mapea desde un DTO de creación hacia una entidad.
+     * (Útil cuando creas o actualizas un roster manualmente)
+     */
+    public TeamRoster toEntity(TeamRosterDTO dto, Team team, Player player) {
+        if (dto == null) return null;
+
+        return TeamRoster.builder()
+                .team(team)
+                .player(player)
+                .jerseyNumber(dto.getJerseyNumber())
+                // ✅ valor por defecto si viene null desde el DTO
+                .isCaptain(dto.getIsCaptain() != null ? dto.getIsCaptain() : false)
                 .build();
     }
 }

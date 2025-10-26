@@ -64,6 +64,7 @@ public class TournamentMapper {
                 .id(entity.getId())
                 .name(entity.getName())
                 .status(entity.getStatus())
+                .modality(entity.getModality())
                 .startDate(entity.getStartDate())
                 .endDate(entity.getEndDate())
                 .build();

@@ -7,7 +7,11 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class TeamRosterResponseDTO {
+
     private PlayerSummaryDTO player;
+
     private Integer jerseyNumber;
-    private Boolean isCaptain;
+
+    @Builder.Default
+    private Boolean isCaptain = false; // ✅ Evita valores null en respuestas
 }
