@@ -11,14 +11,15 @@ import java.time.LocalTime;
 @Entity
 @Table(name = "team_availability", indexes = {
         @Index(name = "idx_availability_team", columnList = "team_id"),
+        @Index(name = "idx_availability_inscription", columnList = "inscription_id"),
         @Index(name = "idx_availability_day", columnList = "day_of_week")
 })
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"team"})
-@EqualsAndHashCode(exclude = {"team"})
+@ToString(exclude = {"team", "inscription"})
+@EqualsAndHashCode(exclude = {"team", "inscription"})
 public class TeamAvailability implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -27,9 +28,13 @@ public class TeamAvailability implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull(message = "Team is required")
+    // Puede pertenecer a una inscripción (temporal) o al team (definitivo)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "team_id", nullable = false)
+    @JoinColumn(name = "inscription_id")
+    private Inscription inscription;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "team_id")
     private Team team;
 
     @NotNull(message = "Day of week is required")
@@ -45,10 +50,6 @@ public class TeamAvailability implements Serializable {
     @Column(name = "end_time", nullable = false)
     private LocalTime endTime;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "inscription_id")
-    private Inscription inscription;
-    
     @Column(nullable = false)
     private Boolean available = true;
 

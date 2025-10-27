@@ -1,29 +1,23 @@
 package co.edu.uptc.backend_tc.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
-import java.time.DayOfWeek;
-import java.time.LocalTime;
-
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class TeamAvailabilityDTO {
+
     private Long id;
 
-    @NotNull(message = "Team ID is required")
-    private Long teamId;
+    @NotBlank(message = "dayOfWeek is required (MONDAY..FRIDAY)")
+    private String dayOfWeek; // e.g. "MONDAY"
 
-    @NotNull(message = "Day of week is required")
-    private DayOfWeek dayOfWeek;
+    @NotBlank(message = "startTime is required (HH:mm)")
+    private String startTime; // e.g. "11:00"
 
-    @NotNull(message = "Start time is required")
-    private LocalTime startTime;
-
-    @NotNull(message = "End time is required")
-    private LocalTime endTime;
-
-    private Boolean available;
+    @NotBlank(message = "endTime is required (HH:mm)")
+    private String endTime;   // e.g. "12:00"
 }

@@ -64,4 +64,29 @@ public interface InscriptionRepository extends JpaRepository<Inscription, Long>,
             @Param("status") InscriptionStatus status);
 
     long countByStatus(InscriptionStatus status);
+
+
+
+    // Comprueba si ya existe una inscripción para el torneo con el mismo club (no rechazadas)
+    @Query("select case when count(i) > 0 then true else false end " +
+            "from Inscription i " +
+            "where i.tournament.id = :tournamentId " +
+            "and i.club.id = :clubId " +
+            "and i.status <> co.edu.uptc.backend_tc.model.InscriptionStatus.REJECTED")
+    boolean existsByTournamentIdAndClubIdAndStatusNot(@Param("tournamentId") Long tournamentId, @Param("clubId") Long clubId);
+
+    // Comprueba si un jugador (por documento) ya está registrado en alguna inscripción no rechazada de ese torneo
+    @Query("select case when count(ip) > 0 then true else false end " +
+            "from Inscription i join i.players ip " +
+            "where i.tournament.id = :tournamentId " +
+            "and ip.player.documentNumber = :documentNumber " +
+            "and i.status <> co.edu.uptc.backend_tc.model.InscriptionStatus.REJECTED")
+    boolean existsByTournamentIdAndPlayerDocumentNumber(@Param("tournamentId") Long tournamentId, @Param("documentNumber") String documentNumber);
+
+
+    // Si ya tienes existsByTournamentIdAndTeamNameIgnoreCaseAndStatusNot reemplázalo por esto si lo usas
+    @Query("select case when count(i) > 0 then true else false end from Inscription i where i.tournament.id = :tournamentId and lower(i.teamName) = lower(:teamName) and i.status <> co.edu.uptc.backend_tc.model.InscriptionStatus.REJECTED")
+    boolean existsByTournamentIdAndTeamNameIgnoreCaseAndStatusNot(@Param("tournamentId") Long tournamentId, @Param("teamName") String teamName);
+
+
 }

@@ -56,4 +56,17 @@ public interface TeamRepository extends JpaRepository<Team, Long>,
      * @return true si existe, false si no
      */
     boolean existsByTournamentAndName(Tournament tournament, String name);
+    boolean existsByTournamentAndNameIgnoreCase(Tournament tournament, String name);
+
+    boolean existsByClubIdAndTournamentId(Long clubId, Long tournamentId);
+
+    @Query("""
+        SELECT COUNT(tr) > 0 FROM TeamRoster tr
+        WHERE tr.player.id IN (
+            SELECT ip.player.id FROM InscriptionPlayer ip
+            WHERE ip.inscription.tournament.id = :tournamentId
+        )
+        AND tr.team.tournament.id = :tournamentId
+    """)
+    boolean existsPlayerAlreadyRegistered(Long tournamentId);
 }

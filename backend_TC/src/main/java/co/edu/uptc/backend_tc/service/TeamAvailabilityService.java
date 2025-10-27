@@ -43,10 +43,20 @@ public class TeamAvailabilityService {
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new ResourceNotFoundException("Team", "id", teamId));
 
-        // Validación: al menos un horario por día de lunes a viernes
+        // Agrupar por DayOfWeek (convertir desde el campo del DTO)
         Map<DayOfWeek, List<TeamAvailabilityDTO>> byDay = dtoList.stream()
-                .collect(Collectors.groupingBy(TeamAvailabilityDTO::getDayOfWeek));
+                .collect(Collectors.groupingBy(dto -> {
+                    if (dto.getDayOfWeek() == null) {
+                        throw new BadRequestException("dayOfWeek is required");
+                    }
+                    try {
+                        return DayOfWeek.valueOf(dto.getDayOfWeek().toUpperCase());
+                    } catch (IllegalArgumentException e) {
+                        throw new BadRequestException("Invalid dayOfWeek: " + dto.getDayOfWeek());
+                    }
+                }));
 
+        // Validación: al menos un horario por día de lunes a viernes
         for (DayOfWeek day : List.of(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY,
                 DayOfWeek.THURSDAY, DayOfWeek.FRIDAY)) {
             if (!byDay.containsKey(day)) {
@@ -62,21 +72,30 @@ public class TeamAvailabilityService {
         LocalTime max = isNocturno ? LocalTime.of(21, 0) : LocalTime.of(16, 0);
 
         for (TeamAvailabilityDTO dto : dtoList) {
-            if (dto.getStartTime().isBefore(min) || dto.getEndTime().isAfter(max)) {
+            LocalTime start = parseTime(dto.getStartTime());
+            LocalTime end = parseTime(dto.getEndTime());
+
+            if (start.isBefore(min) || end.isAfter(max)) {
                 throw new BadRequestException(
                         String.format("Time range must be between %s and %s for this tournament type",
                                 min, max)
                 );
             }
+
+            if (!end.isAfter(start) && !end.equals(start)) {
+                throw new BadRequestException("endTime must be after startTime");
+            }
         }
 
-        // Validación: no permitir solapamientos
+        // Validación: no permitir solapamientos por día
         for (DayOfWeek day : byDay.keySet()) {
             List<TeamAvailabilityDTO> slots = byDay.get(day);
-            slots.sort(Comparator.comparing(TeamAvailabilityDTO::getStartTime));
+            slots.sort(Comparator.comparing(s -> parseTime(s.getStartTime())));
 
             for (int i = 0; i < slots.size() - 1; i++) {
-                if (slots.get(i).getEndTime().isAfter(slots.get(i + 1).getStartTime())) {
+                LocalTime endCurrent = parseTime(slots.get(i).getEndTime());
+                LocalTime startNext = parseTime(slots.get(i + 1).getStartTime());
+                if (endCurrent.isAfter(startNext)) {
                     throw new BusinessException(
                             "Overlapping time slots detected for " + day,
                             "OVERLAPPING_TIME_SLOTS"
@@ -97,5 +116,16 @@ public class TeamAvailabilityService {
                 .stream()
                 .map(availabilityMapper::toDTO)
                 .toList();
+    }
+
+    private LocalTime parseTime(String timeStr) {
+        if (timeStr == null) {
+            throw new BadRequestException("Time value is required");
+        }
+        try {
+            return LocalTime.parse(timeStr);
+        } catch (Exception e) {
+            throw new BadRequestException("Invalid time format: " + timeStr + " (expected HH:mm[:ss])");
+        }
     }
 }

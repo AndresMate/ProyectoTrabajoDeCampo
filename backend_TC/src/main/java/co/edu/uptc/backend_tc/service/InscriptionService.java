@@ -2,6 +2,7 @@ package co.edu.uptc.backend_tc.service;
 
 import co.edu.uptc.backend_tc.dto.InscriptionDTO;
 import co.edu.uptc.backend_tc.dto.PlayerInscriptionDTO;
+import co.edu.uptc.backend_tc.dto.TeamAvailabilityDTO;
 import co.edu.uptc.backend_tc.dto.response.InscriptionResponseDTO;
 import co.edu.uptc.backend_tc.dto.response.CategorySummaryDTO;
 import co.edu.uptc.backend_tc.dto.response.ClubSummaryDTO;
@@ -16,14 +17,14 @@ import co.edu.uptc.backend_tc.mapper.PlayerMapper;
 import co.edu.uptc.backend_tc.model.InscriptionStatus;
 import co.edu.uptc.backend_tc.model.TournamentStatus;
 import co.edu.uptc.backend_tc.repository.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.time.LocalTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -85,84 +86,98 @@ public class InscriptionService {
 
     @Transactional
     public InscriptionResponseDTO create(InscriptionDTO dto) {
-        // Validar torneo
+        // ✅ 1. Validar torneo
         Tournament tournament = tournamentRepository.findById(dto.getTournamentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Tournament", "id", dto.getTournamentId()));
 
         if (tournament.getStatus() != TournamentStatus.OPEN_FOR_INSCRIPTION) {
             throw new BusinessException(
-                    "Inscriptions are only allowed for tournaments with open registration",
+                    "Las inscripciones solo están permitidas para torneos con inscripción abierta",
                     "INSCRIPTIONS_CLOSED"
             );
         }
 
-        // Validar límite de equipos
+        // ✅ 2. Validar límite de equipos aprobados
         long currentTeams = inscriptionRepository.countByTournamentIdAndStatus(
-                tournament.getId(),
-                InscriptionStatus.APPROVED
+                tournament.getId(), InscriptionStatus.APPROVED
         );
-
         if (tournament.getMaxTeams() != null && currentTeams >= tournament.getMaxTeams()) {
-            throw new BusinessException("Tournament has reached maximum number of teams", "MAX_TEAMS_REACHED");
+            throw new BusinessException("El torneo ha alcanzado el número máximo de equipos permitidos", "MAX_TEAMS_REACHED");
         }
 
-        // Validar categoría
+        // ✅ 3. Validar categoría
         Category category = categoryRepository.findById(dto.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "id", dto.getCategoryId()));
 
         if (!category.getSport().getId().equals(tournament.getSport().getId())) {
-            throw new BusinessException("Category does not belong to tournament's sport", "CATEGORY_SPORT_MISMATCH");
+            throw new BusinessException("La categoría no pertenece al mismo deporte del torneo", "CATEGORY_SPORT_MISMATCH");
         }
 
-        // Validar nombre de equipo
-        if (inscriptionRepository.existsByTournamentIdAndCategoryIdAndTeamNameIgnoreCase(
-                tournament.getId(),
-                category.getId(),
-                dto.getTeamName())) {
+        // ✅ 4. Validar nombre de equipo único en el torneo
+        if (teamRepository.existsByTournamentAndNameIgnoreCase(tournament, dto.getTeamName())) {
             throw new ConflictException(
-                    "A team with this name already exists in this tournament and category",
+                    "El nombre del equipo ya está registrado en este torneo",
                     "teamName",
                     dto.getTeamName()
             );
         }
 
-        // ✅ VALIDAR ÍNDICE DEL DELEGADO
-        if (dto.getDelegateIndex() == null || dto.getDelegateIndex() >= dto.getPlayers().size()) {
-            throw new BusinessException("Invalid delegate index", "INVALID_DELEGATE_INDEX");
+        // ✅ 5. Validar club único (si se selecciona)
+        if (dto.getClubId() != null && teamRepository.existsByClubIdAndTournamentId(dto.getClubId(), tournament.getId())) {
+            throw new ConflictException(
+                    "Este club ya tiene un equipo inscrito en este torneo",
+                    "clubId",
+                    dto.getClubId()
+            );
         }
 
-        // ✅ VALIDAR LÍMITE DE JUGADORES
+        // ✅ 6. Validar jugadores duplicados en otros equipos del mismo torneo
+        for (PlayerInscriptionDTO playerDTO : dto.getPlayers()) {
+            if (playerRepository.existsByInstitutionalEmail(playerDTO.getInstitutionalEmail())) {
+                Player existing = playerRepository.findByInstitutionalEmail(playerDTO.getInstitutionalEmail()).orElse(null);
+                if (existing != null && teamRosterRepository.existsByPlayerIdAndTeam_TournamentId(existing.getId(), tournament.getId())) {
+                    throw new ConflictException(
+                            "El jugador " + playerDTO.getFullName() + " ya está inscrito en otro equipo de este torneo",
+                            "players",
+                            playerDTO.getInstitutionalEmail()
+                    );
+                }
+            }
+        }
+
+        // ✅ 7. Validar índice del delegado
+        if (dto.getDelegateIndex() == null || dto.getDelegateIndex() >= dto.getPlayers().size()) {
+            throw new BusinessException("El índice del delegado no es válido", "INVALID_DELEGATE_INDEX");
+        }
+
+        // ✅ 8. Validar cantidad de jugadores
         Integer maxPlayers = category.getMembersPerTeam();
         if (maxPlayers != null && dto.getPlayers().size() > maxPlayers) {
             throw new BusinessException(
-                    String.format("Category allows maximum %d players, but %d were provided",
+                    String.format("La categoría permite máximo %d jugadores, pero se enviaron %d",
                             maxPlayers, dto.getPlayers().size()),
                     "EXCEEDED_MAX_PLAYERS"
             );
         }
 
-        if (maxPlayers != null && dto.getPlayers().size() < 1) {
-            throw new BusinessException(
-                    "At least one player is required",
-                    "INSUFFICIENT_PLAYERS"
-            );
+        if (dto.getPlayers().isEmpty()) {
+            throw new BusinessException("Debe haber al menos un jugador en la inscripción", "NO_PLAYERS_PROVIDED");
         }
 
-        // ✅ PROCESAR JUGADORES
+        // ✅ 9. Procesar jugadores
         List<Player> players = new ArrayList<>();
-        PlayerInscriptionDTO delegateData = dto.getPlayers().get(dto.getDelegateIndex());
         Player delegate = null;
 
         for (int i = 0; i < dto.getPlayers().size(); i++) {
             PlayerInscriptionDTO playerDTO = dto.getPlayers().get(i);
 
-            // Buscar o crear jugador
+            // Buscar jugador existente o crear uno nuevo
             Player player = playerRepository.findByDocumentNumber(playerDTO.getDocumentNumber())
                     .orElseGet(() -> {
                         // Validar email único
                         if (playerRepository.existsByInstitutionalEmail(playerDTO.getInstitutionalEmail())) {
                             throw new ConflictException(
-                                    "A player with this email already exists",
+                                    "Ya existe un jugador con este correo institucional",
                                     "institutionalEmail",
                                     playerDTO.getInstitutionalEmail()
                             );
@@ -171,39 +186,38 @@ public class InscriptionService {
                         // Validar código único
                         if (playerRepository.existsByStudentCode(playerDTO.getStudentCode())) {
                             throw new ConflictException(
-                                    "A player with this student code already exists",
+                                    "Ya existe un jugador con este código estudiantil",
                                     "studentCode",
                                     playerDTO.getStudentCode()
                             );
                         }
 
-                        // Crear nuevo jugador
                         Player newPlayer = Player.builder()
                                 .documentNumber(playerDTO.getDocumentNumber())
                                 .studentCode(playerDTO.getStudentCode())
                                 .fullName(playerDTO.getFullName())
                                 .institutionalEmail(playerDTO.getInstitutionalEmail())
-                                .idCardPhotoUrl(playerDTO.getIdCardPhotoUrl()) // ✅ URL de la foto
+                                .idCardPhotoUrl(playerDTO.getIdCardPhotoUrl())
                                 .isActive(true)
                                 .build();
+
                         return playerRepository.save(newPlayer);
                     });
 
             players.add(player);
-
             if (i == dto.getDelegateIndex()) {
                 delegate = player;
             }
         }
 
-        // Obtener club
+        // ✅ 10. Obtener club si aplica
         Club club = null;
         if (dto.getClubId() != null) {
             club = clubRepository.findById(dto.getClubId())
                     .orElseThrow(() -> new ResourceNotFoundException("Club", "id", dto.getClubId()));
         }
 
-        // ✅ CREAR INSCRIPCIÓN
+        // ✅ 11. Crear inscripción
         Inscription inscription = Inscription.builder()
                 .tournament(tournament)
                 .category(category)
@@ -218,7 +232,7 @@ public class InscriptionService {
 
         inscription = inscriptionRepository.save(inscription);
 
-        // ✅ ASOCIAR JUGADORES
+        // ✅ 12. Asociar jugadores a la inscripción
         for (Player player : players) {
             InscriptionPlayer inscriptionPlayer = InscriptionPlayer.builder()
                     .inscription(inscription)
@@ -227,59 +241,25 @@ public class InscriptionService {
             inscriptionPlayerRepository.save(inscriptionPlayer);
         }
 
-        // ✅ Guardar disponibilidad semanal del equipo (en la inscripción)
-        if (dto.getAvailability() != null && !dto.getAvailability().isEmpty()) {
-            // Validar al menos una franja por día
-            Set<DayOfWeek> days = dto.getAvailability().stream()
-                    .map(a -> a.getDayOfWeek())
-                    .collect(Collectors.toSet());
-
-            List<DayOfWeek> requiredDays = List.of(
-                    DayOfWeek.MONDAY,
-                    DayOfWeek.TUESDAY,
-                    DayOfWeek.WEDNESDAY,
-                    DayOfWeek.THURSDAY,
-                    DayOfWeek.FRIDAY
-            );
-
-            if (!days.containsAll(requiredDays)) {
-                throw new BusinessException("Debe haber al menos una franja horaria para cada día (lunes a viernes)", "MISSING_DAY_AVAILABILITY");
-            }
-
-            Inscription finalInscription = inscription;
-            List<TeamAvailability> availabilityList = dto.getAvailability().stream()
-                    .map(a -> TeamAvailability.builder()
-                            .inscription(finalInscription) // 👈 vínculo temporal
-                            .dayOfWeek(a.getDayOfWeek())
-                            .startTime(a.getStartTime())
-                            .endTime(a.getEndTime())
-                            .available(true)
-                            .build())
-                    .toList();
-
-            teamAvailabilityRepository.saveAll(availabilityList);
-        }
-
-
         return enrichResponseDTO(inscription);
     }
 
+
     @Transactional
     public InscriptionResponseDTO approve(Long inscriptionId) {
-        // 1️⃣ Buscar inscripción
         Inscription inscription = inscriptionRepository.findById(inscriptionId)
-                .orElseThrow(() -> new EntityNotFoundException("Inscripción", inscriptionId));
+                .orElseThrow(() -> new EntityNotFoundException("Inscription", inscriptionId));
 
         if (inscription.getStatus() == InscriptionStatus.APPROVED) {
             throw new BusinessException("La inscripción ya fue aprobada");
         }
 
-        // 2️⃣ Validar duplicado de nombre de equipo
+        // Verifica que no exista equipo con el mismo nombre
         if (teamRepository.existsByTournamentAndName(inscription.getTournament(), inscription.getTeamName())) {
             throw new ConflictException("Ya existe un equipo con ese nombre en este torneo");
         }
 
-        // 3️⃣ Crear el equipo oficial
+        // Crear team
         Team team = Team.builder()
                 .name(inscription.getTeamName())
                 .tournament(inscription.getTournament())
@@ -288,46 +268,52 @@ public class InscriptionService {
                 .originInscription(inscription)
                 .isActive(true)
                 .build();
-
         teamRepository.save(team);
 
-        // 4️⃣ Migrar jugadores de inscripción a roster
-        for (InscriptionPlayer inscriptionPlayer : inscription.getPlayers()) {
-            TeamRoster roster = TeamRoster.builder()
-                    .team(team)
-                    .player(inscriptionPlayer.getPlayer())
-                    .build();
-            teamRosterRepository.save(roster);
+        // Migrar jugadores -> roster
+        if (inscription.getPlayers() != null) {
+            for (InscriptionPlayer ip : inscription.getPlayers()) {
+                TeamRoster roster = TeamRoster.builder()
+                        .team(team)
+                        .player(ip.getPlayer())
+                        .build();
+                teamRosterRepository.save(roster);
+            }
         }
 
-        // 5️⃣ Marcar inscripción como aprobada
+        // Migrar disponibilidades de la inscripción al equipo
+        List<TeamAvailability> inscriptionAvail = teamAvailabilityRepository.findByInscription(inscription);
+        if (inscriptionAvail != null && !inscriptionAvail.isEmpty()) {
+            for (TeamAvailability ta : inscriptionAvail) {
+                ta.setTeam(team);
+                ta.setInscription(null);
+            }
+            teamAvailabilityRepository.saveAll(inscriptionAvail);
+        }
+
+        // Marcar inscripción aprobada
         inscription.setStatus(InscriptionStatus.APPROVED);
         inscription.setOriginatedTeam(team);
         inscriptionRepository.save(inscription);
 
-        // 🔹 Copiar disponibilidades del inscription al nuevo equipo
-        List<TeamAvailability> inscriptionAvailability = teamAvailabilityRepository.findByInscription(inscription);
-        if (inscriptionAvailability != null && !inscriptionAvailability.isEmpty()) {
-            List<TeamAvailability> teamAvailability = inscriptionAvailability.stream()
-                    .map(a -> TeamAvailability.builder()
-                            .team(team)
-                            .dayOfWeek(a.getDayOfWeek())
-                            .startTime(a.getStartTime())
-                            .endTime(a.getEndTime())
-                            .available(a.getAvailable())
-                            .build())
-                    .toList();
-
-            teamAvailabilityRepository.saveAll(teamAvailability);
-        }
-
-
-        // 6️⃣ Retornar DTO
         return inscriptionMapper.toResponseDTO(inscription);
     }
 
+    // Exposed checks used by controller
 
+    public boolean isClubRegistered(Long tournamentId, Long clubId) {
+        if (clubId == null) return false;
+        return inscriptionRepository.existsByTournamentIdAndClubIdAndStatusNot(tournamentId, clubId);
+    }
 
+    public Map<String, Object> checkPlayersAvailable(Long tournamentId, List<String> documents) {
+        for (String doc : documents) {
+            if (inscriptionRepository.existsByTournamentIdAndPlayerDocumentNumber(tournamentId, doc)) {
+                return Map.of("isAllAvailable", false, "conflictingDocument", doc);
+            }
+        }
+        return Map.of("isAllAvailable", true);
+    }
     @Transactional
     public InscriptionResponseDTO reject(Long id, String reason) {
         Inscription inscription = inscriptionRepository.findById(id)
@@ -354,6 +340,32 @@ public class InscriptionService {
 
         inscriptionRepository.delete(inscription);
     }
+
+    /**
+     * Verifica si un jugador ya está inscrito en otro equipo dentro del mismo torneo.
+     *
+     * @param tournamentId ID del torneo.
+     * @param documentNumber Número de documento del jugador.
+     * @return true si el jugador está disponible (no inscrito aún), false si ya está inscrito.
+     */
+    public boolean isPlayerAvailable(Long tournamentId, String documentNumber) {
+        // Buscar inscripciones activas del torneo
+        List<Inscription> inscriptions = inscriptionRepository.findByTournamentId(tournamentId);
+
+        for (Inscription inscription : inscriptions) {
+            // Si la inscripción tiene jugadores asociados, verificamos sus documentos
+            List<InscriptionPlayer> players = inscriptionPlayerRepository.findByInscription(inscription);
+            for (InscriptionPlayer ip : players) {
+                if (ip.getPlayer() != null &&
+                        ip.getPlayer().getDocumentNumber().equalsIgnoreCase(documentNumber)) {
+                    return false; // ya está inscrito en otro equipo
+                }
+            }
+        }
+
+        return true; // no se encontró duplicado
+    }
+
 
     private InscriptionResponseDTO enrichResponseDTO(Inscription inscription) {
         InscriptionResponseDTO response = InscriptionResponseDTO.builder()

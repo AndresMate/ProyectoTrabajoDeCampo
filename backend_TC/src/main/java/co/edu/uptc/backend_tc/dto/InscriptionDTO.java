@@ -3,6 +3,7 @@ package co.edu.uptc.backend_tc.dto;
 import co.edu.uptc.backend_tc.model.InscriptionStatus;
 import jakarta.validation.constraints.*;
 import lombok.*;
+
 import java.util.List;
 
 @Data
@@ -37,7 +38,6 @@ public class InscriptionDTO {
 
     private InscriptionStatus status;
 
-    // ✅ NUEVO: Disponibilidad semanal del equipo
-    @NotEmpty(message = "Availability schedule is required (at least one per day)")
+    @NotEmpty(message = "Availability is required (at least one per day)")
     private List<TeamAvailabilityDTO> availability;
 }

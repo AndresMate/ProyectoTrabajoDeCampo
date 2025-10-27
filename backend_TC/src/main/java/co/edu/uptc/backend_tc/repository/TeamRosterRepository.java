@@ -44,4 +44,6 @@ public interface TeamRosterRepository extends JpaRepository<TeamRoster, Long> {
     Optional<TeamRoster> findByTeamIdAndPlayerId(Long teamId, Long playerId);
 
     boolean existsByPlayerIdAndTeamId(Long playerId, Long teamId);
+
+    boolean existsByPlayerIdAndTeam_TournamentId(Long id, Long id1);
 }

@@ -5,6 +5,9 @@ import co.edu.uptc.backend_tc.entity.TeamAvailability;
 import co.edu.uptc.backend_tc.entity.Team;
 import org.springframework.stereotype.Component;
 
+import java.time.DayOfWeek;
+import java.time.LocalTime;
+
 @Component
 public class TeamAvailabilityMapper {
 
@@ -12,12 +15,9 @@ public class TeamAvailabilityMapper {
         if (entity == null) return null;
 
         return TeamAvailabilityDTO.builder()
-                .id(entity.getId())
-                .teamId(entity.getTeam() != null ? entity.getTeam().getId() : null)
-                .dayOfWeek(entity.getDayOfWeek())
-                .startTime(entity.getStartTime())
-                .endTime(entity.getEndTime())
-                .available(entity.getAvailable())
+                .dayOfWeek(entity.getDayOfWeek() != null ? entity.getDayOfWeek().name() : null)
+                .startTime(entity.getStartTime() != null ? entity.getStartTime().toString() : null)
+                .endTime(entity.getEndTime() != null ? entity.getEndTime().toString() : null)
                 .build();
     }
 
@@ -25,12 +25,11 @@ public class TeamAvailabilityMapper {
         if (dto == null) return null;
 
         return TeamAvailability.builder()
-                .id(dto.getId())
                 .team(team)
-                .dayOfWeek(dto.getDayOfWeek())
-                .startTime(dto.getStartTime())
-                .endTime(dto.getEndTime())
-                .available(dto.getAvailable())
+                .dayOfWeek(dto.getDayOfWeek() != null ? DayOfWeek.valueOf(dto.getDayOfWeek().toUpperCase()) : null)
+                .startTime(dto.getStartTime() != null ? LocalTime.parse(dto.getStartTime()) : null)
+                .endTime(dto.getEndTime() != null ? LocalTime.parse(dto.getEndTime()) : null)
+                .available(true)
                 .build();
     }
 }

@@ -25,13 +25,46 @@ public class InscriptionController {
 
     private final InscriptionService inscriptionService;
 
-    // ✅ ENDPOINT NUEVO: Crear inscripción completa con jugadores y fotos
-    @Operation(summary = "Crear inscripción completa con jugadores",
-            description = "Endpoint público para inscribir equipo con todos sus jugadores e imágenes de carnets")
+// ==========================
+// VALIDACIONES PREVIAS
+// ==========================
+
+    @Operation(summary = "Verificar disponibilidad de nombre de equipo")
+    @GetMapping("/check-team-name")
+    public ResponseEntity<Map<String, Boolean>> checkTeamName(
+            @RequestParam Long tournamentId,
+            @RequestParam String teamName) {
+        boolean isAvailable = inscriptionService.isTeamNameAvailable(tournamentId, teamName);
+        return ResponseEntity.ok(Map.of("isAvailable", isAvailable));
+    }
+
+    @Operation(summary = "Verificar si un club ya está inscrito en el torneo")
+    @GetMapping("/check-club")
+    public ResponseEntity<Map<String, Boolean>> checkClub(
+            @RequestParam Long tournamentId,
+            @RequestParam Long clubId) {
+        boolean isAvailable = !inscriptionService.isClubRegistered(tournamentId, clubId);
+        return ResponseEntity.ok(Map.of("isAvailable", isAvailable));
+    }
+
+    @Operation(summary = "Verificar si un jugador ya está inscrito en otro equipo del torneo")
+    @GetMapping("/check-player")
+    public ResponseEntity<Map<String, Boolean>> checkPlayer(
+            @RequestParam Long tournamentId,
+            @RequestParam String documentNumber) {
+        boolean isAvailable = inscriptionService.isPlayerAvailable(tournamentId, documentNumber);
+        return ResponseEntity.ok(Map.of("isAvailable", isAvailable));
+    }
+
+    // ==========================
+    // CREACIÓN DE INSCRIPCIONES
+    // ==========================
+
+    @Operation(summary = "Crear inscripción completa con jugadores y disponibilidad")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Inscripción creada exitosamente"),
             @ApiResponse(responseCode = "400", description = "Datos inválidos"),
-            @ApiResponse(responseCode = "409", description = "Nombre de equipo o datos de jugadores duplicados")
+            @ApiResponse(responseCode = "409", description = "Nombre de equipo, club o jugadores duplicados")
     })
     @PostMapping
     public ResponseEntity<InscriptionResponseDTO> create(@RequestBody InscriptionDTO dto) {
@@ -39,11 +72,9 @@ public class InscriptionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdInscription);
     }
 
-    @Operation(summary = "Obtener inscripciones aprobadas por torneo")
-    @GetMapping("/tournament/{tournamentId}/approved")
-    public ResponseEntity<List<InscriptionResponseDTO>> getApprovedByTournament(@PathVariable Long tournamentId) {
-        return ResponseEntity.ok(inscriptionService.getApprovedByTournament(tournamentId));
-    }
+    // ==========================
+    // CONSULTAS
+    // ==========================
 
     @Operation(summary = "Obtener una inscripción por su ID")
     @GetMapping("/{id}")
@@ -51,12 +82,11 @@ public class InscriptionController {
         return ResponseEntity.ok(inscriptionService.getById(id));
     }
 
-    @GetMapping("/check-team-name")
-    public ResponseEntity<Map<String, Boolean>> isTeamNameAvailable(
-            @RequestParam Long tournamentId,
-            @RequestParam String teamName) {
-        boolean isAvailable = inscriptionService.isTeamNameAvailable(tournamentId, teamName);
-        return ResponseEntity.ok(Map.of("isAvailable", isAvailable));
+    @Operation(summary = "Obtener inscripciones aprobadas por torneo")
+    @GetMapping("/tournament/{tournamentId}/approved")
+    public ResponseEntity<List<InscriptionResponseDTO>> getApprovedByTournament(
+            @PathVariable Long tournamentId) {
+        return ResponseEntity.ok(inscriptionService.getApprovedByTournament(tournamentId));
     }
 
     @DeleteMapping("/{id}")
@@ -65,7 +95,9 @@ public class InscriptionController {
         return ResponseEntity.noContent().build();
     }
 
-    // === ENDPOINTS DE ADMINISTRACIÓN ===
+    // ==========================
+    // ADMINISTRACIÓN
+    // ==========================
 
     @Operation(summary = "Obtener todas las inscripciones (Admin)")
     @SecurityRequirement(name = "bearerAuth")
@@ -74,14 +106,14 @@ public class InscriptionController {
         return ResponseEntity.ok(inscriptionService.getAll());
     }
 
-    @Operation(summary = "Aprobar una inscripción (Admin)")
+    @Operation(summary = "Aprobar inscripción (Admin)")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/admin/{id}/approve")
     public ResponseEntity<InscriptionResponseDTO> approve(@PathVariable Long id) {
         return ResponseEntity.ok(inscriptionService.approve(id));
     }
 
-    @Operation(summary = "Rechazar una inscripción (Admin)")
+    @Operation(summary = "Rechazar inscripción (Admin)")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/admin/{id}/reject")
     public ResponseEntity<InscriptionResponseDTO> reject(

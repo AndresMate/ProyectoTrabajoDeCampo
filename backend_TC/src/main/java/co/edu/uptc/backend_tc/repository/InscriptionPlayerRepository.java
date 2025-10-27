@@ -1,5 +1,6 @@
 package co.edu.uptc.backend_tc.repository;
 
+import co.edu.uptc.backend_tc.entity.Inscription;
 import co.edu.uptc.backend_tc.entity.InscriptionPlayer;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -27,4 +28,6 @@ public interface InscriptionPlayerRepository extends JpaRepository<InscriptionPl
     void deleteByInscriptionId(Long inscriptionId);
 
     void deleteByInscriptionIdAndPlayerId(Long inscriptionId, Long playerId);
+
+    List<InscriptionPlayer> findByInscription(Inscription inscription);
 }

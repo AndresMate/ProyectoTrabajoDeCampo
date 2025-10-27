@@ -1,6 +1,10 @@
-import React, { useState, useEffect, FC } from 'react';
+"use client";
 
-// ================== Tipos ==================
+import React, { useState, useEffect } from "react";
+import inscriptionsService from "@/services/inscriptionsService";
+import tournamentsService from "@/services/tournamentsService";
+import clubsService from "@/services/clubsService";
+
 type Player = {
   fullName: string;
   documentNumber: string;
@@ -9,23 +13,13 @@ type Player = {
   idCardPhotoUrl: string;
 };
 
-type Category = {
-  id: number;
-  name?: string;
-  membersPerTeam: number;
+type Availability = {
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
 };
 
-type Tournament = {
-  id: number;
-  name: string;
-  category: Category;
-  modalidad: 'diurna' | 'nocturna';
-} | null;
-
-type Club = {
-  id: number;
-  name: string;
-};
+type Club = { id: number; name: string };
 
 type Props = {
   tournamentId: number | string;
@@ -33,177 +27,173 @@ type Props = {
   onCancel: () => void;
 };
 
-// ================== Datos base ==================
 const defaultPlayer = (): Player => ({
-  fullName: '',
-  documentNumber: '',
-  studentCode: '',
-  institutionalEmail: '',
-  idCardPhotoUrl: ''
+  fullName: "",
+  documentNumber: "",
+  studentCode: "",
+  institutionalEmail: "",
+  idCardPhotoUrl: "",
 });
 
-const days = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'];
+const DAYS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"];
 
-const diurnalSlots = [
-  { start: '11:00', end: '12:00' },
-  { start: '12:00', end: '13:00' },
-  { start: '13:00', end: '14:00' },
-  { start: '14:00', end: '15:00' },
-  { start: '15:00', end: '16:00' }
-];
+const SCHEDULES = {
+  DIURNO: [
+    ["11:00", "12:00"],
+    ["12:00", "13:00"],
+    ["13:00", "14:00"],
+    ["14:00", "15:00"],
+    ["15:00", "16:00"],
+  ],
+  NOCTURNO: [
+    ["17:00", "18:00"],
+    ["18:00", "19:00"],
+    ["19:00", "20:00"],
+    ["20:00", "21:00"],
+  ],
+};
 
-const nocturnalSlots = [
-  { start: '17:00', end: '18:00' },
-  { start: '18:00', end: '19:00' },
-  { start: '19:00', end: '20:00' },
-  { start: '20:00', end: '21:00' }
-];
-
-// ================== Formulario principal ==================
-const InscriptionCompleteForm: FC<Props> = ({ tournamentId, onSuccess, onCancel }) => {
-  const [loading, setLoading] = useState<boolean>(false);
-  const [tournament, setTournament] = useState<Tournament>(null);
+export default function InscriptionCompleteForm({
+  tournamentId,
+  onSuccess,
+  onCancel,
+}: Props) {
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [tournament, setTournament] = useState<any>(null);
   const [clubs, setClubs] = useState<Club[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
-  const [delegateIndex, setDelegateIndex] = useState<number>(0);
-  const [availability, setAvailability] = useState<any[]>([]);
+  const [delegateIndex, setDelegateIndex] = useState(0);
+  const [availability, setAvailability] = useState<Availability[]>([]);
 
   const [formData, setFormData] = useState({
-    teamName: '',
+    teamName: "",
     clubId: 0,
-    delegatePhone: ''
+    delegatePhone: "",
   });
 
-  // ================== Cargar datos del torneo y clubes ==================
+  // === Cargar torneo y clubs ===
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const tRes = await fetch(`http://localhost:8080/api/tournaments/${tournamentId}`);
-        if (tRes.ok) {
-          const tData = await tRes.json();
-          setTournament(tData);
-        }
-      } catch (err) {
-        console.error('Error cargando torneo:', err);
-      }
-
-      try {
-        const cRes = await fetch('http://localhost:8080/api/clubs');
-        if (cRes.ok) {
-          const cData = await cRes.json();
-          setClubs(cData);
-        }
-      } catch (err) {
-        console.error('Error cargando clubs:', err);
+        const t = await tournamentsService.getById(tournamentId);
+        setTournament(t);
+        const c = await clubsService.getAll();
+        setClubs(Array.isArray(c) ? c : []);
+      } catch (e) {
+        console.error("Error cargando datos:", e);
       }
     };
-
     fetchData();
   }, [tournamentId]);
 
-  // ================== Inicializar jugadores según categoría ==================
+  // === Inicializar jugadores ===
   useEffect(() => {
-    const members = tournament?.category?.membersPerTeam;
-    if (typeof members === 'number' && members > 0) {
-      const initialPlayers: Player[] = Array.from({ length: members }, () => defaultPlayer());
-      setPlayers(initialPlayers);
+    if (tournament?.category?.membersPerTeam) {
+      setPlayers(
+        Array.from({ length: tournament.category.membersPerTeam }, () =>
+          defaultPlayer()
+        )
+      );
     }
   }, [tournament]);
 
-  // ================== Funciones auxiliares ==================
-  const handlePlayerChange = (index: number, field: keyof Player, value: string) => {
-    setPlayers(prev => {
+  // === Manejo de jugadores ===
+  const handlePlayerChange = (i: number, field: keyof Player, value: string) => {
+    setPlayers((prev) => {
       const updated = [...prev];
-      updated[index] = { ...(updated[index] ?? defaultPlayer()), [field]: value };
+      updated[i] = { ...updated[i], [field]: value };
       return updated;
     });
   };
 
+  // === Subir foto ===
   const handleFileUpload = async (index: number, file: File | null) => {
     if (!file) return;
-
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-    if (!validTypes.includes(file.type)) {
-      alert('Solo se permiten archivos JPG, JPEG o PNG');
+    if (!["image/jpeg", "image/jpg", "image/png"].includes(file.type)) {
+      alert("Solo se permiten JPG o PNG");
       return;
     }
-
     if (file.size > 5 * 1024 * 1024) {
-      alert('El archivo no debe superar 5MB');
+      alert("El archivo no puede superar los 5MB");
       return;
     }
-
-    handlePlayerChange(index, 'idCardPhotoUrl', 'UPLOADING...');
-
+    handlePlayerChange(index, "idCardPhotoUrl", "UPLOADING...");
     try {
       const data = new FormData();
-      data.append('file', file);
-
-      const response = await fetch('http://localhost:8080/api/files/upload/id-card', {
-        method: 'POST',
-        body: data
+      data.append("file", file);
+      const res = await fetch("http://localhost:8080/api/files/upload/id-card", {
+        method: "POST",
+        body: data,
       });
-
-      if (!response.ok) throw new Error('Error al subir archivo');
-
-      const json = await response.json();
-      const fileUrl = json.url as string | undefined;
-
-      if (fileUrl) {
-        handlePlayerChange(index, 'idCardPhotoUrl', fileUrl);
-        alert(`✅ Foto del jugador ${index + 1} cargada exitosamente`);
-      } else {
-        throw new Error('Respuesta sin URL');
-      }
-    } catch (error) {
-      console.error('❌ Error al subir:', error);
-      handlePlayerChange(index, 'idCardPhotoUrl', '');
-      alert(`❌ Error al cargar la foto del jugador ${index + 1}`);
+      const json = await res.json();
+      handlePlayerChange(index, "idCardPhotoUrl", json.url || "");
+    } catch (e) {
+      handlePlayerChange(index, "idCardPhotoUrl", "");
+      alert("Error al subir la foto");
     }
   };
 
-  // ================== Validaciones ==================
-  const validateForm = (): boolean => {
-    if (!formData.teamName.trim()) {
-      alert('El nombre del equipo es requerido');
-      return false;
+  // === Validar Paso 1 (datos del equipo) ===
+  const validateStep1 = async () => {
+    if (!formData.teamName.trim()) return alert("El nombre del equipo es requerido");
+    if (!formData.delegatePhone.trim()) return alert("Teléfono del delegado requerido");
+
+    const isTeamNameAvailable = await inscriptionsService.checkTeamName(
+      Number(tournamentId),
+      formData.teamName
+    );
+    if (!isTeamNameAvailable)
+      return alert("❌ Este nombre de equipo ya está registrado en este torneo");
+
+    if (formData.clubId) {
+      const isClubAvailable = await inscriptionsService.checkClub(
+        Number(tournamentId),
+        formData.clubId
+      );
+      if (!isClubAvailable)
+        return alert("❌ Este club ya tiene un equipo inscrito en este torneo");
     }
 
-    if (!formData.delegatePhone.trim()) {
-      alert('El teléfono del delegado es requerido');
-      return false;
-    }
+    setStep(2);
+  };
 
-    // Validar jugadores
+  // === Validar Paso 2 (jugadores) ===
+  const validateStep2 = async () => {
     for (let i = 0; i < players.length; i++) {
-      const player = players[i];
-      if (!player.fullName || !player.documentNumber || !player.studentCode ||
-          !player.institutionalEmail || !player.idCardPhotoUrl) {
-        alert(`Faltan datos del jugador ${i + 1}`);
+      const p = players[i];
+      if (!p.fullName || !p.documentNumber || !p.studentCode || !p.institutionalEmail)
+        return alert(`Faltan datos del jugador ${i + 1}`);
+      if (p.idCardPhotoUrl === "UPLOADING...") return alert(`Foto en proceso del jugador ${i + 1}`);
+      if (!p.idCardPhotoUrl) return alert(`Foto obligatoria para el jugador ${i + 1}`);
+
+      const available = await inscriptionsService.checkPlayer(
+        Number(tournamentId),
+        p.documentNumber
+      );
+      if (!available)
+        return alert(`El jugador ${p.fullName} ya está inscrito en otro equipo`);
+    }
+    setStep(3);
+  };
+
+  // === Validar Paso 3 (disponibilidad) ===
+  const validateStep3 = (): boolean => {
+    const selectedDays = new Set(availability.map((a) => a.dayOfWeek));
+    for (const d of DAYS) {
+      if (!selectedDays.has(d)) {
+        alert(`Debe seleccionar al menos un horario para ${d}`);
         return false;
       }
     }
-
-    // Validar disponibilidad
-    const selectedDays = new Set(availability.map(a => a.dayOfWeek));
-    if (selectedDays.size < 5) {
-      alert('Debes seleccionar al menos una franja horaria por cada día (lunes a viernes)');
-      return false;
-    }
-
     return true;
   };
 
-  // ================== Envío del formulario ==================
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (!validateForm()) return;
+  // === Enviar inscripción completa ===
+  const handleSubmit = async () => {
+    if (!validateStep3()) return;
     setLoading(true);
-
     try {
-      if (!tournament) throw new Error('Torneo no cargado');
-
       const payload = {
         tournamentId: Number(tournamentId),
         categoryId: tournament.category.id,
@@ -212,232 +202,221 @@ const InscriptionCompleteForm: FC<Props> = ({ tournamentId, onSuccess, onCancel 
         delegatePhone: formData.delegatePhone,
         delegateIndex,
         players,
-        availability
+        availability,
       };
-
-      const response = await fetch('http://localhost:8080/api/inscriptions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Error al crear inscripción');
-      }
-
-      alert('✅ Inscripción creada exitosamente');
+      await inscriptionsService.create(payload);
+      alert("✅ Inscripción creada correctamente");
       onSuccess();
-    } catch (error) {
-      alert(`❌ Error al crear inscripción: ${error instanceof Error ? error.message : 'Desconocido'}`);
+    } catch (e) {
+      console.error(e);
+      alert("❌ Error al crear inscripción");
     } finally {
       setLoading(false);
     }
   };
 
-  // ================== Subcomponente de horarios ==================
-  const TeamAvailabilitySelector = ({
-    modalidad,
-    onChange
-  }: {
-    modalidad: 'diurna' | 'nocturna';
-    onChange: (selection: any[]) => void;
-  }) => {
-    const slots = modalidad === 'diurna' ? diurnalSlots : nocturnalSlots;
-    const [selection, setSelection] = useState<Record<string, string[]>>({});
-
-    useEffect(() => {
-      const formatted = Object.entries(selection).flatMap(([day, starts]) =>
-        starts.map(start => {
-          const slot = slots.find(s => s.start === start);
-          return { dayOfWeek: day, startTime: slot?.start, endTime: slot?.end };
-        })
-      );
-      onChange(formatted);
-    }, [selection]);
-
-    const toggleSlot = (day: string, start: string) => {
-      setSelection(prev => {
-        const updated = { ...prev };
-        const list = new Set(updated[day] || []);
-        list.has(start) ? list.delete(start) : list.add(start);
-        updated[day] = Array.from(list);
-        return updated;
-      });
-    };
-
-    return (
-      <div className="mt-8">
-        <h3 className="text-lg font-bold mb-4">🕒 Disponibilidad del equipo</h3>
-        <p className="text-sm text-gray-600 mb-2">
-          Selecciona al menos una franja por día ({modalidad.toUpperCase()}).
-        </p>
-
-        <table className="w-full border text-center">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-2 border">Hora</th>
-              {days.map(day => (
-                <th key={day} className="p-2 border">{day}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {slots.map(slot => (
-              <tr key={slot.start}>
-                <td className="border p-2">{`${slot.start} - ${slot.end}`}</td>
-                {days.map(day => (
-                  <td key={day} className="border p-2">
-                    <input
-                      type="checkbox"
-                      checked={selection[day]?.includes(slot.start) || false}
-                      onChange={() => toggleSlot(day, slot.start)}
-                    />
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
-  };
-
-  // ================== Render ==================
-  if (!tournament) return <div className="text-center p-8">Cargando...</div>;
+  // === Renderizado de pasos ===
+  if (!tournament)
+    return <div className="p-6 text-center">Cargando datos del torneo...</div>;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 p-6 bg-white rounded-lg shadow">
-      {/* Datos del equipo */}
-      <div className="border-b pb-4">
-        <h3 className="text-lg font-bold mb-4">📋 Datos del Equipo</h3>
-        <div className="grid gap-4">
-          <div>
-            <label className="block font-semibold mb-2">Nombre del Equipo *</label>
+    <div className="p-6 bg-white rounded-lg shadow-lg space-y-6">
+      {step === 1 && (
+        <>
+          <h2 className="text-xl font-bold mb-4">📋 Datos del Equipo</h2>
+          <div className="space-y-4">
             <input
               type="text"
+              placeholder="Nombre del equipo *"
+              className="w-full p-2 border rounded"
               value={formData.teamName}
-              onChange={(e) => setFormData({...formData, teamName: e.target.value})}
-              className="w-full px-4 py-2 border rounded-lg"
-              required
+              onChange={(e) =>
+                setFormData({ ...formData, teamName: e.target.value })
+              }
             />
-          </div>
-
-          <div>
-            <label className="block font-semibold mb-2">Club (Opcional)</label>
             <select
               value={formData.clubId}
-              onChange={(e) => setFormData({...formData, clubId: Number(e.target.value)})}
-              className="w-full px-4 py-2 border rounded-lg"
+              onChange={(e) =>
+                setFormData({ ...formData, clubId: Number(e.target.value) })
+              }
+              className="w-full p-2 border rounded"
             >
               <option value={0}>Sin club</option>
-              {clubs.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {Array.isArray(clubs) &&
+                clubs.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
             </select>
-          </div>
-
-          <div>
-            <label className="block font-semibold mb-2">Teléfono del Delegado *</label>
             <input
               type="tel"
+              placeholder="Teléfono del delegado *"
+              className="w-full p-2 border rounded"
               value={formData.delegatePhone}
-              onChange={(e) => setFormData({...formData, delegatePhone: e.target.value})}
-              className="w-full px-4 py-2 border rounded-lg"
-              placeholder="3001234567"
-              required
+              onChange={(e) =>
+                setFormData({ ...formData, delegatePhone: e.target.value })
+              }
             />
           </div>
-        </div>
-      </div>
+          <button
+            onClick={validateStep1}
+            className="mt-4 bg-black text-yellow-400 px-6 py-3 rounded-lg font-bold"
+          >
+            Siguiente ➡️
+          </button>
+        </>
+      )}
 
-      {/* Jugadores */}
-      <div>
-        <h3 className="text-lg font-bold mb-4">
-          👥 Jugadores ({tournament.category.membersPerTeam} requeridos)
-        </h3>
-
-        <div className="space-y-6">
-          {players.map((player, index) => (
-            <div key={index} className="border p-4 rounded-lg bg-gray-50">
-              <div className="flex justify-between items-center mb-3">
-                <h4 className="font-semibold">Jugador {index + 1}</h4>
+      {step === 2 && (
+        <>
+          <h2 className="text-xl font-bold mb-4">👥 Jugadores</h2>
+          {players.map((p, i) => (
+            <div key={i} className="border p-3 rounded mb-3 bg-gray-50">
+              <div className="flex justify-between">
+                <h4 className="font-semibold">Jugador {i + 1}</h4>
                 <label className="flex items-center gap-2">
                   <input
                     type="radio"
-                    name="delegate"
-                    checked={delegateIndex === index}
-                    onChange={() => setDelegateIndex(index)}
+                    checked={delegateIndex === i}
+                    onChange={() => setDelegateIndex(i)}
                   />
-                  <span className="text-sm">Delegado</span>
+                  <span>Delegado</span>
                 </label>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  placeholder="Nombre Completo *"
-                  value={player.fullName}
-                  onChange={(e) => handlePlayerChange(index, 'fullName', e.target.value)}
-                  className="px-3 py-2 border rounded"
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="Documento *"
-                  value={player.documentNumber}
-                  onChange={(e) => handlePlayerChange(index, 'documentNumber', e.target.value)}
-                  className="px-3 py-2 border rounded"
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="Código Estudiantil *"
-                  value={player.studentCode}
-                  onChange={(e) => handlePlayerChange(index, 'studentCode', e.target.value)}
-                  className="px-3 py-2 border rounded"
-                  required
-                />
-                <input
-                  type="email"
-                  placeholder="Email Institucional *"
-                  value={player.institutionalEmail}
-                  onChange={(e) => handlePlayerChange(index, 'institutionalEmail', e.target.value)}
-                  className="px-3 py-2 border rounded"
-                  required
-                />
-              </div>
+              <input
+                className="w-full border p-2 my-1"
+                placeholder="Nombre completo"
+                value={p.fullName}
+                onChange={(e) =>
+                  handlePlayerChange(i, "fullName", e.target.value)
+                }
+              />
+              <input
+                className="w-full border p-2 my-1"
+                placeholder="Documento"
+                value={p.documentNumber}
+                onChange={(e) =>
+                  handlePlayerChange(i, "documentNumber", e.target.value)
+                }
+              />
+              <input
+                className="w-full border p-2 my-1"
+                placeholder="Código estudiantil"
+                value={p.studentCode}
+                onChange={(e) =>
+                  handlePlayerChange(i, "studentCode", e.target.value)
+                }
+              />
+              <input
+                className="w-full border p-2 my-1"
+                placeholder="Correo institucional"
+                value={p.institutionalEmail}
+                onChange={(e) =>
+                  handlePlayerChange(i, "institutionalEmail", e.target.value)
+                }
+              />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) =>
+                  handleFileUpload(i, e.target.files?.[0] || null)
+                }
+              />
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* Disponibilidad */}
-      {tournament.modalidad && (
-        <TeamAvailabilitySelector
-          modalidad={tournament.modalidad}
-          onChange={setAvailability}
-        />
+          <div className="flex justify-between">
+            <button
+              onClick={() => setStep(1)}
+              className="bg-gray-300 px-4 py-2 rounded"
+            >
+              ⬅️ Volver
+            </button>
+            <button
+              onClick={validateStep2}
+              className="bg-black text-yellow-400 px-6 py-3 rounded font-bold"
+            >
+              Siguiente ➡️
+            </button>
+          </div>
+        </>
       )}
 
-      {/* Botones */}
-      <div className="flex gap-3 pt-4 border-t">
-        <button
-          type="submit"
-          disabled={loading || players.some(p => p.idCardPhotoUrl === 'UPLOADING...')}
-          className="flex-1 bg-black text-yellow-400 py-3 rounded-lg font-bold disabled:opacity-50 hover:bg-gray-800 transition"
-        >
-          {loading ? 'Enviando...' : '✅ Crear Inscripción'}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={loading}
-          className="px-6 py-3 bg-gray-300 rounded-lg hover:bg-gray-400 transition disabled:opacity-50"
-        >
-          Cancelar
-        </button>
-      </div>
-    </form>
+      {step === 3 && (
+        <>
+          <h2 className="text-xl font-bold mb-4">🕐 Disponibilidad Horaria</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full border">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="p-2 border">Hora</th>
+                  {DAYS.map((d) => (
+                    <th key={d} className="p-2 border">
+                      {d}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(SCHEDULES[
+                  tournament.modality === "NOCTURNO" ? "NOCTURNO" : "DIURNO"
+                ] as [string, string][]).map(([start, end], i) => (
+                  <tr key={i}>
+                    <td className="p-2 border text-center">
+                      {start} - {end}
+                    </td>
+                    {DAYS.map((day) => {
+                      const selected = availability.some(
+                        (a) =>
+                          a.dayOfWeek === day &&
+                          a.startTime === start &&
+                          a.endTime === end
+                      );
+                      return (
+                        <td
+                          key={day}
+                          className="p-2 border text-center cursor-pointer"
+                          onClick={() => {
+                            setAvailability((prev) => {
+                              if (selected)
+                                return prev.filter(
+                                  (a) =>
+                                    !(
+                                      a.dayOfWeek === day &&
+                                      a.startTime === start &&
+                                      a.endTime === end
+                                    )
+                                );
+                              return [...prev, { dayOfWeek: day, startTime: start, endTime: end }];
+                            });
+                          }}
+                        >
+                          {selected ? "✅" : ""}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="flex justify-between mt-4">
+            <button
+              onClick={() => setStep(2)}
+              className="bg-gray-300 px-4 py-2 rounded"
+            >
+              ⬅️ Volver
+            </button>
+            <button
+              disabled={loading}
+              onClick={handleSubmit}
+              className="bg-green-600 text-white px-6 py-3 rounded font-bold"
+            >
+              {loading ? "Enviando..." : "✅ Finalizar inscripción"}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
   );
-};
-
-export default InscriptionCompleteForm;
+}

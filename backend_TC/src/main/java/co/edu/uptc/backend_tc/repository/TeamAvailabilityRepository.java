@@ -1,6 +1,7 @@
 package co.edu.uptc.backend_tc.repository;
 
 import co.edu.uptc.backend_tc.entity.Inscription;
+import co.edu.uptc.backend_tc.entity.Team;
 import co.edu.uptc.backend_tc.entity.TeamAvailability;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -24,4 +25,13 @@ public interface TeamAvailabilityRepository extends JpaRepository<TeamAvailabili
 
     // Eliminar todas las disponibilidades de un equipo
     void deleteByTeamId(Long teamId);
+
+    List<TeamAvailability> findByTeamAndAvailableTrue(Team team);
+
+    List<TeamAvailability> findByInscriptionAndAvailableTrue(Inscription inscription);
+
+    boolean existsByTeam(Team team);
+
+
+    List<TeamAvailability> findByTeamAndDayOfWeek(Team team, DayOfWeek dayOfWeek);
 }
