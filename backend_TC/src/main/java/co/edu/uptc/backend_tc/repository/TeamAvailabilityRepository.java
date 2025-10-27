@@ -1,5 +1,6 @@
 package co.edu.uptc.backend_tc.repository;
 
+import co.edu.uptc.backend_tc.entity.Inscription;
 import co.edu.uptc.backend_tc.entity.TeamAvailability;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -16,6 +17,10 @@ public interface TeamAvailabilityRepository extends JpaRepository<TeamAvailabili
 
     // Por día
     List<TeamAvailability> findByTeamIdAndDayOfWeek(Long teamId, DayOfWeek dayOfWeek);
+    // 🔹 Buscar las franjas que pertenecen a una inscripción pendiente
+    List<TeamAvailability> findByInscription(Inscription inscription);
+
+    // (opcional) por día de la semana y equipo
 
     // Eliminar todas las disponibilidades de un equipo
     void deleteByTeamId(Long teamId);

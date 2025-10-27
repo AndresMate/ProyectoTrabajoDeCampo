@@ -20,8 +20,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,6 +41,8 @@ public class InscriptionService {
     private final PlayerMapper playerMapper;
     private final TeamRepository teamRepository;
     private final TeamRosterRepository teamRosterRepository;
+    private final TeamAvailabilityRepository teamAvailabilityRepository;
+
 
     public List<InscriptionResponseDTO> getAll() {
         return inscriptionRepository.findAll()
@@ -223,6 +227,40 @@ public class InscriptionService {
             inscriptionPlayerRepository.save(inscriptionPlayer);
         }
 
+        // ✅ Guardar disponibilidad semanal del equipo (en la inscripción)
+        if (dto.getAvailability() != null && !dto.getAvailability().isEmpty()) {
+            // Validar al menos una franja por día
+            Set<DayOfWeek> days = dto.getAvailability().stream()
+                    .map(a -> a.getDayOfWeek())
+                    .collect(Collectors.toSet());
+
+            List<DayOfWeek> requiredDays = List.of(
+                    DayOfWeek.MONDAY,
+                    DayOfWeek.TUESDAY,
+                    DayOfWeek.WEDNESDAY,
+                    DayOfWeek.THURSDAY,
+                    DayOfWeek.FRIDAY
+            );
+
+            if (!days.containsAll(requiredDays)) {
+                throw new BusinessException("Debe haber al menos una franja horaria para cada día (lunes a viernes)", "MISSING_DAY_AVAILABILITY");
+            }
+
+            Inscription finalInscription = inscription;
+            List<TeamAvailability> availabilityList = dto.getAvailability().stream()
+                    .map(a -> TeamAvailability.builder()
+                            .inscription(finalInscription) // 👈 vínculo temporal
+                            .dayOfWeek(a.getDayOfWeek())
+                            .startTime(a.getStartTime())
+                            .endTime(a.getEndTime())
+                            .available(true)
+                            .build())
+                    .toList();
+
+            teamAvailabilityRepository.saveAll(availabilityList);
+        }
+
+
         return enrichResponseDTO(inscription);
     }
 
@@ -266,6 +304,23 @@ public class InscriptionService {
         inscription.setStatus(InscriptionStatus.APPROVED);
         inscription.setOriginatedTeam(team);
         inscriptionRepository.save(inscription);
+
+        // 🔹 Copiar disponibilidades del inscription al nuevo equipo
+        List<TeamAvailability> inscriptionAvailability = teamAvailabilityRepository.findByInscription(inscription);
+        if (inscriptionAvailability != null && !inscriptionAvailability.isEmpty()) {
+            List<TeamAvailability> teamAvailability = inscriptionAvailability.stream()
+                    .map(a -> TeamAvailability.builder()
+                            .team(team)
+                            .dayOfWeek(a.getDayOfWeek())
+                            .startTime(a.getStartTime())
+                            .endTime(a.getEndTime())
+                            .available(a.getAvailable())
+                            .build())
+                    .toList();
+
+            teamAvailabilityRepository.saveAll(teamAvailability);
+        }
+
 
         // 6️⃣ Retornar DTO
         return inscriptionMapper.toResponseDTO(inscription);

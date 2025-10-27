@@ -70,6 +70,10 @@ public class Inscription implements Serializable {
     @JoinColumn(name = "club_id")
     private Club club;
 
+    @OneToMany(mappedBy = "inscription", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TeamAvailability> availability = new ArrayList<>();
+
+
 
     @Column(length = 500)
     private String rejectionReason;
@@ -83,6 +87,7 @@ public class Inscription implements Serializable {
 
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
+
 
     @PrePersist
     protected void onCreate() {

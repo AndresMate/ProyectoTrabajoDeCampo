@@ -45,6 +45,10 @@ public class TeamAvailability implements Serializable {
     @Column(name = "end_time", nullable = false)
     private LocalTime endTime;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "inscription_id")
+    private Inscription inscription;
+    
     @Column(nullable = false)
     private Boolean available = true;
 

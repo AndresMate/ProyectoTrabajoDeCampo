@@ -34,8 +34,63 @@ export default function InscripcionTorneoPage() {
 
   const [errors, setErrors] = useState<any>({});
 
+  // Disponibilidad: internal representation is a map day -> Set(startTime)
+  // days used in payload will be English uppercase: MONDAY..FRIDAY
+  const DAYS_ORDER = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'] as const;
+  const DAY_LABEL: Record<string, string> = {
+    MONDAY: 'Lunes',
+    TUESDAY: 'Martes',
+    WEDNESDAY: 'Miércoles',
+    THURSDAY: 'Jueves',
+    FRIDAY: 'Viernes'
+  };
+
+  const DIURNO_SLOTS = [
+    { start: '11:00', end: '12:00' },
+    { start: '12:00', end: '13:00' },
+    { start: '13:00', end: '14:00' },
+    { start: '14:00', end: '15:00' },
+    { start: '15:00', end: '16:00' }
+  ];
+
+  const NOCTURNO_SLOTS = [
+    { start: '17:00', end: '18:00' },
+    { start: '18:00', end: '19:00' },
+    { start: '19:00', end: '20:00' },
+    { start: '20:00', end: '21:00' }
+  ];
+
+  // internal selection state
+  const [selection, setSelection] = useState<Record<string, Set<string>>>({
+    MONDAY: new Set(),
+    TUESDAY: new Set(),
+    WEDNESDAY: new Set(),
+    THURSDAY: new Set(),
+    FRIDAY: new Set()
+  });
+
+  // computed availability for payload (list of objects)
+  const computeAvailabilityPayload = (): { dayOfWeek: string; startTime: string; endTime: string }[] => {
+    const slots = tournament?.modality === 'DIURNO' ? DIURNO_SLOTS : NOCTURNO_SLOTS;
+    const result: { dayOfWeek: string; startTime: string; endTime: string }[] = [];
+
+    for (const day of DAYS_ORDER) {
+      const starts = Array.from(selection[day] || []);
+      for (const start of starts) {
+        const slot = slots.find(s => s.start === start);
+        if (slot) {
+          result.push({ dayOfWeek: day, startTime: slot.start, endTime: slot.end });
+        }
+      }
+    }
+    return result;
+  };
+
   useEffect(() => {
     fetchData();
+    // reset selection when tournament changes
+    return () => {};
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchData = async () => {
@@ -48,7 +103,7 @@ export default function InscripcionTorneoPage() {
       setTournament(tournamentData);
       setClubs(clubsData);
 
-      // ✅ Inicializar jugadores según el tamaño del equipo
+      // Inicializar jugadores según el tamaño del equipo
       const membersCount = tournamentData.category?.membersPerTeam || 1;
       setPlayers(Array.from({ length: membersCount }, () => ({
         fullName: '',
@@ -57,6 +112,16 @@ export default function InscripcionTorneoPage() {
         institutionalEmail: '',
         idCardPhotoUrl: ''
       })));
+
+      // inicializar selection vacío (por si viene otro torneo)
+      setSelection({
+        MONDAY: new Set(),
+        TUESDAY: new Set(),
+        WEDNESDAY: new Set(),
+        THURSDAY: new Set(),
+        FRIDAY: new Set()
+      });
+
     } catch (error) {
       console.error('Error al cargar datos:', error);
       alert('No se pudo cargar la información del torneo');
@@ -74,8 +139,9 @@ export default function InscripcionTorneoPage() {
 
     if (!formData.delegatePhone.trim()) {
       newErrors.delegatePhone = 'El teléfono del delegado es requerido';
-    } else if (!/^\d{10}$/.test(formData.delegatePhone)) {
-      newErrors.delegatePhone = 'Teléfono debe tener 10 dígitos';
+    } else if (!/^\d{7,15}$/.test(formData.delegatePhone)) {
+      // acepta entre 7 y 15 dígitos (ajusta a tu regla si necesitas 10 exactos)
+      newErrors.delegatePhone = 'Teléfono inválido';
     }
 
     setErrors(newErrors);
@@ -116,23 +182,50 @@ export default function InscripcionTorneoPage() {
     return true;
   };
 
+  const validateStep3 = () => {
+    // mínimo una franja por día: verificar cada día tiene al menos un elemento en selection
+    for (const day of DAYS_ORDER) {
+      if (!selection[day] || selection[day].size === 0) {
+        alert(`Debes seleccionar al menos una franja horaria para ${DAY_LABEL[day]}`);
+        return false;
+      }
+    }
+    return true;
+  };
+
   const handleNextStep = async () => {
-    if (!validateStep1()) {
-      alert('Por favor corrige los errores en el formulario');
+    if (step === 1) {
+      if (!validateStep1()) {
+        alert('Por favor corrige los errores en el formulario');
+        return;
+      }
+
+      // Chequear nombre de equipo disponible
+      try {
+        const availability = await inscriptionsService.checkTeamName(Number(id), formData.teamName);
+        if (!availability.isAvailable) {
+          alert('El nombre del equipo ya está en uso. Por favor elige otro.');
+          return;
+        }
+      } catch (err) {
+        console.error('Error al chequear nombre:', err);
+        alert('No se pudo verificar el nombre del equipo. Intenta nuevamente.');
+        return;
+      }
+
+      setStep(2);
       return;
     }
 
-    const availability = await inscriptionsService.checkTeamName(
-      Number(id),
-      formData.teamName
-    );
-
-    if (!availability.isAvailable) {
-      alert('El nombre del equipo ya está en uso. Por favor elige otro.');
+    if (step === 2) {
+      if (!validateStep2()) return;
+      setStep(3);
       return;
     }
+  };
 
-    setStep(2);
+  const handleBack = () => {
+    if (step > 1) setStep(step - 1);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -161,8 +254,6 @@ export default function InscripcionTorneoPage() {
       return;
     }
 
-    console.log('📤 Archivo seleccionado:', file.name, file.type, file.size);
-
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     if (!validTypes.includes(file.type)) {
       alert('Solo se permiten archivos JPG, JPEG o PNG');
@@ -177,35 +268,26 @@ export default function InscripcionTorneoPage() {
     setUploadingFiles(prev => ({ ...prev, [index]: true }));
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      console.log('⬆️  Enviando archivo al servidor...');
+      const form = new FormData();
+      form.append('file', file);
 
       const response = await fetch('http://localhost:8080/api/files/upload/id-card', {
         method: 'POST',
-        body: formData
+        body: form
       });
 
-      console.log('📥 Respuesta del servidor:', response.status, response.statusText);
-
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('❌ Error del servidor:', errorData);
-        throw new Error(errorData.error || 'Error al subir archivo');
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || 'Error al subir archivo');
       }
 
       const json = await response.json();
-      console.log('✅ JSON completo de respuesta:', json);
-
       const fileUrl = json.url as string | undefined;
 
       if (fileUrl) {
         handlePlayerChange(index, 'idCardPhotoUrl', fileUrl);
-        alert(`✅ Foto del jugador ${index + 1} cargada exitosamente`);
-        console.log(`🔗 URL guardada para jugador ${index + 1}:`, fileUrl);
       } else {
-        throw new Error('Respuesta de upload sin URL');
+        throw new Error('Respuesta sin URL');
       }
     } catch (error) {
       console.error('❌ Error completo al subir:', error);
@@ -215,12 +297,35 @@ export default function InscripcionTorneoPage() {
     }
   };
 
+  const toggleSlot = (day: string, start: string) => {
+    setSelection(prev => {
+      const updated = { ...prev };
+      const setForDay = new Set(updated[day] || []);
+      if (setForDay.has(start)) {
+        setForDay.delete(start);
+      } else {
+        setForDay.add(start);
+      }
+      updated[day] = setForDay;
+      return updated;
+    });
+  };
+
+  const isSlotSelected = (day: string, start: string) => {
+    return selection[day]?.has(start) ?? false;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateStep2()) {
+    // validate previous steps again
+    if (step !== 3) {
+      alert('Debes completar todos los pasos antes de enviar');
       return;
     }
+
+    if (!validateStep3()) return;
+    if (!validateStep2()) return; // ensure players still valid
 
     setSubmitting(true);
 
@@ -231,8 +336,9 @@ export default function InscripcionTorneoPage() {
         clubId: formData.clubId || undefined,
         teamName: formData.teamName,
         delegatePhone: formData.delegatePhone,
-        delegateIndex, // ✅ Índice del jugador que será delegado
-        players
+        delegateIndex,
+        players,
+        availability: computeAvailabilityPayload()
       };
 
       console.log('📤 Enviando inscripción:', inscriptionData);
@@ -270,6 +376,8 @@ export default function InscripcionTorneoPage() {
     );
   }
 
+  const slotsToShow = tournament.modality === 'DIURNO' ? DIURNO_SLOTS : NOCTURNO_SLOTS;
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
@@ -282,25 +390,18 @@ export default function InscripcionTorneoPage() {
             <p className="font-semibold">Torneo: <span className="text-uptc-black">{tournament.name}</span></p>
             <p>Deporte: <span className="font-medium">{tournament.sport?.name}</span> • Categoría: <span className="font-medium">{tournament.category?.name}</span></p>
             <p className="text-sm mt-1">Jugadores requeridos: <span className="font-bold text-uptc-yellow">{tournament.category?.membersPerTeam}</span></p>
+            <p className="text-sm mt-1">Modalidad: <span className="font-bold">{tournament.modality}</span></p>
           </div>
         </div>
 
         {/* Indicador de pasos */}
         <div className="bg-white rounded-lg shadow-md p-4 mb-6">
           <div className="flex items-center justify-center space-x-4">
-            <div className={`flex items-center ${step === 1 ? 'text-uptc-yellow' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 1 ? 'bg-uptc-yellow text-white' : 'bg-gray-200'}`}>
-                1
-              </div>
-              <span className="ml-2 font-semibold">Datos del Equipo</span>
-            </div>
+            <StepIndicator step={step} index={1} label="Datos del Equipo" />
             <div className="w-16 h-1 bg-gray-300"></div>
-            <div className={`flex items-center ${step === 2 ? 'text-uptc-yellow' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 2 ? 'bg-uptc-yellow text-white' : 'bg-gray-200'}`}>
-                2
-              </div>
-              <span className="ml-2 font-semibold">Jugadores</span>
-            </div>
+            <StepIndicator step={step} index={2} label="Jugadores" />
+            <div className="w-16 h-1 bg-gray-300"></div>
+            <StepIndicator step={step} index={3} label="Disponibilidad" />
           </div>
         </div>
 
@@ -319,14 +420,10 @@ export default function InscripcionTorneoPage() {
                     name="teamName"
                     value={formData.teamName}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-uptc-yellow ${
-                      errors.teamName ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-uptc-yellow ${errors.teamName ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="Ej: Águilas FC"
                   />
-                  {errors.teamName && (
-                    <p className="text-red-500 text-sm mt-1">{errors.teamName}</p>
-                  )}
+                  {errors.teamName && (<p className="text-red-500 text-sm mt-1">{errors.teamName}</p>)}
                 </div>
 
                 <div>
@@ -357,21 +454,16 @@ export default function InscripcionTorneoPage() {
                     name="delegatePhone"
                     value={formData.delegatePhone}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-uptc-yellow ${
-                      errors.delegatePhone ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-uptc-yellow ${errors.delegatePhone ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="3001234567"
-                    maxLength={10}
+                    maxLength={15}
                   />
-                  {errors.delegatePhone && (
-                    <p className="text-red-500 text-sm mt-1">{errors.delegatePhone}</p>
-                  )}
+                  {errors.delegatePhone && (<p className="text-red-500 text-sm mt-1">{errors.delegatePhone}</p>)}
                   <p className="text-xs text-gray-500 mt-1">
                     El teléfono del jugador que será el delegado del equipo
                   </p>
                 </div>
 
-                {/* Información importante */}
                 <div className="bg-blue-50 border-l-4 border-uptc-yellow p-4">
                   <h4 className="font-semibold text-uptc-black mb-2">📋 Información Importante:</h4>
                   <ul className="text-sm text-uptc-black space-y-1">
@@ -382,20 +474,11 @@ export default function InscripcionTorneoPage() {
                   </ul>
                 </div>
 
-                {/* Botones paso 1 */}
                 <div className="flex gap-4 pt-4">
-                  <button
-                    type="button"
-                    onClick={handleNextStep}
-                    className="flex-1 bg-uptc-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition"
-                  >
+                  <button type="button" onClick={handleNextStep} className="flex-1 bg-uptc-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition">
                     Continuar →
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => router.push(`/torneos/${id}`)}
-                    className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-400 transition"
-                  >
+                  <button type="button" onClick={() => router.push(`/torneos/${id}`)} className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-400 transition">
                     Cancelar
                   </button>
                 </div>
@@ -415,148 +498,122 @@ export default function InscripcionTorneoPage() {
                       <div className="flex justify-between items-center mb-3">
                         <h4 className="font-bold text-lg text-uptc-black">Jugador {index + 1}</h4>
                         <label className="flex items-center gap-2 cursor-pointer bg-white px-4 py-2 rounded-lg border-2 border-uptc-yellow hover:bg-uptc-yellow hover:text-white transition">
-                          <input
-                            type="radio"
-                            name="delegate"
-                            checked={delegateIndex === index}
-                            onChange={() => setDelegateIndex(index)}
-                            className="w-4 h-4"
-                          />
-                          <span className="text-sm font-semibold">
-                            {delegateIndex === index ? '✓ Delegado' : 'Marcar como Delegado'}
-                          </span>
+                          <input type="radio" name="delegate" checked={delegateIndex === index} onChange={() => setDelegateIndex(index)} className="w-4 h-4" />
+                          <span className="text-sm font-semibold">{delegateIndex === index ? '✓ Delegado' : 'Marcar como Delegado'}</span>
                         </label>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-semibold mb-1">Nombre Completo *</label>
-                          <input
-                            type="text"
-                            value={player.fullName}
-                            onChange={(e) => handlePlayerChange(index, 'fullName', e.target.value)}
-                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-uptc-yellow"
-                            placeholder="Juan Pérez López"
-                            required
-                          />
+                          <input type="text" value={player.fullName} onChange={(e) => handlePlayerChange(index, 'fullName', e.target.value)} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-uptc-yellow" placeholder="Juan Pérez López" required />
                         </div>
 
                         <div>
                           <label className="block text-sm font-semibold mb-1">Documento *</label>
-                          <input
-                            type="text"
-                            value={player.documentNumber}
-                            onChange={(e) => handlePlayerChange(index, 'documentNumber', e.target.value)}
-                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-uptc-yellow"
-                            placeholder="1234567890"
-                            required
-                          />
+                          <input type="text" value={player.documentNumber} onChange={(e) => handlePlayerChange(index, 'documentNumber', e.target.value)} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-uptc-yellow" placeholder="1234567890" required />
                         </div>
 
                         <div>
                           <label className="block text-sm font-semibold mb-1">Código Estudiantil *</label>
-                          <input
-                            type="text"
-                            value={player.studentCode}
-                            onChange={(e) => handlePlayerChange(index, 'studentCode', e.target.value)}
-                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-uptc-yellow"
-                            placeholder="202012345"
-                            required
-                          />
+                          <input type="text" value={player.studentCode} onChange={(e) => handlePlayerChange(index, 'studentCode', e.target.value)} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-uptc-yellow" placeholder="202012345" required />
                         </div>
 
                         <div>
                           <label className="block text-sm font-semibold mb-1">Email Institucional *</label>
-                          <input
-                            type="email"
-                            value={player.institutionalEmail}
-                            onChange={(e) => handlePlayerChange(index, 'institutionalEmail', e.target.value)}
-                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-uptc-yellow"
-                            placeholder="jugador@uptc.edu.co"
-                            required
-                          />
+                          <input type="email" value={player.institutionalEmail} onChange={(e) => handlePlayerChange(index, 'institutionalEmail', e.target.value)} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-uptc-yellow" placeholder="jugador@uptc.edu.co" required />
                         </div>
                       </div>
 
-                      {/* Input de archivo */}
                       <div>
-                        <label className="block text-sm font-semibold mb-2">
-                          📷 Foto del Carnet Estudiantil *
-                        </label>
-                        <input
-                          type="file"
-                          accept="image/jpeg,image/jpg,image/png"
-                          onChange={(e) => handleFileUpload(index, e.target.files?.[0] || null)}
-                          disabled={uploadingFiles[index]}
-                          className="w-full px-3 py-2 border rounded-lg bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-                        />
-
-                        {/* Indicador de carga */}
-                        {uploadingFiles[index] && (
-                          <div className="mt-2 flex items-center gap-2">
-                            <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-                            <p className="text-blue-600 text-sm">⏳ Subiendo foto...</p>
-                          </div>
-                        )}
-
-                        {/* Confirmación de carga exitosa */}
-                        {player.idCardPhotoUrl && !uploadingFiles[index] && (
-                          <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-                            <p className="text-green-700 font-semibold text-sm">✅ Foto cargada correctamente</p>
-                            <a
-                              href={player.idCardPhotoUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-blue-600 hover:underline break-all"
-                            >
-                              Ver foto subida
-                            </a>
-                          </div>
-                        )}
-
-                        {!player.idCardPhotoUrl && !uploadingFiles[index] && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            Formatos: JPG, JPEG, PNG • Máximo: 5MB
-                          </p>
-                        )}
+                        <label className="block text-sm font-semibold mb-2">📷 Foto del Carnet Estudiantil *</label>
+                        <input type="file" accept="image/jpeg,image/jpg,image/png" onChange={(e) => handleFileUpload(index, e.target.files?.[0] || null)} disabled={uploadingFiles[index]} className="w-full px-3 py-2 border rounded-lg bg-white disabled:opacity-50 disabled:cursor-not-allowed" />
+                        {uploadingFiles[index] && (<div className="mt-2 flex items-center gap-2"><div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full"></div><p className="text-blue-600 text-sm">⏳ Subiendo foto...</p></div>)}
+                        {player.idCardPhotoUrl && !uploadingFiles[index] && (<div className="mt-2 p-2 bg-green-50 border border-green-200 rounded"><p className="text-green-700 font-semibold text-sm">✅ Foto cargada correctamente</p><a href={player.idCardPhotoUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline break-all">Ver foto subida</a></div>)}
+                        {!player.idCardPhotoUrl && !uploadingFiles[index] && (<p className="text-xs text-gray-500 mt-1">Formatos: JPG, JPEG, PNG • Máximo: 5MB</p>)}
                       </div>
                     </div>
                   ))}
                 </div>
 
-                {/* Información de validación */}
-                <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4">
-                  <h4 className="font-semibold text-yellow-800 mb-2">⚠️ Antes de enviar:</h4>
-                  <ul className="text-sm text-yellow-800 space-y-1">
-                    <li>• Verifica que todos los datos sean correctos</li>
-                    <li>• Asegúrate de haber cargado todas las fotos de carnets</li>
-                    <li>• Has marcado a <strong className="text-uptc-black">{players[delegateIndex]?.fullName || `Jugador ${delegateIndex + 1}`}</strong> como delegado</li>
-                    <li>• La inscripción quedará pendiente de aprobación</li>
-                  </ul>
-                </div>
-
-                {/* Botones paso 2 */}
                 <div className="flex gap-4 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setStep(1)}
-                    className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-400 transition"
-                  >
-                    ← Volver
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submitting || Object.values(uploadingFiles).some(status => status)}
-                    className="flex-1 bg-uptc-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {submitting ? 'Enviando...' : '✅ Inscribir Equipo'}
-                  </button>
+                  <button type="button" onClick={handleBack} className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-400 transition">← Volver</button>
+                  <button type="button" onClick={handleNextStep} className="flex-1 bg-uptc-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition">Continuar →</button>
+                </div>
+              </>
+            )}
+
+            {/* PASO 3: Disponibilidad */}
+            {step === 3 && (
+              <>
+                <div>
+                  <h3 className="text-xl font-bold text-uptc-black border-b pb-2">🕒 Disponibilidad Horaria</h3>
+                  <p className="text-sm text-gray-600 mt-2 mb-4">
+                    Selecciona al menos una franja por cada día (Lunes a Viernes). Puedes seleccionar varias franjas por día.
+                  </p>
+
+                  <div className="overflow-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr>
+                          <th className="border px-3 py-2 bg-gray-100 text-left">Hora</th>
+                          {DAYS_ORDER.map(day => (
+                            <th key={day} className="border px-3 py-2 bg-gray-100 text-center">{DAY_LABEL[day]}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {slotsToShow.map(slot => (
+                          <tr key={slot.start}>
+                            <td className="border px-3 py-2">{`${slot.start} - ${slot.end}`}</td>
+                            {DAYS_ORDER.map(day => {
+                              const selected = isSlotSelected(day, slot.start);
+                              return (
+                                <td
+                                  key={day + slot.start}
+                                  className={`border px-3 py-2 text-center cursor-pointer select-none ${selected ? 'bg-uptc-yellow' : 'bg-gray-50'}`}
+                                  onClick={() => toggleSlot(day, slot.start)}
+                                  role="button"
+                                  aria-pressed={selected}
+                                >
+                                  <input type="checkbox" className="hidden" checked={selected} readOnly />
+                                  <div className="min-h-[28px] flex items-center justify-center">
+                                    {selected ? <span className="font-semibold">✓</span> : null}
+                                  </div>
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="flex gap-4 pt-4">
+                    <button type="button" onClick={handleBack} className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-400 transition">← Volver</button>
+                    <button type="submit" disabled={submitting || Object.values(uploadingFiles).some(v => v)} className="flex-1 bg-uptc-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition">
+                      {submitting ? 'Enviando...' : '✅ Enviar Inscripción'}
+                    </button>
+                  </div>
                 </div>
               </>
             )}
           </form>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ---------- Helper component for step indicator ---------- */
+function StepIndicator({ step, index, label }: { step: number; index: number; label: string }) {
+  const active = step === index;
+  return (
+    <div className={`flex items-center ${active ? 'text-uptc-yellow' : 'text-gray-400'}`}>
+      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${active ? 'bg-uptc-yellow text-white' : 'bg-gray-200'}`}>
+        {index}
+      </div>
+      <span className="ml-2 font-semibold">{label}</span>
     </div>
   );
 }
