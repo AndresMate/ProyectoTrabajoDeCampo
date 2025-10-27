@@ -1,4 +1,3 @@
-// frontend-uptc/src/services/fileUploadService.ts
 import api from "./api";
 
 const fileUploadService = {

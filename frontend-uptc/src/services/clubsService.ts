@@ -1,5 +1,6 @@
 // src/services/clubsService.ts
 import api from "./api";
+import axios from "axios";
 
 export interface Club {
   id: number;
@@ -12,14 +13,18 @@ const clubsService = {
   // Obtener todos los clubes activos
   getAll: async (): Promise<Club[]> => {
     try {
-      const res = await api.get("/clubs/active");
+      const res = await api.get<Club[]>("/clubs/active");
       // 🔹 Aseguramos que solo devuelva id y name
-      return (res.data || []).map((c: any) => ({
+      return (res.data ?? []).map((c) => ({
         id: c.id,
         name: c.name,
       }));
-    } catch (e) {
-      console.error("Error al obtener clubes:", e);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("Error al obtener clubes:", error.response?.data ?? error.message);
+      } else {
+        console.error("Error al obtener clubes:", error);
+      }
       return [];
     }
   },

@@ -1,5 +1,5 @@
 import api from "./api";
-
+import axios from "axios";
 // ========================
 // Interfaces principales
 // ========================
@@ -78,9 +78,13 @@ const inscriptionsService = {
       const response = await api.post("/inscriptions", data);
       console.log("📥 Respuesta inscripción:", response.data);
       return response.data;
-    } catch (error: any) {
-      console.error("❌ Error al crear inscripción:", error.response?.data || error);
-      throw error;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("❌ Error al crear inscripción:", error.response?.data ?? error.message);
+        throw error;
+      }
+      console.error("❌ Error al crear inscripción:", error);
+      throw new Error(String(error));
     }
   },
 
@@ -89,9 +93,13 @@ const inscriptionsService = {
     try {
       const response = await api.get(`/inscriptions/${id}`);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("❌ Error al obtener inscripción:", error.response?.data ?? error.message);
+        throw error;
+      }
       console.error("❌ Error al obtener inscripción:", error);
-      throw error;
+      throw new Error(String(error));
     }
   },
 
@@ -106,8 +114,12 @@ const inscriptionsService = {
         params: { tournamentId, teamName }
       });
       return response.data?.isAvailable ?? false;
-    } catch (error: any) {
-      console.error("❌ Error al verificar nombre de equipo:", error);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("❌ Error al verificar nombre de equipo:", error.response?.data ?? error.message);
+      } else {
+        console.error("❌ Error al verificar nombre de equipo:", error);
+      }
       return false;
     }
   },
@@ -119,8 +131,12 @@ const inscriptionsService = {
         params: { tournamentId, clubId }
       });
       return response.data?.isAvailable ?? false;
-    } catch (error: any) {
-      console.error("❌ Error al verificar club:", error);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("❌ Error al verificar club:", error.response?.data ?? error.message);
+      } else {
+        console.error("❌ Error al verificar club:", error);
+      }
       return false;
     }
   },
@@ -132,8 +148,12 @@ const inscriptionsService = {
         params: { tournamentId, documentNumber }
       });
       return response.data?.isAvailable ?? false;
-    } catch (error: any) {
-      console.error("❌ Error al verificar jugador:", error);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("❌ Error al verificar jugador:", error.response?.data ?? error.message);
+      } else {
+        console.error("❌ Error al verificar jugador:", error);
+      }
       return false;
     }
   },
@@ -147,9 +167,13 @@ const inscriptionsService = {
     try {
       const response = await api.get("/inscriptions/admin");
       return Array.isArray(response.data) ? response.data : [];
-    } catch (error: any) {
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("❌ Error al obtener inscripciones:", error.response?.data ?? error.message);
+        throw error;
+      }
       console.error("❌ Error al obtener inscripciones:", error);
-      throw error;
+      throw new Error(String(error));
     }
   },
 
@@ -158,9 +182,13 @@ const inscriptionsService = {
     try {
       const response = await api.post(`/inscriptions/admin/${id}/approve`);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("❌ Error al aprobar inscripción:", error.response?.data ?? error.message);
+        throw error;
+      }
       console.error("❌ Error al aprobar inscripción:", error);
-      throw error;
+      throw new Error(String(error));
     }
   },
 
@@ -169,9 +197,13 @@ const inscriptionsService = {
     try {
       const response = await api.post(`/inscriptions/admin/${id}/reject`, { reason });
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("❌ Error al rechazar inscripción:", error.response?.data ?? error.message);
+        throw error;
+      }
       console.error("❌ Error al rechazar inscripción:", error);
-      throw error;
+      throw new Error(String(error));
     }
   }
 };
