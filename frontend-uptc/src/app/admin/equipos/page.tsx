@@ -6,6 +6,7 @@ import teamsService from '@/services/teamsService';
 import Modal from '@/components/Modal';
 import TeamForm from '@/components/forms/TeamForm';
 import TeamRosterModal from '@/components/TeamRosterModal';
+import axios from "axios";
 
 interface Team {
   id: number;
@@ -48,15 +49,23 @@ export default function AdminEquiposPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('¿Estás seguro de eliminar este equipo?')) return;
+      if (!confirm('¿Estás seguro de eliminar este equipo?')) return;
 
-    try {
-      await teamsService.delete(id);
-      alert('Equipo eliminado exitosamente');
-      fetchTeams();
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Error al eliminar equipo');
-    }
+      try {
+        await teamsService.delete(id);
+        alert('Equipo eliminado exitosamente');
+        fetchTeams();
+      } catch (error: unknown) {
+        if (axios.isAxiosError(error)) {
+          const message = error.response?.data?.message ?? error.message;
+          alert(message || 'Error al eliminar equipo');
+        } else if (error instanceof Error) {
+          alert(error.message);
+        } else {
+          alert('Error al eliminar equipo');
+        }
+        console.error('Error eliminando equipo:', error);
+      }
   };
 
   const filteredTeams = teams.filter(

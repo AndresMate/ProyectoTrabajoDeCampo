@@ -1,16 +1,65 @@
 'use client';
 
+// typescript
 import { useState, useEffect } from 'react';
 import { tournamentsService } from '@/services/tournamentsService';
 import sportsService from '@/services/sportsService';
 import categoriesService from '@/services/categoriesService';
 import { authService } from '@/services/authService';
 
-export default function TournamentForm({ tournamentId, onSuccess, onCancel }: any) {
-  const [loading, setLoading] = useState(false);
-  const [sports, setSports] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [formData, setFormData] = useState({
+type Modality = 'DIURNO' | 'NOCTURNO';
+type Status =
+  | 'PLANNING'
+  | 'OPEN_FOR_INSCRIPTION'
+  | 'IN_PROGRESS'
+  | 'FINISHED'
+  | 'CANCELLED';
+
+interface Sport {
+  id: number;
+  name: string;
+}
+
+interface Category {
+  id: number;
+  name: string;
+}
+
+interface FormData {
+  name: string;
+  maxTeams: number;
+  startDate: string;
+  endDate: string;
+  modality: Modality;
+  status: Status;
+  sportId: number;
+  categoryId: number;
+  createdById: number;
+}
+
+interface TournamentDTO {
+  name?: string;
+  maxTeams?: number;
+  startDate?: string;
+  endDate?: string;
+  modality?: Modality;
+  status?: Status;
+  sport?: { id: number };
+  category?: { id: number };
+  createdBy?: { id: number };
+}
+
+interface Props {
+  tournamentId?: number;
+  onSuccess: () => void;
+  onCancel: () => void;
+}
+
+export default function TournamentForm({ tournamentId, onSuccess, onCancel }: Props) {
+  const [loading, setLoading] = useState<boolean>(false);
+  const [sports, setSports] = useState<Sport[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     maxTeams: 0,
     startDate: '',
@@ -21,7 +70,7 @@ export default function TournamentForm({ tournamentId, onSuccess, onCancel }: an
     categoryId: 0,
     createdById: 0,
   });
-  const [errors, setErrors] = useState<any>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
 
   // =========================
   // Cargar datos iniciales
@@ -34,7 +83,6 @@ export default function TournamentForm({ tournamentId, onSuccess, onCancel }: an
       setFormData(prev => ({ ...prev, createdById: user.userId }));
     }
 
-    // Si viene un ID, cargamos los datos del torneo existente
     if (tournamentId) {
       loadTournament(tournamentId);
     }
@@ -43,12 +91,15 @@ export default function TournamentForm({ tournamentId, onSuccess, onCancel }: an
   useEffect(() => {
     if (formData.sportId) {
       fetchCategories(formData.sportId);
+    } else {
+      setCategories([]);
+      setFormData(prev => ({ ...prev, categoryId: 0 }));
     }
   }, [formData.sportId]);
 
   const fetchSports = async () => {
     try {
-      const data = await sportsService.getActive();
+      const data = (await sportsService.getActive()) as Sport[];
       setSports(data);
     } catch (err) {
       console.error('Error cargando deportes:', err);
@@ -57,28 +108,27 @@ export default function TournamentForm({ tournamentId, onSuccess, onCancel }: an
 
   const fetchCategories = async (sportId: number) => {
     try {
-      const data = await categoriesService.getActiveBySport(sportId);
+      const data = (await categoriesService.getActiveBySport(sportId)) as Category[];
       setCategories(data);
     } catch (err) {
       console.error('Error cargando categorías:', err);
     }
   };
 
-  // ✅ Cargar datos del torneo existente
   const loadTournament = async (id: number) => {
     setLoading(true);
     try {
-      const data = await tournamentsService.getById(id);
+      const data = (await tournamentsService.getById(id)) as TournamentDTO;
       setFormData({
-        name: data.name || '',
-        maxTeams: data.maxTeams || 0,
-        startDate: data.startDate || '',
-        endDate: data.endDate || '',
-        modality: data.modality || 'DIURNO',
-        status: data.status || 'PLANNING',
-        sportId: data.sport?.id || 0,
-        categoryId: data.category?.id || 0,
-        createdById: data.createdBy?.id || 0,
+        name: data.name ?? '',
+        maxTeams: data.maxTeams ?? 0,
+        startDate: data.startDate ?? '',
+        endDate: data.endDate ?? '',
+        modality: (data.modality ?? 'DIURNO') as Modality,
+        status: (data.status ?? 'PLANNING') as Status,
+        sportId: data.sport?.id ?? 0,
+        categoryId: data.category?.id ?? 0,
+        createdById: data.createdBy?.id ?? 0,
       });
     } catch (err) {
       console.error('Error cargando torneo:', err);
@@ -91,7 +141,7 @@ export default function TournamentForm({ tournamentId, onSuccess, onCancel }: an
   // Validaciones
   // =========================
   const validateForm = () => {
-    const newErrors: any = {};
+    const newErrors: Partial<Record<keyof FormData, string>> = {};
     if (!formData.name.trim()) newErrors.name = 'El nombre es requerido';
     if (!formData.startDate) newErrors.startDate = 'La fecha de inicio es requerida';
     if (!formData.endDate) newErrors.endDate = 'La fecha de fin es requerida';
@@ -105,15 +155,15 @@ export default function TournamentForm({ tournamentId, onSuccess, onCancel }: an
   // =========================
   // Manejo de inputs
   // =========================
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const name = e.target.name as keyof FormData;
+    const value = e.target.value;
     setFormData(prev => ({
       ...prev,
-      [name]: ['sportId', 'categoryId', 'maxTeams'].includes(name)
-        ? Number(value)
-        : value,
+      [name]:
+        name === 'sportId' || name === 'categoryId' || name === 'maxTeams'
+          ? Number(value)
+          : (value as any),
     }));
   };
 
@@ -129,10 +179,11 @@ export default function TournamentForm({ tournamentId, onSuccess, onCancel }: an
       const user = authService.getCurrentUser();
       if (!user?.userId) {
         alert('Error: usuario no autenticado');
+        setLoading(false);
         return;
       }
 
-      const payload = {
+      const payload: Partial<FormData> = {
         ...formData,
         createdById: user.userId,
       };
@@ -146,7 +197,7 @@ export default function TournamentForm({ tournamentId, onSuccess, onCancel }: an
       }
 
       onSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Error al guardar torneo:', error);
       alert('Error al guardar el torneo. Revisa la consola.');
     } finally {
@@ -235,7 +286,7 @@ export default function TournamentForm({ tournamentId, onSuccess, onCancel }: an
           required
           className="w-full border p-2 rounded"
         >
-          <option value="0">Selecciona un deporte</option>
+          <option value={0}>Selecciona un deporte</option>
           {sports.map(s => (
             <option key={s.id} value={s.id}>
               {s.name}
@@ -255,7 +306,7 @@ export default function TournamentForm({ tournamentId, onSuccess, onCancel }: an
           required
           className="w-full border p-2 rounded"
         >
-          <option value="0">Selecciona una categoría</option>
+          <option value={0}>Selecciona una categoría</option>
           {categories.map(c => (
             <option key={c.id} value={c.id}>
               {c.name}

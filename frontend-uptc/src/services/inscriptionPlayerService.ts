@@ -1,4 +1,4 @@
-// frontend-uptc/src/services/inscriptionPlayerService.ts
+import axios from 'axios';
 import api from "./api";
 
 export interface InscriptionPlayerDTO {
@@ -20,13 +20,12 @@ export interface InscriptionWithLimit {
   category: {
     id: number;
     name: string;
-    membersPerTeam: number; // 🔥 LÍMITE DE JUGADORES
+    membersPerTeam: number;
   };
-  playerCount: number; // 🔥 JUGADORES ACTUALES
+  playerCount: number;
 }
 
 const inscriptionPlayerService = {
-  // Obtener inscripción con información de límite
   getInscriptionWithLimit: async (inscriptionId: number): Promise<InscriptionWithLimit> => {
     try {
       const response = await api.get(`/inscriptions/${inscriptionId}`);
@@ -37,7 +36,6 @@ const inscriptionPlayerService = {
     }
   },
 
-  // Obtener jugadores de una inscripción
   getByInscription: async (inscriptionId: number): Promise<PlayerSummary[]> => {
     try {
       const response = await api.get(`/inscriptions/${inscriptionId}/players`);
@@ -48,23 +46,29 @@ const inscriptionPlayerService = {
     }
   },
 
-  // Añadir jugador a inscripción CON VALIDACIÓN
   addPlayer: async (inscriptionId: number, playerId: number): Promise<InscriptionPlayerDTO> => {
     try {
-      const response = await api.post(`/inscriptions/${inscriptionId}/players`, {
-        playerId
-      });
+      const response = await api.post(`/inscriptions/${inscriptionId}/players`, { playerId });
       return response.data;
-    } catch (error: any) {
-      // El backend ya valida el límite, pero aquí manejamos el error
-      if (error.response?.status === 400) {
-        throw new Error(error.response.data.message || 'Se alcanzó el límite de jugadores');
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        const message = error.response?.data?.message ?? error.message;
+        if (status === 400) {
+          throw new Error(message || 'Se alcanzó el límite de jugadores');
+        }
+        // rethrow the original axios error to preserve details
+        throw error;
       }
-      throw error;
+
+      if (error instanceof Error) {
+        throw error;
+      }
+
+      throw new Error('Error inesperado al agregar jugador');
     }
   },
 
-  // Eliminar jugador de inscripción
   removePlayer: async (inscriptionId: number, playerId: number): Promise<void> => {
     try {
       await api.delete(`/inscriptions/${inscriptionId}/players/${playerId}`);
@@ -74,7 +78,6 @@ const inscriptionPlayerService = {
     }
   },
 
-  // Buscar jugadores disponibles
   searchPlayers: async (query: string): Promise<PlayerSummary[]> => {
     try {
       const response = await api.post('/players/search', {
