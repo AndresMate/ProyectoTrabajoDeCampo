@@ -5,6 +5,7 @@ import co.edu.uptc.backend_tc.dto.response.MatchResponseDTO;
 import co.edu.uptc.backend_tc.dto.response.MatchResultSummaryDTO;
 import co.edu.uptc.backend_tc.dto.response.MatchSummaryDTO;
 import co.edu.uptc.backend_tc.entity.*;
+import co.edu.uptc.backend_tc.model.MatchStatus;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -84,13 +85,20 @@ public class MatchMapper {
 
     public Match toEntity(MatchDTO dto, Tournament tournament, Category category, Scenario scenario, Team homeTeam, Team awayTeam, User referee) {
         Match match = new Match();
+
         match.setTournament(tournament);
         match.setCategory(category);
         match.setScenario(scenario);
         match.setHomeTeam(homeTeam);
         match.setAwayTeam(awayTeam);
         match.setReferee(referee);
+
+        // 🔹 Agregar estos campos que estaban faltando
+        match.setStartsAt(dto.getStartsAt());
+        match.setStatus(dto.getStatus() != null ? dto.getStatus() : MatchStatus.SCHEDULED);
+
         return match;
     }
+
 
 }

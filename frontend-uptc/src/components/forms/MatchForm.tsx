@@ -33,10 +33,38 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
 
   const [errors, setErrors] = useState<any>({});
 
+  // 🔹 Cargar datos al iniciar
   useEffect(() => {
     fetchTournaments();
     fetchVenues();
-  }, []);
+
+    if (matchId) {
+      fetchMatch(matchId);
+    }
+  }, [matchId]);
+
+  const fetchMatch = async (id: number) => {
+    try {
+      const data = await matchesService.getById(id);
+      setFormData({
+        tournamentId: data.tournament?.id || 0,
+        categoryId: data.category?.id || 0,
+        homeTeamId: data.homeTeam?.id || 0,
+        awayTeamId: data.awayTeam?.id || 0,
+        matchDate: data.startsAt ? data.startsAt.slice(0, 16) : '',
+        venueId: data.venue?.id || 0,
+        scenarioId: data.scenario?.id || 0,
+      });
+
+      // Cargar dependencias
+      if (data.tournament?.id) await fetchCategories(data.tournament.id);
+      if (data.tournament?.id && data.category?.id)
+        await fetchTeams(data.tournament.id, data.category.id);
+      if (data.venue?.id) await fetchScenarios(data.venue.id);
+    } catch (error) {
+      console.error('Error al cargar partido:', error);
+    }
+  };
 
   const fetchTournaments = async () => {
     try {
@@ -136,24 +164,33 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validateForm()) {
-      alert('Por favor corrige los errores en el formulario');
+      alert('⚠️ Por favor completa todos los campos requeridos.');
       return;
     }
 
     setLoading(true);
 
     try {
-      await matchesService.create({
-        ...formData,
-        startsAt: formData.matchDate
-      });
-      alert('✅ Partido creado correctamente');
+      if (matchId) {
+        // 🔹 Editar partido existente
+        await matchesService.update(matchId, {
+          ...formData,
+          startsAt: formData.matchDate
+        });
+        alert('✅ Partido actualizado correctamente');
+      } else {
+        // 🔹 Crear nuevo partido
+        await matchesService.create({
+          ...formData,
+          startsAt: formData.matchDate
+        });
+        alert('✅ Partido creado correctamente');
+      }
       onSuccess();
     } catch (error: any) {
-      console.error('Error al crear partido:', error);
-      alert(error.response?.data?.message || 'Error al crear el partido');
+      console.error('Error al guardar partido:', error);
+      alert(error.response?.data?.message || 'Error al guardar el partido');
     } finally {
       setLoading(false);
     }
@@ -164,9 +201,7 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Torneo */}
         <div>
-          <label className="block font-semibold mb-2 text-gray-700">
-            Torneo *
-          </label>
+          <label className="block font-semibold mb-2 text-gray-700">Torneo *</label>
           <select
             name="tournamentId"
             value={formData.tournamentId}
@@ -183,16 +218,12 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
               </option>
             ))}
           </select>
-          {errors.tournamentId && (
-            <p className="text-red-500 text-sm mt-1">{errors.tournamentId}</p>
-          )}
+          {errors.tournamentId && <p className="text-red-500 text-sm mt-1">{errors.tournamentId}</p>}
         </div>
 
         {/* Categoría */}
         <div>
-          <label className="block font-semibold mb-2 text-gray-700">
-            Categoría *
-          </label>
+          <label className="block font-semibold mb-2 text-gray-700">Categoría *</label>
           <select
             name="categoryId"
             value={formData.categoryId}
@@ -212,16 +243,12 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
               </option>
             ))}
           </select>
-          {errors.categoryId && (
-            <p className="text-red-500 text-sm mt-1">{errors.categoryId}</p>
-          )}
+          {errors.categoryId && <p className="text-red-500 text-sm mt-1">{errors.categoryId}</p>}
         </div>
 
         {/* Equipo Local */}
         <div>
-          <label className="block font-semibold mb-2 text-gray-700">
-            Equipo Local *
-          </label>
+          <label className="block font-semibold mb-2 text-gray-700">Equipo Local *</label>
           <select
             name="homeTeamId"
             value={formData.homeTeamId}
@@ -232,25 +259,19 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
             required
             disabled={teams.length === 0}
           >
-            <option value="0">
-              {teams.length > 0 ? 'Selecciona equipo local' : 'Carga equipos primero'}
-            </option>
+            <option value="0">Selecciona equipo local</option>
             {teams.map(t => (
               <option key={t.id} value={t.id}>
-                {t.name}
+                {t.name} {t.clubName ? `(${t.clubName})` : ''}
               </option>
             ))}
           </select>
-          {errors.homeTeamId && (
-            <p className="text-red-500 text-sm mt-1">{errors.homeTeamId}</p>
-          )}
+          {errors.homeTeamId && <p className="text-red-500 text-sm mt-1">{errors.homeTeamId}</p>}
         </div>
 
         {/* Equipo Visitante */}
         <div>
-          <label className="block font-semibold mb-2 text-gray-700">
-            Equipo Visitante *
-          </label>
+          <label className="block font-semibold mb-2 text-gray-700">Equipo Visitante *</label>
           <select
             name="awayTeamId"
             value={formData.awayTeamId}
@@ -261,25 +282,21 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
             required
             disabled={teams.length === 0}
           >
-            <option value="0">
-              {teams.length > 0 ? 'Selecciona equipo visitante' : 'Carga equipos primero'}
-            </option>
-            {teams.filter(t => t.id !== formData.homeTeamId).map(t => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
+            <option value="0">Selecciona equipo visitante</option>
+            {teams
+              .filter(t => t.id !== formData.homeTeamId)
+              .map(t => (
+                <option key={t.id} value={t.id}>
+                  {t.name} {t.clubName ? `(${t.clubName})` : ''}
+                </option>
+              ))}
           </select>
-          {errors.awayTeamId && (
-            <p className="text-red-500 text-sm mt-1">{errors.awayTeamId}</p>
-          )}
+          {errors.awayTeamId && <p className="text-red-500 text-sm mt-1">{errors.awayTeamId}</p>}
         </div>
 
-        {/* Fecha y Hora */}
+        {/* Fecha */}
         <div>
-          <label className="block font-semibold mb-2 text-gray-700">
-            Fecha y Hora del Partido *
-          </label>
+          <label className="block font-semibold mb-2 text-gray-700">Fecha y Hora *</label>
           <input
             type="datetime-local"
             name="matchDate"
@@ -290,52 +307,8 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
             }`}
             required
           />
-          {errors.matchDate && (
-            <p className="text-red-500 text-sm mt-1">{errors.matchDate}</p>
-          )}
+          {errors.matchDate && <p className="text-red-500 text-sm mt-1">{errors.matchDate}</p>}
         </div>
-
-        {/* Sede */}
-        <div>
-          <label className="block font-semibold mb-2 text-gray-700">
-            Sede (Opcional)
-          </label>
-          <select
-            name="venueId"
-            value={formData.venueId}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow"
-          >
-            <option value="0">Sin sede específica</option>
-            {venues.map(v => (
-              <option key={v.id} value={v.id}>
-                {v.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Escenario */}
-        {formData.venueId > 0 && (
-          <div>
-            <label className="block font-semibold mb-2 text-gray-700">
-              Escenario (Opcional)
-            </label>
-            <select
-              name="scenarioId"
-              value={formData.scenarioId}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow"
-            >
-              <option value="0">Sin escenario específico</option>
-              {scenarios.map(s => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
       </div>
 
       {/* Botones */}
@@ -352,7 +325,7 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
           disabled={loading}
           className="px-6 py-2 bg-uptc-black text-white rounded-lg hover:bg-gray-800 transition disabled:opacity-50"
         >
-          {loading ? 'Creando...' : 'Crear Partido'}
+          {loading ? 'Guardando...' : matchId ? 'Actualizar Partido' : 'Crear Partido'}
         </button>
       </div>
     </form>
