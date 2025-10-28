@@ -59,6 +59,12 @@ const teamsService = {
     const response = await api.delete(`/teams/${teamId}/players/${playerId}`);
     return response.data;
   },
+
+  // ✅ 🔹 Obtener equipos por torneo y categoría (usado en MatchForm)
+  getByTournamentAndCategory: async (tournamentId: number, categoryId: number) => {
+    const response = await api.get(`/teams/tournament/${tournamentId}/category/${categoryId}`);
+    return response.data;
+  },
 };
 
 export default teamsService;
