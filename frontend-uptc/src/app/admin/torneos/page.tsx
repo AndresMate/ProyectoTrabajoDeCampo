@@ -1,4 +1,4 @@
-// frontend-uptc/src/app/admin/torneos/page.tsx - VERSIÓN CORREGIDA CON MEJOR CONTRASTE
+// typescript
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -10,7 +10,7 @@ import Link from 'next/link';
 interface Tournament {
   id: number;
   name: string;
-  description: string;
+  description?: string;
   startDate: string;
   endDate: string;
   status: string;
@@ -20,6 +20,15 @@ interface Tournament {
   category?: {
     name: string;
   };
+}
+
+function getErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'object' && err !== null && 'response' in err) {
+    const maybeResp = (err as { response?: { data?: { message?: string } } }).response;
+    return maybeResp?.data?.message ?? String(err);
+  }
+  return String(err);
 }
 
 export default function AdminTorneosPage() {
@@ -37,8 +46,8 @@ export default function AdminTorneosPage() {
     try {
       const data = await tournamentsService.getAll(0, 100);
       setTournaments(data);
-    } catch (error) {
-      console.error('Error al cargar torneos:', error);
+    } catch (error: unknown) {
+      console.error('Error al cargar torneos:', getErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -60,8 +69,8 @@ export default function AdminTorneosPage() {
 
       alert('Estado actualizado exitosamente');
       fetchTournaments();
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Error al cambiar el estado');
+    } catch (error: unknown) {
+      alert(getErrorMessage(error) || 'Error al cambiar el estado');
     }
   };
 
@@ -72,8 +81,8 @@ export default function AdminTorneosPage() {
       await tournamentsService.delete(id);
       alert('Torneo eliminado exitosamente');
       fetchTournaments();
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Error al eliminar el torneo');
+    } catch (error: unknown) {
+      alert(getErrorMessage(error) || 'Error al eliminar el torneo');
     }
   };
 
@@ -205,7 +214,7 @@ export default function AdminTorneosPage() {
                 </div>
 
                 <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                  {tournament.description}
+                  {tournament.description || 'Sin descripción'}
                 </p>
 
                 <div className="space-y-2 text-sm text-gray-700 mb-4 font-medium">

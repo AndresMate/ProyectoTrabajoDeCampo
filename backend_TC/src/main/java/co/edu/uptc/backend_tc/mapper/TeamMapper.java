@@ -38,14 +38,34 @@ public class TeamMapper {
     public TeamResponseDTO toResponseDTO(Team entity) {
         if (entity == null) return null;
 
+        // 🔹 Extraer delegado si existe
+        String delegateName = null;
+        String delegateEmail = null;
+        if (entity.getOriginInscription() != null && entity.getOriginInscription().getDelegate() != null) {
+            var delegate = entity.getOriginInscription().getDelegate();
+            delegateName = delegate.getFullName();
+            delegateEmail = delegate.getInstitutionalEmail();
+        }
+
+        // 🔹 Construcción segura del DTO
         return TeamResponseDTO.builder()
                 .id(entity.getId())
                 .name(entity.getName())
-                .isActive(entity.getIsActive())
+                .isActive(Boolean.TRUE.equals(entity.getIsActive()))
+
+                // --- Campos planos para el frontend ---
+                .clubName(entity.getClub() != null ? entity.getClub().getName() : "Sin club")
+                .tournamentName(entity.getTournament() != null ? entity.getTournament().getName() : "Sin torneo")
+                .categoryName(entity.getCategory() != null ? entity.getCategory().getName() : "Sin categoría")
+                .delegateName(delegateName)
+                .delegateEmail(delegateEmail)
+
+                // --- Relaciones anidadas ---
                 .tournament(tournamentMapper.toSummaryDTO(entity.getTournament()))
                 .category(categoryMapper.toSummaryDTO(entity.getCategory()))
                 .club(clubMapper.toSummaryDTO(entity.getClub()))
-                // roster y estadísticas se agregan desde el servicio
+
+                // --- Campos dinámicos: roster y estadísticas (agregados luego en el servicio) ---
                 .build();
     }
 

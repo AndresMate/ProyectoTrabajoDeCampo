@@ -1,9 +1,9 @@
-// frontend-uptc/src/components/FixtureGenerator.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { tournamentsService } from '@/services/tournamentsService';
 import categoriesService from '@/services/categoriesService';
+import fixtureService from '@/services/fixtureService';
 
 interface FixtureGeneratorProps {
   onClose: () => void;
@@ -23,15 +23,13 @@ export default function FixtureGenerator({ onClose, onSuccess }: FixtureGenerato
   }, []);
 
   useEffect(() => {
-    if (selectedTournament) {
-      fetchCategories();
-    }
+    if (selectedTournament) fetchCategories();
   }, [selectedTournament]);
 
+  // 🔹 Cargar torneos activos
   const fetchTournaments = async () => {
     try {
       const data = await tournamentsService.getAll();
-      // Filtrar torneos en progreso o inscripción
       const filtered = data.filter(
         (t: any) => t.status === 'IN_PROGRESS' || t.status === 'OPEN_FOR_INSCRIPTION'
       );
@@ -41,6 +39,7 @@ export default function FixtureGenerator({ onClose, onSuccess }: FixtureGenerato
     }
   };
 
+  // 🔹 Cargar categorías
   const fetchCategories = async () => {
     try {
       const data = await categoriesService.getAll();
@@ -50,46 +49,71 @@ export default function FixtureGenerator({ onClose, onSuccess }: FixtureGenerato
     }
   };
 
+  // 🔹 Generar fixture
   const handleGenerate = async () => {
     if (!selectedTournament || !selectedCategory) {
       alert('Selecciona torneo y categoría');
       return;
     }
 
-    if (!confirm(`¿Generar fixture con modo ${selectedMode === 'round_robin' ? 'Round Robin (Todos contra todos)' : 'Knockout (Eliminación directa)'}?`)) {
+    if (
+      !confirm(
+        `¿Generar fixture con modo ${
+          selectedMode === 'round_robin'
+            ? 'Round Robin (Todos contra todos)'
+            : 'Knockout (Eliminación directa)'
+        }?`
+      )
+    )
       return;
-    }
 
     setLoading(true);
     try {
-      // Aquí iría la llamada al servicio de fixture
-      // await fixtureService.generate(selectedTournament, selectedCategory, selectedMode);
-      alert('✅ Fixture generado exitosamente');
+      const response = await fixtureService.generate(
+        selectedTournament,
+        selectedCategory,
+        selectedMode
+      );
+
+      alert(
+        `✅ Fixture generado exitosamente.\n\n🗓️ Partidos creados: ${response.matchesCreated}`
+      );
       onSuccess();
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Error al generar fixture');
+      const msg = error.response?.data?.message || 'Error al generar el fixture.';
+      alert(`❌ ${msg}`);
+      console.error('Error generando fixture:', error);
     } finally {
       setLoading(false);
     }
   };
 
+  // 🔹 Eliminar fixture
   const handleDelete = async () => {
     if (!selectedTournament || !selectedCategory) {
       alert('Selecciona torneo y categoría');
       return;
     }
 
-    if (!confirm('¿Estás seguro de eliminar el fixture actual? Esta acción no se puede deshacer.')) {
+    if (
+      !confirm(
+        '¿Estás seguro de eliminar el fixture actual? Esta acción no se puede deshacer.'
+      )
+    )
       return;
-    }
 
     setLoading(true);
     try {
-      // await fixtureService.delete(selectedTournament, selectedCategory);
-      alert('✅ Fixture eliminado exitosamente');
+      const response = await fixtureService.delete(
+        selectedTournament,
+        selectedCategory
+      );
+      alert(response.message || '✅ Fixture eliminado exitosamente');
       onSuccess();
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Error al eliminar fixture');
+      const msg = error.response?.data?.message || 'Error al eliminar fixture.';
+      alert(`❌ ${msg}`);
+      console.error('Error eliminando fixture:', error);
     } finally {
       setLoading(false);
     }
@@ -101,15 +125,15 @@ export default function FixtureGenerator({ onClose, onSuccess }: FixtureGenerato
       name: 'Round Robin',
       description: 'Todos los equipos se enfrentan entre sí (ida y vuelta opcional)',
       icon: '🔄',
-      recommended: 'Recomendado para ligas'
+      recommended: 'Recomendado para ligas',
     },
     {
       value: 'knockout',
       name: 'Eliminación Directa',
       description: 'Sistema de playoffs donde el perdedor queda eliminado',
       icon: '🏆',
-      recommended: 'Recomendado para copas'
-    }
+      recommended: 'Recomendado para copas',
+    },
   ];
 
   return (
@@ -117,10 +141,7 @@ export default function FixtureGenerator({ onClose, onSuccess }: FixtureGenerato
       <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
           <h2 className="text-2xl font-bold text-gray-800">Generador de Fixture</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">
             ×
           </button>
         </div>
@@ -131,16 +152,14 @@ export default function FixtureGenerator({ onClose, onSuccess }: FixtureGenerato
             <h3 className="font-semibold text-uptc-black mb-2">ℹ️ ¿Qué es un fixture?</h3>
             <p className="text-sm text-uptc-black">
               El fixture es el calendario de partidos del torneo. El sistema genera automáticamente
-              todos los enfrentamientos según el modo seleccionado, considerando la disponibilidad
+              los enfrentamientos según el modo seleccionado, considerando la disponibilidad
               horaria de cada equipo.
             </p>
           </div>
 
           {/* Selector de torneo */}
           <div>
-            <label className="block text-gray-700 font-medium mb-2">
-              Seleccionar Torneo *
-            </label>
+            <label className="block text-gray-700 font-medium mb-2">Seleccionar Torneo *</label>
             <select
               value={selectedTournament || ''}
               onChange={(e) => {
@@ -150,7 +169,7 @@ export default function FixtureGenerator({ onClose, onSuccess }: FixtureGenerato
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow"
             >
               <option value="">-- Selecciona un torneo --</option>
-              {tournaments.map(t => (
+              {tournaments.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name} ({t.status})
                 </option>
@@ -170,7 +189,7 @@ export default function FixtureGenerator({ onClose, onSuccess }: FixtureGenerato
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow"
               >
                 <option value="">-- Selecciona una categoría --</option>
-                {categories.map(c => (
+                {categories.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>
@@ -182,11 +201,9 @@ export default function FixtureGenerator({ onClose, onSuccess }: FixtureGenerato
           {/* Selector de modo */}
           {selectedCategory && (
             <div>
-              <label className="block text-gray-700 font-medium mb-3">
-                Modo de Fixture *
-              </label>
+              <label className="block text-gray-700 font-medium mb-3">Modo de Fixture *</label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {modes.map(mode => (
+                {modes.map((mode) => (
                   <div
                     key={mode.value}
                     onClick={() => setSelectedMode(mode.value)}

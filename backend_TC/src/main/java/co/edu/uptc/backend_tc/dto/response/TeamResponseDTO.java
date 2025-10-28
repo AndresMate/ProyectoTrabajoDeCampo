@@ -1,7 +1,6 @@
 package co.edu.uptc.backend_tc.dto.response;
 
 import lombok.*;
-
 import java.util.List;
 
 @Data
@@ -13,16 +12,23 @@ public class TeamResponseDTO {
     private String name;
     private Boolean isActive;
 
-    // Información anidada
+    // --- NUEVOS CAMPOS PLANOS PARA FRONTEND ---
+    private String clubName;
+    private String tournamentName;
+    private String categoryName;
+    private String delegateName;
+    private String delegateEmail;
+
+    // --- Información anidada (mantienes compatibilidad) ---
     private TournamentSummaryDTO tournament;
     private CategorySummaryDTO category;
     private ClubSummaryDTO club;
 
-    // Roster
+    // --- Roster ---
     private List<TeamRosterResponseDTO> roster;
     private Integer rosterSize;
 
-    // Estadísticas
+    // --- Estadísticas ---
     private Integer matchesPlayed;
     private Integer wins;
     private Integer draws;

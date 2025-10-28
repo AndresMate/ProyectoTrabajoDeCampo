@@ -26,10 +26,18 @@ public class TeamController {
 
     private final TeamService teamService;
 
-    @Operation(summary = "Obtener todos los equipos paginados")
+    // 🔹 Cambiado: ahora devuelve TeamResponseDTO, no TeamDTO
+    @Operation(summary = "Obtener todos los equipos paginados con información completa")
     @GetMapping
-    public ResponseEntity<PageResponseDTO<TeamDTO>> getAll(Pageable pageable) {
+    public ResponseEntity<PageResponseDTO<TeamResponseDTO>> getAll(Pageable pageable) {
         return ResponseEntity.ok(teamService.getAll(pageable));
+    }
+
+    // 🔹 Nuevo endpoint opcional si quieres obtener todos sin paginación
+    @Operation(summary = "Obtener todos los equipos sin paginación")
+    @GetMapping("/all")
+    public ResponseEntity<List<TeamResponseDTO>> getAllList() {
+        return ResponseEntity.ok(teamService.getAllList());
     }
 
     @Operation(summary = "Obtener equipos por ID de torneo")
@@ -40,14 +48,16 @@ public class TeamController {
 
     @Operation(summary = "Obtener equipos por torneo y categoría")
     @GetMapping("/tournament/{tournamentId}/category/{categoryId}")
-    public ResponseEntity<List<TeamDTO>> getByTournamentAndCategory(@PathVariable Long tournamentId, @PathVariable Long categoryId) {
+    public ResponseEntity<List<TeamDTO>> getByTournamentAndCategory(
+            @PathVariable Long tournamentId,
+            @PathVariable Long categoryId) {
         return ResponseEntity.ok(teamService.getByTournamentAndCategory(tournamentId, categoryId));
     }
 
     @Operation(summary = "Obtener un equipo por ID con estadísticas")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Equipo encontrado"),
-        @ApiResponse(responseCode = "404", description = "Equipo no encontrado")
+            @ApiResponse(responseCode = "200", description = "Equipo encontrado"),
+            @ApiResponse(responseCode = "404", description = "Equipo no encontrado")
     })
     @GetMapping("/{id}")
     public ResponseEntity<TeamResponseDTO> getById(@PathVariable Long id) {
@@ -56,9 +66,9 @@ public class TeamController {
 
     @Operation(summary = "Crear un nuevo equipo")
     @ApiResponses({
-        @ApiResponse(responseCode = "201", description = "Equipo creado exitosamente"),
-        @ApiResponse(responseCode = "409", description = "Ya existe un equipo con ese nombre en el torneo"),
-        @ApiResponse(responseCode = "404", description = "Torneo, categoría o club no encontrado")
+            @ApiResponse(responseCode = "201", description = "Equipo creado exitosamente"),
+            @ApiResponse(responseCode = "409", description = "Ya existe un equipo con ese nombre en el torneo"),
+            @ApiResponse(responseCode = "404", description = "Torneo, categoría o club no encontrado")
     })
     @PostMapping
     public ResponseEntity<TeamDTO> create(@RequestBody TeamDTO dto) {
@@ -68,9 +78,9 @@ public class TeamController {
 
     @Operation(summary = "Actualizar un equipo existente")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Equipo actualizado"),
-        @ApiResponse(responseCode = "404", description = "Equipo no encontrado"),
-        @ApiResponse(responseCode = "409", description = "Conflicto de nombre")
+            @ApiResponse(responseCode = "200", description = "Equipo actualizado"),
+            @ApiResponse(responseCode = "404", description = "Equipo no encontrado"),
+            @ApiResponse(responseCode = "409", description = "Conflicto de nombre")
     })
     @PutMapping("/{id}")
     public ResponseEntity<TeamDTO> update(@PathVariable Long id, @RequestBody TeamDTO dto) {
@@ -79,13 +89,14 @@ public class TeamController {
 
     @Operation(summary = "Desactivar un equipo (Soft Delete)")
     @ApiResponses({
-        @ApiResponse(responseCode = "204", description = "Equipo desactivado"),
-        @ApiResponse(responseCode = "404", description = "Equipo no encontrado"),
-        @ApiResponse(responseCode = "400", description = "El equipo tiene partidos jugados y no puede ser eliminado")
+            @ApiResponse(responseCode = "204", description = "Equipo desactivado"),
+            @ApiResponse(responseCode = "404", description = "Equipo no encontrado"),
+            @ApiResponse(responseCode = "400", description = "El equipo tiene partidos jugados y no puede ser eliminado")
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         teamService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
 }

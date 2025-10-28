@@ -1,4 +1,5 @@
 import api from "./api";
+import axios from "axios";
 
 // ======================
 // Interfaces de datos
@@ -17,9 +18,9 @@ export interface Tournament {
     name: string;
   };
   category: {
-      membersPerTeam: number;
-      id: number;
-      name: string;
+    membersPerTeam: number;
+    id: number;
+    name: string;
   };
   createdBy: {
     id: number;
@@ -49,6 +50,24 @@ export interface PageResponse<T> {
   number: number;
 }
 
+// Tipos adicionales para evitar `any`
+export interface InscriptionSummary {
+  id: number;
+  teamName: string;
+  clubName?: string;
+  playerCount?: number;
+}
+
+export interface MatchDTO {
+  id: number;
+  homeTeam: string;
+  awayTeam: string;
+  date?: string;
+  round?: string;
+}
+
+export type StatsDTO = Record<string, unknown>;
+
 // ======================
 // Servicio principal
 // ======================
@@ -60,40 +79,58 @@ export const tournamentsService = {
 
   getAll: async (page = 0, size = 10): Promise<Tournament[]> => {
     try {
-      const response = await api.get(`/tournaments/public?page=${page}&size=${size}`);
-      return response.data.content || response.data;
-    } catch (error) {
-      console.error("Error al obtener torneos:", error);
+      const response = await api.get<PageResponse<Tournament> | Tournament[]>(`/tournaments/public?page=${page}&size=${size}`);
+      const data = response.data;
+      if (Array.isArray(data)) return data;
+      return data.content ?? [];
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("Error al obtener torneos:", error.response?.data ?? error.message);
+      } else {
+        console.error("Error al obtener torneos:", error);
+      }
       throw error;
     }
   },
 
   getAllPaginated: async (page = 0, size = 10): Promise<PageResponse<Tournament>> => {
     try {
-      const response = await api.get(`/tournaments/public?page=${page}&size=${size}`);
+      const response = await api.get<PageResponse<Tournament>>(`/tournaments/public?page=${page}&size=${size}`);
       return response.data;
-    } catch (error) {
-      console.error("Error al obtener torneos paginados:", error);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("Error al obtener torneos paginados:", error.response?.data ?? error.message);
+      } else {
+        console.error("Error al obtener torneos paginados:", error);
+      }
       throw error;
     }
   },
 
   getById: async (id: number | string): Promise<Tournament> => {
     try {
-      const response = await api.get(`/tournaments/public/${id}`);
+      const response = await api.get<Tournament>(`/tournaments/public/${id}`);
       return response.data;
-    } catch (error) {
-      console.error("Error al obtener torneo por ID:", error);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("Error al obtener torneo por ID:", error.response?.data ?? error.message);
+      } else {
+        console.error("Error al obtener torneo por ID:", error);
+      }
       throw error;
     }
   },
 
   getActive: async (): Promise<Tournament[]> => {
     try {
-      const response = await api.get("/tournaments/public/active");
+      const response = await api.get<Tournament[]>("/tournaments/public/active");
       return response.data;
-    } catch (error) {
-      console.error("Error al obtener torneos activos:", error);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("Error al obtener torneos activos:", error.response?.data ?? error.message);
+      } else {
+        console.error("Error al obtener torneos activos:", error);
+      }
       throw error;
     }
   },
@@ -105,11 +142,15 @@ export const tournamentsService = {
   create: async (data: TournamentCreateDTO): Promise<Tournament> => {
     try {
       console.log("📤 Enviando torneo al backend:", data);
-      const response = await api.post("/tournaments", data);
+      const response = await api.post<Tournament>("/tournaments", data);
       return response.data;
-    } catch (error: any) {
-      console.error("Error al crear torneo:", error.response?.data || error);
-      throw error;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("Error al crear torneo:", error.response?.data ?? error.message);
+        throw error;
+      }
+      console.error("Error al crear torneo:", error);
+      throw new Error(String(error));
     }
   },
 
@@ -117,19 +158,27 @@ export const tournamentsService = {
   update: async (id: number | string, data: Partial<TournamentCreateDTO>): Promise<Tournament> => {
     try {
       console.log(`✏️ Actualizando torneo ${id} con datos:`, data);
-      const response = await api.patch(`/tournaments/${id}`, data);
+      const response = await api.patch<Tournament>(`/tournaments/${id}`, data);
       return response.data;
-    } catch (error: any) {
-      console.error("Error al actualizar torneo:", error.response?.data || error);
-      throw error;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("Error al actualizar torneo:", error.response?.data ?? error.message);
+        throw error;
+      }
+      console.error("Error al actualizar torneo:", error);
+      throw new Error(String(error));
     }
   },
 
   delete: async (id: number | string): Promise<void> => {
     try {
       await api.delete(`/tournaments/${id}`);
-    } catch (error) {
-      console.error("Error al eliminar torneo:", error);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("Error al eliminar torneo:", error.response?.data ?? error.message);
+      } else {
+        console.error("Error al eliminar torneo:", error);
+      }
       throw error;
     }
   },
@@ -140,30 +189,42 @@ export const tournamentsService = {
 
   startTournament: async (id: number | string): Promise<Tournament> => {
     try {
-      const response = await api.post(`/tournaments/${id}/start`);
+      const response = await api.post<Tournament>(`/tournaments/${id}/start`);
       return response.data;
-    } catch (error) {
-      console.error("Error al iniciar torneo:", error);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("Error al iniciar torneo:", error.response?.data ?? error.message);
+      } else {
+        console.error("Error al iniciar torneo:", error);
+      }
       throw error;
     }
   },
 
   completeTournament: async (id: number | string): Promise<Tournament> => {
     try {
-      const response = await api.post(`/tournaments/${id}/complete`);
+      const response = await api.post<Tournament>(`/tournaments/${id}/complete`);
       return response.data;
-    } catch (error) {
-      console.error("Error al completar torneo:", error);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("Error al completar torneo:", error.response?.data ?? error.message);
+      } else {
+        console.error("Error al completar torneo:", error);
+      }
       throw error;
     }
   },
 
   cancelTournament: async (id: number | string): Promise<Tournament> => {
     try {
-      const response = await api.post(`/tournaments/${id}/cancel`);
+      const response = await api.post<Tournament>(`/tournaments/${id}/cancel`);
       return response.data;
-    } catch (error) {
-      console.error("Error al cancelar torneo:", error);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("Error al cancelar torneo:", error.response?.data ?? error.message);
+      } else {
+        console.error("Error al cancelar torneo:", error);
+      }
       throw error;
     }
   },
@@ -172,33 +233,44 @@ export const tournamentsService = {
   // RELACIONES
   // ======================
 
-  async getInscriptions(tournamentId: number | string): Promise<any[]> {
-  try {
-    const response = await api.get(`/inscriptions/tournament/${tournamentId}/approved`);
-    return response.data;
-  } catch (error) {
-    console.error("Error al obtener inscripciones:", error);
-    return [];
-  }
-},
-
-
-  getMatches: async (tournamentId: number | string): Promise<any[]> => {
+  async getInscriptions(tournamentId: number | string): Promise<InscriptionSummary[]> {
     try {
-      const response = await api.get(`/matches/public?tournamentId=${tournamentId}`);
+      const response = await api.get<InscriptionSummary[]>(`/inscriptions/tournament/${tournamentId}/approved`);
       return response.data;
-    } catch (error) {
-      console.error("Error al obtener partidos:", error);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("Error al obtener inscripciones:", error.response?.data ?? error.message);
+      } else {
+        console.error("Error al obtener inscripciones:", error);
+      }
       return [];
     }
   },
 
-  getStats: async (): Promise<any> => {
+  getMatches: async (tournamentId: number | string): Promise<MatchDTO[]> => {
     try {
-      const response = await api.get("/tournaments/stats");
+      const response = await api.get<MatchDTO[]>(`/matches/public?tournamentId=${tournamentId}`);
       return response.data;
-    } catch (error) {
-      console.error("Error al obtener estadísticas:", error);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("Error al obtener partidos:", error.response?.data ?? error.message);
+      } else {
+        console.error("Error al obtener partidos:", error);
+      }
+      return [];
+    }
+  },
+
+  getStats: async (): Promise<StatsDTO> => {
+    try {
+      const response = await api.get<StatsDTO>("/tournaments/stats");
+      return response.data;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("Error al obtener estadísticas:", error.response?.data ?? error.message);
+      } else {
+        console.error("Error al obtener estadísticas:", error);
+      }
       throw error;
     }
   },

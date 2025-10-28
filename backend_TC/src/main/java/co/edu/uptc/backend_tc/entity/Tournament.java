@@ -2,10 +2,13 @@ package co.edu.uptc.backend_tc.entity;
 
 import co.edu.uptc.backend_tc.model.Modality;
 import co.edu.uptc.backend_tc.model.TournamentStatus;
+import co.edu.uptc.backend_tc.validation.OnCreate;
+import co.edu.uptc.backend_tc.validation.OnUpdate;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -26,27 +29,28 @@ import java.util.List;
 @EqualsAndHashCode(exclude = {"category", "sport", "createdBy", "inscriptions", "teams", "matches", "standings"})
 public class Tournament implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Tournament name is required")
-    @Size(min = 5, max = 200, message = "Name must be between 5 and 200 characters")
+    @NotBlank(message = "Tournament name is required", groups = {OnCreate.class, OnUpdate.class})
+    @Size(min = 5, max = 200, message = "Name must be between 5 and 200 characters", groups = {OnCreate.class, OnUpdate.class})
     @Column(nullable = false, length = 200)
     private String name;
 
-    @Positive(message = "Maximum teams must be positive")
+    @Positive(message = "Maximum teams must be positive", groups = {OnCreate.class, OnUpdate.class})
     @Column(name = "max_teams")
     private Integer maxTeams;
 
-    @NotNull(message = "Start date is required")
-    @Future(message = "Start date must be in the future")
+    @NotNull(message = "Start date is required", groups = {OnCreate.class, OnUpdate.class})
+    @Future(message = "Start date must be in the future", groups = OnCreate.class)
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
 
-    @NotNull(message = "End date is required")
+    @NotNull(message = "End date is required", groups = {OnCreate.class, OnUpdate.class})
     @Column(name = "end_date", nullable = false)
     private LocalDate endDate;
 
@@ -61,18 +65,17 @@ public class Tournament implements Serializable {
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
-    // ✅ Nueva relación con Category
-    @NotNull(message = "Category is required")
+    @NotNull(message = "Category is required", groups = {OnCreate.class, OnUpdate.class})
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    @NotNull(message = "Sport is required")
+    @NotNull(message = "Sport is required", groups = {OnCreate.class, OnUpdate.class})
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sport_id", nullable = false)
     private Sport sport;
 
-    @NotNull(message = "Creator is required")
+    @NotNull(message = "Creator is required", groups = OnCreate.class)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;

@@ -174,6 +174,7 @@ public class TournamentService {
         return enrichResponseDTO(tournament);
     }
 
+
     @Transactional
     public TournamentResponseDTO completeTournament(Long id) {
         Tournament tournament = tournamentRepository.findById(id)
@@ -186,10 +187,24 @@ public class TournamentService {
             );
         }
 
+        long totalMatches = matchRepository.countByTournamentId(id);
+        long finishedMatches = matchRepository.countByTournamentIdAndStatus(
+                id,
+                co.edu.uptc.backend_tc.model.MatchStatus.FINISHED
+        );
+
+        if (totalMatches > 0 && finishedMatches < totalMatches) {
+            throw new BusinessException(
+                    "Cannot complete tournament: there are pending matches",
+                    "PENDING_MATCHES"
+            );
+        }
+
         tournament.setStatus(TournamentStatus.FINISHED);
         tournament = tournamentRepository.save(tournament);
         return enrichResponseDTO(tournament);
     }
+
 
     @Transactional
     public void delete(Long id) {

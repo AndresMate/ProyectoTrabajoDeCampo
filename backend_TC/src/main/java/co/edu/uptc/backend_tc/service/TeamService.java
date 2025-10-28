@@ -2,7 +2,9 @@ package co.edu.uptc.backend_tc.service;
 
 import co.edu.uptc.backend_tc.dto.TeamDTO;
 import co.edu.uptc.backend_tc.dto.page.PageResponseDTO;
+import co.edu.uptc.backend_tc.dto.response.PlayerSummaryDTO;
 import co.edu.uptc.backend_tc.dto.response.TeamResponseDTO;
+import co.edu.uptc.backend_tc.dto.response.TeamRosterResponseDTO;
 import co.edu.uptc.backend_tc.entity.*;
 import co.edu.uptc.backend_tc.exception.BusinessException;
 import co.edu.uptc.backend_tc.exception.ConflictException;
@@ -32,9 +34,15 @@ public class TeamService {
     private final TeamMapper teamMapper;
     private final MapperUtils mapperUtils;
 
-    public PageResponseDTO<TeamDTO> getAll(Pageable pageable) {
+    // 🔹 AHORA devuelve TeamResponseDTO con datos completos
+    public PageResponseDTO<TeamResponseDTO> getAll(Pageable pageable) {
         Page<Team> page = teamRepository.findAll(pageable);
-        return mapperUtils.mapPage(page, teamMapper::toDTO);
+        return mapperUtils.mapPage(page, this::enrichResponseDTO);
+    }
+
+    public List<TeamResponseDTO> getAllList() {
+        List<Team> teams = teamRepository.findAll();
+        return teams.stream().map(this::enrichResponseDTO).toList();
     }
 
     public List<TeamDTO> getByTournament(Long tournamentId) {
@@ -59,19 +67,15 @@ public class TeamService {
 
     @Transactional
     public TeamDTO create(TeamDTO dto) {
-        // Verificar torneo
         Tournament tournament = tournamentRepository.findById(dto.getTournamentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Tournament", "id", dto.getTournamentId()));
 
-        // Verificar categoría
         Category category = categoryRepository.findById(dto.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "id", dto.getCategoryId()));
 
-        // Verificar club
         Club club = clubRepository.findById(dto.getClubId())
                 .orElseThrow(() -> new ResourceNotFoundException("Club", "id", dto.getClubId()));
 
-        // Verificar nombre único en el torneo
         if (teamRepository.existsByTournamentIdAndNameIgnoreCase(tournament.getId(), dto.getName())) {
             throw new ConflictException(
                     "Team with this name already exists in this tournament",
@@ -80,7 +84,6 @@ public class TeamService {
             );
         }
 
-        // Verificar inscripción si se proporciona
         Inscription inscription = null;
         if (dto.getOriginInscriptionId() != null) {
             inscription = inscriptionRepository.findById(dto.getOriginInscriptionId())
@@ -105,7 +108,6 @@ public class TeamService {
         Team team = teamRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Team", "id", id));
 
-        // Validar nombre único si cambió
         if (!team.getName().equalsIgnoreCase(dto.getName()) &&
                 teamRepository.existsByTournamentIdAndNameIgnoreCase(team.getTournament().getId(), dto.getName())) {
             throw new ConflictException(
@@ -129,7 +131,6 @@ public class TeamService {
         Team team = teamRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Team", "id", id));
 
-        // Verificar que no tenga partidos jugados
         long playedMatches = matchRepository.countByTeamIdAndStatusNot(
                 id,
                 co.edu.uptc.backend_tc.model.MatchStatus.SCHEDULED
@@ -142,18 +143,67 @@ public class TeamService {
             );
         }
 
-        // Soft delete
         team.setIsActive(false);
         teamRepository.save(team);
     }
 
+    @Transactional(readOnly = true)
+    public TeamResponseDTO getTeamRoster(Long teamId) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new ResourceNotFoundException("Team", "id", teamId));
+
+        TeamResponseDTO dto = teamMapper.toResponseDTO(team);
+
+        // Cargar roster si existe relación
+        if (team.getRoster() != null && !team.getRoster().isEmpty()) {
+            dto.setRoster(
+                    team.getRoster().stream()
+                            .map(rosterItem -> {
+                                var player = rosterItem.getPlayer();
+                                return co.edu.uptc.backend_tc.dto.response.TeamRosterResponseDTO.builder()
+                                        .player(co.edu.uptc.backend_tc.dto.response.PlayerSummaryDTO.builder()
+                                                .id(player.getId())
+                                                .fullName(player.getFullName())
+                                                .documentNumber(player.getDocumentNumber())
+                                                .build())
+                                        .jerseyNumber(rosterItem.getJerseyNumber())
+                                        .isCaptain(Boolean.TRUE.equals(rosterItem.getIsCaptain()))
+                                        .build();
+                            })
+                            .toList()
+            );
+        }
+
+        dto.setRosterSize(dto.getRoster() != null ? dto.getRoster().size() : 0);
+
+        return dto;
+    }
+
+
     private TeamResponseDTO enrichResponseDTO(Team team) {
         TeamResponseDTO dto = teamMapper.toResponseDTO(team);
 
-        // Agregar estadísticas
+        // ✅ Agregar roster completo
+        dto.setRoster(
+                team.getRoster().stream().map(tr ->
+                        TeamRosterResponseDTO.builder()
+                                .player(PlayerSummaryDTO.builder()
+                                        .id(tr.getPlayer().getId())
+                                        .fullName(tr.getPlayer().getFullName())
+                                        .documentNumber(tr.getPlayer().getDocumentNumber())
+                                        .build())
+                                .jerseyNumber(tr.getJerseyNumber())
+                                .isCaptain(tr.getIsCaptain() != null ? tr.getIsCaptain() : false)
+                                .build()
+                ).toList()
+        );
+
+
+        // ✅ Estadísticas básicas
         dto.setRosterSize(team.getRoster().size());
         dto.setMatchesPlayed((int) matchRepository.countByTeamId(team.getId()));
 
         return dto;
     }
+
 }
