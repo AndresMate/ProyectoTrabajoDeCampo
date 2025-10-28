@@ -46,7 +46,7 @@ public class MatchEvent implements Serializable {
 
     @Min(value = 0, message = "Minute cannot be negative")
     @Max(value = 200, message = "Minute cannot exceed 200")
-    @Column(name = "minute")
+    @Column(name = "event_minute")
     private Integer minute;
 
     @Size(max = 500, message = "Description cannot exceed 500 characters")
