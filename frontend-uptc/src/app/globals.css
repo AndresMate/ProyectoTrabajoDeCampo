@@ -16,7 +16,7 @@
   --uptc-gray-light: #999999;
 
   --background: #ffffff;
-  --foreground: #1A1A1A;
+  --foreground: #1f2937; /* ✅ Más oscuro para mejor contraste */
 }
 
 @theme inline {
@@ -38,7 +38,7 @@
 
 body {
   background: var(--background);
-  color: var(--foreground);
+  color: #1f2937; /* ✅ Color más oscuro para mejor legibilidad */
   font-family: Georgia, 'Times New Roman', serif;
   line-height: 1.6;
 }
@@ -103,7 +103,7 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-family: Georgia, 'Times New Roman', serif;
   font-weight: 700;
-  color: var(--uptc-black);
+  color: #111827; /* ✅ Casi negro para máxima legibilidad */
   line-height: 1.2;
 }
 
@@ -139,14 +139,14 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
 }
 
-/* ⭐ INPUTS CON MEJOR CONTRASTE - CORRECCIÓN PRINCIPAL */
+/* ✅ INPUTS CON MEJOR CONTRASTE - CORRECCIÓN MEJORADA */
 input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea {
   background-color: #ffffff !important;
-  color: #1A1A1A !important;
+  color: #1f2937 !important; /* ✅ Color más oscuro para mejor contraste */
   border: 2px solid #d1d5db !important;
-  font-weight: 500 !important;
+  font-weight: 400 !important; /* ✅ Peso normal, no medium */
 }
 
 input:not([type="checkbox"]):not([type="radio"]):focus,
@@ -160,13 +160,24 @@ textarea:focus {
 
 input::placeholder,
 textarea::placeholder {
-  color: #6b7280 !important;
+  color: #9ca3af !important; /* ✅ Gris más claro para placeholders */
   font-weight: 400 !important;
 }
 
 /* Labels con mejor contraste */
 label {
+  color: #111827 !important; /* ✅ Casi negro para máxima legibilidad */
+  font-weight: 600 !important;
+}
+
+/* Clases utility para texto legible */
+.text-readable {
   color: #1f2937 !important;
+  font-weight: 400 !important;
+}
+
+.text-readable-bold {
+  color: #111827 !important;
   font-weight: 600 !important;
 }
 
@@ -272,7 +283,7 @@ a:hover {
   color: var(--uptc-yellow-dark);
 }
 
-/* Tablas institucionales */
+/* Tablas institucionales con mejor contraste */
 table {
   border-collapse: collapse;
   width: 100%;
@@ -286,7 +297,7 @@ thead {
 thead th {
   padding: 1rem;
   text-align: left;
-  font-weight: 600;
+  font-weight: 700; /* ✅ Bold para headers */
 }
 
 tbody tr {
@@ -300,7 +311,8 @@ tbody tr:hover {
 
 tbody td {
   padding: 1rem;
-  color: #1f2937;
+  color: #1f2937; /* ✅ Texto más oscuro */
+  font-weight: 500; /* ✅ Peso medio para mejor legibilidad */
 }
 
 /* Alertas institucionales */

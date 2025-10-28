@@ -1,4 +1,4 @@
-// frontend-uptc/src/app/torneos/[id]/page.tsx - VERSIÓN COMPLETA
+// frontend-uptc/src/app/torneos/[id]/page.tsx - ✅ VERSIÓN CORREGIDA
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -29,25 +29,27 @@ export default function TournamentDetailPage() {
       const tournamentData = await tournamentsService.getById(id as string);
       setTournament(tournamentData);
 
-      // Cargar inscripciones aprobadas
+      // ✅ Cargar SOLO inscripciones aprobadas de ESTE torneo
       try {
         const inscriptionsData = await tournamentsService.getInscriptions(Number(id));
+        console.log('✅ Inscripciones cargadas:', inscriptionsData);
         setInscriptions(inscriptionsData);
       } catch (error) {
-        console.error('Error al cargar inscripciones:', error);
+        console.error('❌ Error al cargar inscripciones:', error);
         setInscriptions([]);
       }
 
-      // Cargar partidos
+      // ✅ Cargar SOLO partidos de ESTE torneo
       try {
         const matchesData = await matchesService.getByTournament(Number(id));
+        console.log('✅ Partidos cargados del torneo:', matchesData);
         setMatches(matchesData);
       } catch (error) {
-        console.error('Error al cargar partidos:', error);
+        console.error('❌ Error al cargar partidos:', error);
         setMatches([]);
       }
     } catch (error) {
-      console.error('Error al obtener datos del torneo:', error);
+      console.error('❌ Error al obtener datos del torneo:', error);
     } finally {
       setLoading(false);
     }
@@ -97,6 +99,19 @@ export default function TournamentDetailPage() {
       CANCELLED: 'Cancelado'
     };
     return texts[status] || status;
+  };
+
+  // ✅ Cálculo de estadísticas del torneo
+  const tournamentStats = {
+    totalTeams: inscriptions.length,
+    totalMatches: matches.length,
+    finishedMatches: matches.filter((m: any) => m.status === 'FINISHED').length,
+    scheduledMatches: matches.filter((m: any) => m.status === 'SCHEDULED').length,
+    inProgressMatches: matches.filter((m: any) => m.status === 'IN_PROGRESS').length,
+    totalPlayers: inscriptions.reduce((total: number, insc: any) => total + (insc.playerCount || 0), 0),
+    completionPercentage: matches.length > 0
+      ? Math.round((matches.filter((m: any) => m.status === 'FINISHED').length / matches.length) * 100)
+      : 0
   };
 
   if (loading) {
@@ -167,13 +182,13 @@ export default function TournamentDetailPage() {
             <div className="bg-blue-50 p-4 rounded">
               <div className="text-sm text-blue-600 font-medium">Equipos Inscritos</div>
               <div className="text-lg font-semibold text-gray-800">
-                {inscriptions.length} / {tournament.maxTeams || '∞'}
+                {tournamentStats.totalTeams} / {tournament.maxTeams || '∞'}
               </div>
             </div>
             <div className="bg-blue-50 p-4 rounded">
               <div className="text-sm text-blue-600 font-medium">Partidos</div>
               <div className="text-lg font-semibold text-gray-800">
-                {matches.length} programados
+                {tournamentStats.totalMatches} programados
               </div>
             </div>
           </div>
@@ -231,7 +246,7 @@ export default function TournamentDetailPage() {
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              👥 Equipos ({inscriptions.length})
+              👥 Equipos ({tournamentStats.totalTeams})
             </button>
             <button
               onClick={() => setActiveTab('matches')}
@@ -241,7 +256,7 @@ export default function TournamentDetailPage() {
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              ⚽ Partidos ({matches.length})
+              ⚽ Partidos ({tournamentStats.totalMatches})
             </button>
           </div>
 
@@ -262,32 +277,63 @@ export default function TournamentDetailPage() {
                   </div>
                 </div>
 
+                {/* ✅ ESTADÍSTICAS MEJORADAS DEL TORNEO */}
                 <div>
-                  <h3 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                    📊 Estadísticas
+                  <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    📊 Estadísticas del Torneo
                   </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-blue-50 p-3 rounded text-center">
-                      <div className="text-2xl font-bold text-blue-900">{inscriptions.length}</div>
-                      <div className="text-xs text-gray-600">Equipos</div>
+
+                  {/* Estadísticas principales */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div className="bg-blue-50 p-4 rounded-lg text-center border-l-4 border-blue-500">
+                      <div className="text-3xl font-bold text-blue-900">{tournamentStats.totalTeams}</div>
+                      <div className="text-xs text-gray-600 font-medium mt-1">Equipos Inscritos</div>
                     </div>
-                    <div className="bg-green-50 p-3 rounded text-center">
-                      <div className="text-2xl font-bold text-green-900">{matches.length}</div>
-                      <div className="text-xs text-gray-600">Partidos</div>
+                    <div className="bg-green-50 p-4 rounded-lg text-center border-l-4 border-green-500">
+                      <div className="text-3xl font-bold text-green-900">{tournamentStats.totalMatches}</div>
+                      <div className="text-xs text-gray-600 font-medium mt-1">Total Partidos</div>
                     </div>
-                    <div className="bg-purple-50 p-3 rounded text-center">
-                      <div className="text-2xl font-bold text-purple-900">
-                        {matches.filter((m: any) => m.status === 'FINISHED').length}
-                      </div>
-                      <div className="text-xs text-gray-600">Finalizados</div>
+                    <div className="bg-purple-50 p-4 rounded-lg text-center border-l-4 border-purple-500">
+                      <div className="text-3xl font-bold text-purple-900">{tournamentStats.finishedMatches}</div>
+                      <div className="text-xs text-gray-600 font-medium mt-1">Finalizados</div>
                     </div>
-                    <div className="bg-orange-50 p-3 rounded text-center">
-                      <div className="text-2xl font-bold text-orange-900">
-                        {matches.filter((m: any) => m.status === 'SCHEDULED').length}
-                      </div>
-                      <div className="text-xs text-gray-600">Programados</div>
+                    <div className="bg-orange-50 p-4 rounded-lg text-center border-l-4 border-orange-500">
+                      <div className="text-3xl font-bold text-orange-900">{tournamentStats.scheduledMatches}</div>
+                      <div className="text-xs text-gray-600 font-medium mt-1">Por Jugar</div>
                     </div>
                   </div>
+
+                  {/* Estadísticas secundarias */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="bg-gray-50 p-4 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-gray-900">{tournamentStats.inProgressMatches}</div>
+                      <div className="text-xs text-gray-600 font-medium mt-1">En Curso</div>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-gray-900">{tournamentStats.totalPlayers}</div>
+                      <div className="text-xs text-gray-600 font-medium mt-1">Total Jugadores</div>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-gray-900">{tournamentStats.completionPercentage}%</div>
+                      <div className="text-xs text-gray-600 font-medium mt-1">Completado</div>
+                    </div>
+                  </div>
+
+                  {/* Barra de progreso */}
+                  {tournamentStats.totalMatches > 0 && (
+                    <div className="mt-4">
+                      <div className="flex justify-between text-sm mb-2">
+                        <span className="font-medium text-gray-700">Progreso del Torneo</span>
+                        <span className="font-semibold text-blue-900">{tournamentStats.completionPercentage}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3">
+                        <div
+                          className="bg-blue-600 h-3 rounded-full transition-all duration-500"
+                          style={{ width: `${tournamentStats.completionPercentage}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -337,55 +383,94 @@ export default function TournamentDetailPage() {
               </div>
             )}
 
-            {/* Tab: Partidos */}
+            {/* Tab: Partidos - ✅ AHORA MUESTRA SOLO LOS DEL TORNEO */}
             {activeTab === 'matches' && (
               <div>
                 {matches.length === 0 ? (
                   <div className="text-center py-12">
-                    <p className="text-gray-500 text-lg">No hay partidos programados aún</p>
+                    <div className="text-gray-400 mb-4">
+                      <svg className="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-500 text-lg font-semibold">No hay partidos programados aún</p>
                     <p className="text-gray-400 text-sm mt-2">
                       Los partidos se programarán cuando el torneo esté en curso
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {matches.map((match: any) => (
-                      <div key={match.id} className="border rounded-lg p-4 hover:shadow-md transition">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className={`text-xs px-3 py-1 rounded-full font-semibold ${getMatchStatusBadge(match.status)}`}>
-                            {getMatchStatusText(match.status)}
-                          </span>
-                          <span className="text-sm text-gray-600">
-                            {new Date(match.matchDate || match.startsAt).toLocaleDateString('es-ES', {
-                              day: '2-digit',
-                              month: 'short',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1 text-right">
-                            <p className="font-semibold text-gray-900">{match.homeTeam?.name || match.teamA?.name}</p>
-                          </div>
-                          <div className="px-6 text-center">
-                            <p className="text-xl font-bold text-gray-800">VS</p>
-                          </div>
-                          <div className="flex-1 text-left">
-                            <p className="font-semibold text-gray-900">{match.awayTeam?.name || match.teamB?.name}</p>
-                          </div>
-                        </div>
-
-                        {match.venue && (
-                          <p className="text-center text-xs text-gray-500 mt-3">
-                            📍 {match.venue.name}
-                            {match.scenario && ` - ${match.scenario.name}`}
-                          </p>
-                        )}
+                  <>
+                    <div className="mb-4 flex items-center justify-between">
+                      <p className="text-sm text-gray-600">
+                        Mostrando <span className="font-semibold text-gray-900">{matches.length}</span> partidos de este torneo
+                      </p>
+                      <div className="flex gap-2">
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                          {tournamentStats.scheduledMatches} Programados
+                        </span>
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                          {tournamentStats.inProgressMatches} En Curso
+                        </span>
+                        <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                          {tournamentStats.finishedMatches} Finalizados
+                        </span>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {matches.map((match: any) => (
+                        <div key={match.id} className="border rounded-lg p-4 hover:shadow-md transition bg-white">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className={`text-xs px-3 py-1 rounded-full font-semibold ${getMatchStatusBadge(match.status)}`}>
+                              {getMatchStatusText(match.status)}
+                            </span>
+                            <span className="text-sm text-gray-600 font-medium">
+                              {match.matchDate || match.startsAt
+                                ? new Date(match.matchDate || match.startsAt).toLocaleDateString('es-ES', {
+                                    day: '2-digit',
+                                    month: 'short',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })
+                                : 'Fecha por definir'}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 text-right pr-4">
+                              <p className="font-semibold text-gray-900 text-lg">
+                                {match.homeTeam?.name || match.teamA?.name || 'Equipo Local'}
+                              </p>
+                            </div>
+                            <div className="px-4 text-center">
+                              <p className="text-2xl font-bold text-gray-800">VS</p>
+                            </div>
+                            <div className="flex-1 text-left pl-4">
+                              <p className="font-semibold text-gray-900 text-lg">
+                                {match.awayTeam?.name || match.teamB?.name || 'Equipo Visitante'}
+                              </p>
+                            </div>
+                          </div>
+
+                          {(match.venue || match.scenario) && (
+                            <p className="text-center text-xs text-gray-500 mt-3">
+                              📍 {match.venue?.name || 'Sede por confirmar'}
+                              {match.scenario && ` - ${match.scenario.name}`}
+                            </p>
+                          )}
+
+                          {/* Información adicional si el partido está en curso o finalizado */}
+                          {match.status === 'FINISHED' && match.result && (
+                            <div className="mt-3 pt-3 border-t text-center">
+                              <span className="text-sm font-semibold text-gray-700">
+                                Resultado: {match.result.homeScore} - {match.result.awayScore}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </>
                 )}
               </div>
             )}

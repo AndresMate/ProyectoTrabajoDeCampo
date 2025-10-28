@@ -39,7 +39,7 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/api/tournaments/public/**",
                                 "/api/matches/public/**",
-                                "/api/standings/public/**",
+                                "/api/standings/**",
                                 "/api/inscriptions/**",
                                 "/api/sports/public/**",
                                 "/api/venues/public/**",
@@ -63,8 +63,7 @@ public class SecurityConfig {
                         ).hasAnyRole("REFEREE", "ADMIN", "SUPER_ADMIN")
                         .requestMatchers(
                                 "/api/teams/**",
-                                "/api/players/**",
-                                "/api/standings/**"
+                                "/api/players/**"
                         ).authenticated()
                         .anyRequest().authenticated()
                 )
