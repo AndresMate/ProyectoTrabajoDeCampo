@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { authService } from '@/services/authService';
+import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -141,9 +142,9 @@ export default function LoginPage() {
                 ¿Olvidaste tu contraseña?
               </a>
               <div className="border-t border-gray-200 pt-4">
-                <a href="/" className="text-gray-600 hover:text-uptc-black transition-colors">
+                <Link href="/" className="text-gray-600 hover:text-uptc-black transition-colors">
                   ← Volver al inicio
-                </a>
+                </Link>
               </div>
             </div>
           </div>
