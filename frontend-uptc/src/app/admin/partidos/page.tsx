@@ -28,6 +28,16 @@ interface Match {
   venue?: { id?: number; name?: string } | null;
 }
 
+function getErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'object' && err !== null && 'response' in err) {
+    const resp = (err as Record<string, unknown>)['response'] as Record<string, unknown> | undefined;
+    const data = resp?.['data'] as Record<string, unknown> | undefined;
+    return (data?.['message'] as string) ?? String(err);
+  }
+  return String(err);
+}
+
 export default function AdminPartidosPage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -45,10 +55,22 @@ export default function AdminPartidosPage() {
     setLoading(true);
     try {
       const data = await matchesService.getAll();
-      const list = Array.isArray(data) ? data : data.content || [];
+      const maybe = data as unknown;
+      let list: Match[] = [];
+
+      if (Array.isArray(maybe)) {
+        list = maybe as Match[];
+      } else if (typeof maybe === 'object' && maybe !== null) {
+        const record = maybe as Record<string, unknown>;
+        const content = record['content'];
+        if (Array.isArray(content)) {
+          list = content as Match[];
+        }
+      }
+
       setMatches(list);
-    } catch (err) {
-      console.error('Error al cargar partidos:', err);
+    } catch (err: unknown) {
+      console.error('Error al cargar partidos:', getErrorMessage(err));
       alert('❌ Error al cargar partidos. Revisa la consola para más detalles.');
     } finally {
       setLoading(false);
@@ -61,21 +83,29 @@ export default function AdminPartidosPage() {
       await matchesService.delete(id);
       alert('✅ Partido eliminado exitosamente');
       fetchMatches();
-    } catch (error: any) {
-      console.error('Error al eliminar partido:', error);
-      alert(error?.response?.data?.message || '❌ Error al eliminar partido');
+    } catch (error: unknown) {
+      console.error('Error al eliminar partido:', getErrorMessage(error));
+      alert(getErrorMessage(error) || '❌ Error al eliminar partido');
     }
   };
 
   const handleStartMatch = async (id: number) => {
     if (!confirm('¿Quieres iniciar este partido?')) return;
     try {
-      await matchesService.start(id);
-      alert('✅ Partido iniciado');
-      fetchMatches();
-    } catch (error: any) {
-      console.error('Error al iniciar partido:', error);
-      alert(error?.response?.data?.message || '❌ Error al iniciar partido');
+      const svc = matchesService as unknown as Record<string, unknown>;
+      const startFn = svc['start'] ?? svc['startMatch'];
+
+      if (typeof startFn === 'function') {
+        // Se asume que la función devuelve una Promise
+        await (startFn as (...args: unknown[]) => Promise<unknown>)(id);
+        alert('✅ Partido iniciado');
+        fetchMatches();
+      } else {
+        throw new Error('Función de inicio no disponible en matchesService');
+      }
+    } catch (error: unknown) {
+      console.error('Error al iniciar partido:', getErrorMessage(error));
+      alert(getErrorMessage(error) || '❌ Error al iniciar partido');
     }
   };
 

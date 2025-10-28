@@ -1,32 +1,15 @@
+// typescript
 import api from "./api";
 
 export interface Match {
   id: number;
-  tournament: {
-    id: number;
-    name: string;
-  };
-  category: {
-    id: number;
-    name: string;
-  };
-  teamA: {
-    id: number;
-    name: string;
-  };
-  teamB: {
-    id: number;
-    name: string;
-  };
+  tournament: { id: number; name: string };
+  category: { id: number; name: string };
+  teamA: { id: number; name: string };
+  teamB: { id: number; name: string };
   matchDate: string;
-  venue?: {
-    id: number;
-    name: string;
-  };
-  scenario?: {
-    id: number;
-    name: string;
-  };
+  venue?: { id: number; name: string };
+  scenario?: { id: number; name: string };
   status: string;
   round?: number;
   matchNumber?: number;
@@ -50,7 +33,10 @@ export interface MatchResult {
   scoreTeamB: number;
   winnerId?: number;
   notes?: string;
+  // puedes añadir otros campos que la API devuelva (p.ej. createdAt)
 }
+
+const toErrorMessage = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
 const matchesService = {
   // === ENDPOINTS PÚBLICOS ===
@@ -59,9 +45,9 @@ const matchesService = {
   getAll: async (): Promise<Match[]> => {
     try {
       const response = await api.get("/matches/public");
-      return response.data;
-    } catch (error) {
-      console.error("Error al obtener partidos:", error);
+      return response.data as Match[];
+    } catch (error: unknown) {
+      console.error("Error al obtener partidos:", toErrorMessage(error));
       throw error;
     }
   },
@@ -70,9 +56,9 @@ const matchesService = {
   getById: async (id: number): Promise<Match> => {
     try {
       const response = await api.get(`/matches/public/${id}`);
-      return response.data;
-    } catch (error) {
-      console.error("Error al obtener partido:", error);
+      return response.data as Match;
+    } catch (error: unknown) {
+      console.error("Error al obtener partido:", toErrorMessage(error));
       throw error;
     }
   },
@@ -81,9 +67,9 @@ const matchesService = {
   getByTournament: async (tournamentId: number): Promise<Match[]> => {
     try {
       const response = await api.get(`/matches/public?tournamentId=${tournamentId}`);
-      return response.data;
-    } catch (error) {
-      console.error("Error al obtener partidos del torneo:", error);
+      return response.data as Match[];
+    } catch (error: unknown) {
+      console.error("Error al obtener partidos del torneo:", toErrorMessage(error));
       return [];
     }
   },
@@ -94,9 +80,9 @@ const matchesService = {
   create: async (data: MatchCreateDTO): Promise<Match> => {
     try {
       const response = await api.post("/matches", data);
-      return response.data;
-    } catch (error) {
-      console.error("Error al crear partido:", error);
+      return response.data as Match;
+    } catch (error: unknown) {
+      console.error("Error al crear partido:", toErrorMessage(error));
       throw error;
     }
   },
@@ -105,41 +91,41 @@ const matchesService = {
   delete: async (id: number): Promise<void> => {
     try {
       await api.delete(`/matches/${id}`);
-    } catch (error) {
-      console.error("Error al eliminar partido:", error);
+    } catch (error: unknown) {
+      console.error("Error al eliminar partido:", toErrorMessage(error));
       throw error;
     }
   },
 
   // Registrar resultado
-  registerResult: async (data: MatchResult): Promise<any> => {
+  registerResult: async (data: MatchResult): Promise<MatchResult> => {
     try {
       const response = await api.post("/match-results", data);
-      return response.data;
-    } catch (error) {
-      console.error("Error al registrar resultado:", error);
+      return response.data as MatchResult;
+    } catch (error: unknown) {
+      console.error("Error al registrar resultado:", toErrorMessage(error));
       throw error;
     }
   },
 
   // Obtener resultado de un partido
-  getResult: async (matchId: number): Promise<any> => {
+  getResult: async (matchId: number): Promise<MatchResult | null> => {
     try {
       const response = await api.get(`/match-results/${matchId}`);
-      return response.data;
-    } catch (error) {
-      console.error("Error al obtener resultado:", error);
+      return response.data ? (response.data as MatchResult) : null;
+    } catch (error: unknown) {
+      console.error("Error al obtener resultado:", toErrorMessage(error));
       return null;
     }
   },
 
   // Actualizar resultado
-  updateResult: async (data: MatchResult): Promise<any> => {
+  updateResult: async (data: MatchResult): Promise<MatchResult> => {
     try {
       const response = await api.put("/match-results", data);
-      return response.data;
-    } catch (error) {
-      console.error("Error al actualizar resultado:", error);
+      return response.data as MatchResult;
+    } catch (error: unknown) {
+      console.error("Error al actualizar resultado:", toErrorMessage(error));
       throw error;
     }
   },
@@ -148,8 +134,8 @@ const matchesService = {
   deleteResult: async (matchId: number): Promise<void> => {
     try {
       await api.delete(`/match-results/${matchId}`);
-    } catch (error) {
-      console.error("Error al eliminar resultado:", error);
+    } catch (error: unknown) {
+      console.error("Error al eliminar resultado:", toErrorMessage(error));
       throw error;
     }
   }

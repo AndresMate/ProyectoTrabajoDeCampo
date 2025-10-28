@@ -1,3 +1,4 @@
+// typescript
 // src/app/torneos/[id]/posiciones/page.tsx
 'use client';
 
@@ -19,35 +20,78 @@ interface Standing {
   points: number;
 }
 
+interface Category {
+  id: number;
+  name: string;
+}
+
+interface TournamentBrief {
+  id: number;
+  name: string;
+  categories?: Category[];
+}
+
+function getPropNumber(obj: unknown, key: string, fallback = 0): number {
+  if (typeof obj === 'object' && obj !== null) {
+    const v = (obj as Record<string, unknown>)[key];
+    if (typeof v === 'number') return v;
+    if (typeof v === 'string') {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : fallback;
+    }
+  }
+  return fallback;
+}
+
+function getPropString(obj: unknown, key: string, fallback = ''): string {
+  if (typeof obj === 'object' && obj !== null) {
+    const v = (obj as Record<string, unknown>)[key];
+    if (typeof v === 'string') return v;
+    if (typeof v === 'object' && v !== null) {
+      const name = (v as Record<string, unknown>)['name'];
+      if (typeof name === 'string') return name;
+    }
+  }
+  return fallback;
+}
+
 export default function StandingsPage() {
   const { id } = useParams();
   const [standings, setStandings] = useState<Standing[]>([]);
-  const [tournament, setTournament] = useState<any>(null);
+  const [tournament, setTournament] = useState<TournamentBrief | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (id) {
       fetchTournament();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   useEffect(() => {
     if (selectedCategory) {
       fetchStandings();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategory]);
 
   const fetchTournament = async () => {
     try {
       const data = await tournamentsService.getById(id as string);
-      setTournament(data);
+      const tour = data as unknown as TournamentBrief;
+      setTournament(tour);
 
-      // Aquí deberías obtener las categorías del torneo
-      // Por ahora simulamos una categoría
-      setCategories([{ id: 1, name: 'Categoría Única' }]);
-      setSelectedCategory(1);
+      if (Array.isArray(tour?.categories) && tour.categories.length > 0) {
+        setCategories(tour.categories);
+        setSelectedCategory(tour.categories[0].id);
+      } else {
+        // fallback si la API no devuelve categorías
+        const fallback = [{ id: 1, name: 'Categoría Única' }];
+        setCategories(fallback);
+        setSelectedCategory(fallback[0].id);
+      }
     } catch (error) {
       console.error('Error al cargar torneo:', error);
     } finally {
@@ -59,11 +103,31 @@ export default function StandingsPage() {
     if (!selectedCategory) return;
 
     try {
-      const data = await standingsService.getStandings(
-        Number(id),
-        selectedCategory
-      );
-      setStandings(data);
+      const raw = await standingsService.getStandings(Number(id), selectedCategory);
+      const list: Standing[] = Array.isArray(raw)
+        ? raw.map((s, idx) => {
+            const gf = getPropNumber(s, 'goalsFor', getPropNumber(s, 'gf', 0));
+            const ga = getPropNumber(s, 'goalsAgainst', getPropNumber(s, 'ga', 0));
+            return {
+              position: getPropNumber(s, 'position', idx + 1),
+              teamName:
+                getPropString(s, 'teamName') ||
+                getPropString(s, 'team', '') ||
+                getPropString(s, 'club', '') ||
+                'Equipo',
+              matchesPlayed: getPropNumber(s, 'matchesPlayed', getPropNumber(s, 'played', 0)),
+              wins: getPropNumber(s, 'wins', getPropNumber(s, 'w', 0)),
+              draws: getPropNumber(s, 'draws', getPropNumber(s, 'd', 0)),
+              losses: getPropNumber(s, 'losses', getPropNumber(s, 'l', 0)),
+              goalsFor: gf,
+              goalsAgainst: ga,
+              goalDifference: getPropNumber(s, 'goalDifference', gf - ga),
+              points: getPropNumber(s, 'points', getPropNumber(s, 'pts', 0))
+            };
+          })
+        : [];
+
+      setStandings(list);
     } catch (error) {
       console.error('Error al cargar posiciones:', error);
     }
@@ -85,18 +149,15 @@ export default function StandingsPage() {
           <p className="text-gray-600">{tournament?.name}</p>
         </div>
 
-        {/* Selector de categoría */}
         {categories.length > 1 && (
           <div className="bg-white rounded-lg shadow p-4 mb-6">
-            <label className="block text-gray-700 font-medium mb-2">
-              Seleccionar Categoría:
-            </label>
+            <label className="block text-gray-700 font-medium mb-2">Seleccionar Categoría:</label>
             <select
-              value={selectedCategory || ''}
+              value={selectedCategory ?? ''}
               onChange={(e) => setSelectedCategory(Number(e.target.value))}
               className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
-              {categories.map(cat => (
+              {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
                   {cat.name}
                 </option>
@@ -105,7 +166,7 @@ export default function StandingsPage() {
           </div>
         )}
 
-        {/* Tabla de posiciones */}
+        {/* El resto del JSX permanece igual */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full">
@@ -128,17 +189,15 @@ export default function StandingsPage() {
                   <tr
                     key={index}
                     className={`hover:bg-gray-50 ${
-                      index < 4 ? 'bg-green-50' : 
-                      index >= standings.length - 3 ? 'bg-red-50' : ''
+                      index < 4 ? 'bg-green-50' : index >= standings.length - 3 ? 'bg-red-50' : ''
                     }`}
                   >
                     <td className="px-4 py-4 text-center">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto font-bold ${
-                        index === 0 ? 'bg-yellow-400 text-white' :
-                        index === 1 ? 'bg-gray-400 text-white' :
-                        index === 2 ? 'bg-orange-400 text-white' :
-                        'bg-gray-200 text-gray-700'
-                      }`}>
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto font-bold ${
+                          index === 0 ? 'bg-yellow-400 text-white' : index === 1 ? 'bg-gray-400 text-white' : index === 2 ? 'bg-orange-400 text-white' : 'bg-gray-200 text-gray-700'
+                        }`}
+                      >
                         {standing.position}
                       </div>
                     </td>
@@ -152,18 +211,17 @@ export default function StandingsPage() {
                     <td className="px-4 py-4 text-center text-gray-700">{standing.goalsFor}</td>
                     <td className="px-4 py-4 text-center text-gray-700">{standing.goalsAgainst}</td>
                     <td className="px-4 py-4 text-center">
-                      <span className={`font-semibold ${
-                        standing.goalDifference > 0 ? 'text-green-600' :
-                        standing.goalDifference < 0 ? 'text-red-600' :
-                        'text-gray-600'
-                      }`}>
-                        {standing.goalDifference > 0 ? '+' : ''}{standing.goalDifference}
+                      <span
+                        className={`font-semibold ${
+                          standing.goalDifference > 0 ? 'text-green-600' : standing.goalDifference < 0 ? 'text-red-600' : 'text-gray-600'
+                        }`}
+                      >
+                        {standing.goalDifference > 0 ? '+' : ''}
+                        {standing.goalDifference}
                       </span>
                     </td>
                     <td className="px-4 py-4 text-center">
-                      <div className="bg-blue-900 text-white font-bold rounded px-3 py-1 inline-block">
-                        {standing.points}
-                      </div>
+                      <div className="bg-blue-900 text-white font-bold rounded px-3 py-1 inline-block">{standing.points}</div>
                     </td>
                   </tr>
                 ))}
@@ -171,14 +229,10 @@ export default function StandingsPage() {
             </table>
           </div>
 
-          {standings.length === 0 && (
-            <div className="p-8 text-center text-gray-500">
-              No hay datos de posiciones disponibles
-            </div>
-          )}
+          {standings.length === 0 && <div className="p-8 text-center text-gray-500">No hay datos de posiciones disponibles</div>}
         </div>
 
-        {/* Leyenda */}
+        {/* Leyenda y volver */}
         <div className="mt-6 bg-white rounded-lg shadow p-4">
           <h3 className="font-semibold text-gray-800 mb-3">Leyenda:</h3>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
@@ -205,12 +259,7 @@ export default function StandingsPage() {
         </div>
 
         <div className="mt-6 text-center">
-          <a
-            href={`/torneos/${id}`}
-            className="text-blue-900 hover:underline font-medium"
-          >
-            ← Volver al torneo
-          </a>
+          <a href={`/torneos/${id}`} className="text-blue-900 hover:underline font-medium">← Volver al torneo</a>
         </div>
       </div>
     </main>

@@ -1,5 +1,6 @@
-// frontend-uptc/src/services/index.ts
-// Exportación centralizada de todos los servicios
+// typescript
+// `src/services/index.ts`
+// Reexportación centralizada de servicios y tipos verificados
 
 export { authService } from './authService';
 export { tournamentsService } from './tournamentsService';
@@ -14,68 +15,24 @@ export { default as playersService } from './playersService';
 export { default as clubsService } from './clubsService';
 export { default as venuesService } from './venuesService';
 export { default as reportsService } from './reportsService';
+export { default as fileUploadService } from './fileUploadService';
+export { default as fixtureService } from './fixtureService';
+export { default as inscriptionPlayerService } from './inscriptionPlayerService';
+export { default as inscriptionsService } from './inscriptionsService';
+export { default as sanctionsService } from './sanctionsService';
 
-// Exportar tipos comunes
+// Exportar solo los tipos que están presentes en los archivos proporcionados
+export type { Category, CategoryCreateDTO } from './categoriesService';
+export type { Club } from './clubsService';
+export type { InscriptionPlayerDTO, PlayerSummary, InscriptionWithLimit } from './inscriptionPlayerService';
 export type {
-  User,
-  UsersResponse,
-  UserCreateDTO,
-  UserUpdateDTO,
-  ChangePasswordDTO
-} from './usersService';
-
-export type {
-  Tournament,
-  TournamentCreateDTO,
-  PageResponse
-} from './tournamentsService';
-
-export type {
-  InscriptionDTO,
-  InscriptionResponseDTO,
-  InscriptionPlayerDTO
+  PlayerInscriptionDTO,
+  TeamAvailabilityDTO,
+  InscriptionCreateDTO,
+  PlayerSummaryDTO,
+  InscriptionResponseDTO
 } from './inscriptionsService';
-
-export type {
-  Sport,
-  SportCreateDTO
-} from './sportsService';
-
-export type {
-  Category,
-  CategoryCreateDTO
-} from './categoriesService';
-
-export type {
-  Match,
-  MatchCreateDTO,
-  MatchResult
-} from './matchesService';
-
-export type {
-  Standing
-} from './standingsService';
-
-export type {
-  Team,
-  TeamCreateDTO,
-  TeamPlayer
-} from './teamsService';
-
-export type {
-  Player,
-  PlayerCreateDTO,
-  PlayerFilterDTO
-} from './playersService';
-
-export type {
-  Club,
-  ClubCreateDTO
-} from './clubsService';
-
-export type {
-  Venue,
-  Scenario,
-  VenueCreateDTO,
-  ScenarioCreateDTO
-} from './venuesService';
+export type { Sport, SportCreateDTO } from './sportsService';
+export type { Match, MatchCreateDTO, MatchResult } from './matchesService';
+export type { Player, PlayerCreateDTO, PlayerFilterDTO } from './playersService';
+export type { Standing } from './standingsService';
