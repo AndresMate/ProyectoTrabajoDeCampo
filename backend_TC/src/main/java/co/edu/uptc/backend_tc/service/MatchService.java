@@ -1,15 +1,20 @@
 package co.edu.uptc.backend_tc.service;
 
 import co.edu.uptc.backend_tc.dto.MatchDTO;
+import co.edu.uptc.backend_tc.dto.response.MatchResponseDTO;
 import co.edu.uptc.backend_tc.entity.*;
 import co.edu.uptc.backend_tc.mapper.MatchMapper;
 import co.edu.uptc.backend_tc.repository.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class MatchService {
 
     private final MatchRepository matchRepository;
@@ -20,35 +25,22 @@ public class MatchService {
     private final UserRepository userRepository;
     private final MatchMapper matchMapper;
 
-    public MatchService(MatchRepository matchRepository,
-                        TournamentRepository tournamentRepository,
-                        CategoryRepository categoryRepository,
-                        ScenarioRepository scenarioRepository,
-                        TeamRepository teamRepository,
-                        UserRepository userRepository,
-                        MatchMapper matchMapper) {
-        this.matchRepository = matchRepository;
-        this.tournamentRepository = tournamentRepository;
-        this.categoryRepository = categoryRepository;
-        this.scenarioRepository = scenarioRepository;
-        this.teamRepository = teamRepository;
-        this.userRepository = userRepository;
-        this.matchMapper = matchMapper;
-    }
-
-    public List<MatchDTO> getAllMatches() {
-        return matchRepository.findAll()
-                .stream()
-                .map(matchMapper::toDTO)
+    // ✅ Devuelve partidos con información completa
+    public List<MatchResponseDTO> getAllMatches() {
+        return matchRepository.findAllWithRelations().stream()
+                .map(matchMapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
 
-    public MatchDTO getMatchById(Long id) {
-        return matchRepository.findById(id)
-                .map(matchMapper::toDTO)
+    // ✅ Devuelve un partido con relaciones anidadas
+    public MatchResponseDTO getMatchById(Long id) {
+        Match match = matchRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Match not found with id: " + id));
+        return matchMapper.toResponseDTO(match);
     }
 
+    // ✅ Crea un partido nuevo (recibe DTO con IDs)
+    @Transactional
     public MatchDTO createMatch(MatchDTO dto) {
         Tournament tournament = tournamentRepository.findById(dto.getTournamentId())
                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
@@ -66,11 +58,13 @@ public class MatchService {
                 : null;
 
         Match match = matchMapper.toEntity(dto, tournament, category, scenario, homeTeam, awayTeam, referee);
-        return matchMapper.toDTO(matchRepository.save(match));
+        match = matchRepository.save(match);
+
+        return matchMapper.toDTO(match);
     }
 
+    @Transactional
     public void deleteMatch(Long id) {
         matchRepository.deleteById(id);
     }
 }
-

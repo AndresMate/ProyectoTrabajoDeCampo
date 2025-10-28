@@ -73,4 +73,16 @@ public interface MatchRepository extends JpaRepository<Match, Long>,
     long countByTeamId(@Param("teamId") Long teamId);
 
     long countByScenarioId(Long scenarioId);
+
+    @Query("""
+        SELECT m FROM Match m
+        LEFT JOIN FETCH m.tournament
+        LEFT JOIN FETCH m.category
+        LEFT JOIN FETCH m.scenario
+        LEFT JOIN FETCH m.homeTeam
+        LEFT JOIN FETCH m.awayTeam
+        LEFT JOIN FETCH m.referee
+        LEFT JOIN FETCH m.result
+    """)
+    List<Match> findAllWithRelations();
 }
