@@ -90,9 +90,11 @@ public class MatchService {
         }
 
         match.setStatus(MatchStatus.IN_PROGRESS);
+        match.setStartsAt(java.time.LocalDateTime.now());
         match = matchRepository.save(match);
         return matchMapper.toResponseDTO(match);
     }
+
 
     @Transactional
     public MatchResponseDTO finishMatch(Long id) {
@@ -113,29 +115,43 @@ public class MatchService {
         Match match = matchRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Match not found"));
 
-        if (dto.getHomeTeamId() != null) {
-            Team homeTeam = teamRepository.findById(dto.getHomeTeamId())
-                    .orElseThrow(() -> new RuntimeException("Home team not found"));
-            match.setHomeTeam(homeTeam);
+        // ⚙️ Control de edición según estado
+        MatchStatus status = match.getStatus();
+
+        // 🏟️ Permitir cambiar escenario siempre
+        if (dto.getScenarioId() != null) {
+            Scenario scenario = scenarioRepository.findById(dto.getScenarioId()).orElse(null);
+            match.setScenario(scenario);
         }
 
-        if (dto.getAwayTeamId() != null) {
-            Team awayTeam = teamRepository.findById(dto.getAwayTeamId())
-                    .orElseThrow(() -> new RuntimeException("Away team not found"));
-            match.setAwayTeam(awayTeam);
-        }
-
+        // ⏰ Permitir cambiar la fecha/hora del partido en cualquier estado
         if (dto.getStartsAt() != null) {
             match.setStartsAt(dto.getStartsAt());
         }
 
-        if (dto.getScenarioId() != null) {
-            Scenario scenario = scenarioRepository.findById(dto.getScenarioId())
-                    .orElse(null);
-            match.setScenario(scenario);
+        // ⚽ Solo permitir cambiar equipos si el partido aún no empezó
+        if (status == MatchStatus.SCHEDULED) {
+            if (dto.getHomeTeamId() != null) {
+                Team homeTeam = teamRepository.findById(dto.getHomeTeamId())
+                        .orElseThrow(() -> new RuntimeException("Home team not found"));
+                match.setHomeTeam(homeTeam);
+            }
+
+            if (dto.getAwayTeamId() != null) {
+                Team awayTeam = teamRepository.findById(dto.getAwayTeamId())
+                        .orElseThrow(() -> new RuntimeException("Away team not found"));
+                match.setAwayTeam(awayTeam);
+            }
+        }
+
+        // 🧑‍⚖️ Árbitro: editable en cualquier momento
+        if (dto.getRefereeId() != null) {
+            User referee = userRepository.findById(dto.getRefereeId()).orElse(null);
+            match.setReferee(referee);
         }
 
         match = matchRepository.save(match);
         return matchMapper.toResponseDTO(match);
     }
+
 }

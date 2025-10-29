@@ -1,8 +1,7 @@
-// frontend-uptc/src/components/forms/MatchForm.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
-import matchesService, { MatchCreateDTO, Match } from '@/services/matchesService';
+import matchesService, { MatchCreateDTO } from '@/services/matchesService';
 import { tournamentsService } from '@/services/tournamentsService';
 import categoriesService from '@/services/categoriesService';
 import teamsService from '@/services/teamsService';
@@ -41,7 +40,6 @@ interface Referee {
 }
 
 export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormProps) {
-  // Estados del formulario
   const [formData, setFormData] = useState<MatchCreateDTO>({
     tournamentId: 0,
     categoryId: 0,
@@ -50,58 +48,42 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
     homeTeamId: 0,
     awayTeamId: 0,
     refereeId: null,
-    status: 'SCHEDULED'
+    status: 'SCHEDULED',
   });
 
-  // Estados para los dropdowns
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [referees, setReferees] = useState<Referee[]>([]);
-
-  // Estados de carga
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
 
-  // Cargar datos iniciales
   useEffect(() => {
     loadInitialData();
   }, []);
 
-  // Cargar partido existente si estamos en modo edición
   useEffect(() => {
-    if (matchId) {
-      loadMatch();
-    }
+    if (matchId) loadMatch();
   }, [matchId]);
 
-  // Cargar categorías cuando cambia el torneo
   useEffect(() => {
-    if (formData.tournamentId > 0) {
-      loadCategories();
-    }
+    if (formData.tournamentId > 0) loadCategories();
   }, [formData.tournamentId]);
 
-  // Cargar equipos cuando cambian torneo y categoría
   useEffect(() => {
-    if (formData.tournamentId > 0 && formData.categoryId > 0) {
-      loadTeams();
-    }
+    if (formData.tournamentId > 0 && formData.categoryId > 0) loadTeams();
   }, [formData.tournamentId, formData.categoryId]);
 
   const loadInitialData = async () => {
     setLoadingData(true);
     try {
-      // Cargar torneos
       const tournamentsData = await tournamentsService.getAll();
       setTournaments(tournamentsData);
 
-      // Cargar escenarios
       const scenariosData = await venuesService.getAllScenarios();
       setScenarios(scenariosData.content || scenariosData);
 
-      // Cargar árbitros
       const refereesData = await usersService.getUsersByRole('REFEREE');
       setReferees(refereesData);
     } catch (error) {
@@ -115,17 +97,15 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
   const loadMatch = async () => {
     try {
       const match = await matchesService.getById(matchId!);
-
-      // ✅ CRÍTICO: Convertir de Match (respuesta) a MatchCreateDTO (formulario)
       setFormData({
         tournamentId: match.tournament.id,
         categoryId: match.category.id,
         scenarioId: match.scenario?.id || null,
         startsAt: match.startsAt ? formatDateForInput(match.startsAt) : '',
-        homeTeamId: match.homeTeam.id,  // ✅ Extraer solo el ID
-        awayTeamId: match.awayTeam.id,  // ✅ Extraer solo el ID
+        homeTeamId: match.homeTeam.id,
+        awayTeamId: match.awayTeam.id,
         refereeId: match.referee?.id || null,
-        status: match.status
+        status: match.status,
       });
     } catch (error) {
       console.error('Error al cargar partido:', error);
@@ -155,58 +135,26 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
     }
   };
 
-  // Formatear fecha para el input datetime-local
   const formatDateForInput = (dateString: string): string => {
     const date = new Date(dateString);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+    return date.toISOString().slice(0, 16);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-
     setFormData(prev => ({
       ...prev,
-      [name]: value === '' || value === 'null'
-        ? null
-        : ['tournamentId', 'categoryId', 'scenarioId', 'homeTeamId', 'awayTeamId', 'refereeId'].includes(name)
+      [name]:
+        value === '' || value === 'null'
+          ? null
+          : ['tournamentId', 'categoryId', 'scenarioId', 'homeTeamId', 'awayTeamId', 'refereeId'].includes(name)
           ? Number(value)
-          : value
+          : value,
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validaciones
-    if (!formData.tournamentId || formData.tournamentId === 0) {
-      alert('Selecciona un torneo');
-      return;
-    }
-
-    if (!formData.categoryId || formData.categoryId === 0) {
-      alert('Selecciona una categoría');
-      return;
-    }
-
-    if (!formData.homeTeamId || formData.homeTeamId === 0) {
-      alert('Selecciona el equipo local');
-      return;
-    }
-
-    if (!formData.awayTeamId || formData.awayTeamId === 0) {
-      alert('Selecciona el equipo visitante');
-      return;
-    }
-
-    if (formData.homeTeamId === formData.awayTeamId) {
-      alert('Los equipos local y visitante deben ser diferentes');
-      return;
-    }
 
     if (!formData.startsAt) {
       alert('Selecciona la fecha y hora del partido');
@@ -215,19 +163,14 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
 
     setLoading(true);
     try {
-      // ✅ Preparar datos para enviar (convertir datetime-local a ISO)
       const dataToSend: MatchCreateDTO = {
         ...formData,
-        startsAt: formData.startsAt ? new Date(formData.startsAt).toISOString() : null,
-        scenarioId: formData.scenarioId || null,
-        refereeId: formData.refereeId || null
+        startsAt: new Date(formData.startsAt).toISOString(),
       };
-
-      console.log('📤 Enviando partido:', dataToSend);
 
       if (matchId) {
         await matchesService.update(matchId, dataToSend);
-        alert('✅ Partido actualizado exitosamente');
+        alert('✅ Partido actualizado correctamente');
       } else {
         await matchesService.create(dataToSend);
         alert('✅ Partido creado exitosamente');
@@ -235,13 +178,14 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
 
       onSuccess();
     } catch (error: any) {
-      console.error('❌ Error al guardar partido:', error);
-      const message = error.response?.data?.message || error.message || 'Error al guardar el partido';
-      alert(`❌ ${message}`);
+      console.error('Error al guardar partido:', error);
+      alert(error.response?.data?.message || '❌ Error al guardar partido');
     } finally {
       setLoading(false);
     }
   };
+
+  const isScheduled = formData.status === 'SCHEDULED';
 
   if (loadingData) {
     return (
@@ -253,17 +197,26 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* ⚠️ Aviso cuando el partido no está programado */}
+      {!isScheduled && (
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded-lg">
+          <p className="font-semibold">⚠️ Este partido no está en estado "Programado".</p>
+          <p className="text-sm">
+            Solo puedes modificar la <strong>fecha y hora</strong>, el <strong>escenario</strong> o el <strong>árbitro</strong>.
+          </p>
+        </div>
+      )}
+
       {/* Torneo */}
       <div>
-        <label className="block text-gray-800 font-semibold mb-2">
-          Torneo *
-        </label>
+        <label className="block text-gray-800 font-semibold mb-2">Torneo *</label>
         <select
           name="tournamentId"
           value={formData.tournamentId}
           onChange={handleChange}
           required
-          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-uptc-yellow bg-white text-gray-900"
+          disabled={!isScheduled}
+          className="w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-uptc-yellow disabled:bg-gray-100 disabled:text-gray-500"
         >
           <option value="">-- Selecciona un torneo --</option>
           {tournaments.map(t => (
@@ -276,16 +229,14 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
 
       {/* Categoría */}
       <div>
-        <label className="block text-gray-800 font-semibold mb-2">
-          Categoría *
-        </label>
+        <label className="block text-gray-800 font-semibold mb-2">Categoría *</label>
         <select
           name="categoryId"
           value={formData.categoryId}
           onChange={handleChange}
           required
-          disabled={!formData.tournamentId}
-          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-uptc-yellow bg-white text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed"
+          disabled={!isScheduled || !formData.tournamentId}
+          className="w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-uptc-yellow disabled:bg-gray-100 disabled:text-gray-500"
         >
           <option value="">-- Selecciona una categoría --</option>
           {categories.map(c => (
@@ -296,20 +247,17 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
         </select>
       </div>
 
-      {/* Equipos en dos columnas */}
+      {/* Equipos */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Equipo Local */}
         <div>
-          <label className="block text-gray-800 font-semibold mb-2">
-            Equipo Local *
-          </label>
+          <label className="block text-gray-800 font-semibold mb-2">Equipo Local *</label>
           <select
             name="homeTeamId"
             value={formData.homeTeamId}
             onChange={handleChange}
             required
-            disabled={teams.length === 0}
-            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-uptc-yellow bg-white text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            disabled={!isScheduled || teams.length === 0}
+            className="w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-uptc-yellow disabled:bg-gray-100 disabled:text-gray-500"
           >
             <option value="">-- Selecciona equipo local --</option>
             {teams.map(t => (
@@ -320,18 +268,15 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
           </select>
         </div>
 
-        {/* Equipo Visitante */}
         <div>
-          <label className="block text-gray-800 font-semibold mb-2">
-            Equipo Visitante *
-          </label>
+          <label className="block text-gray-800 font-semibold mb-2">Equipo Visitante *</label>
           <select
             name="awayTeamId"
             value={formData.awayTeamId}
             onChange={handleChange}
             required
-            disabled={teams.length === 0}
-            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-uptc-yellow bg-white text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            disabled={!isScheduled || teams.length === 0}
+            className="w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-uptc-yellow disabled:bg-gray-100 disabled:text-gray-500"
           >
             <option value="">-- Selecciona equipo visitante --</option>
             {teams.map(t => (
@@ -345,29 +290,25 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
 
       {/* Fecha y Hora */}
       <div>
-        <label className="block text-gray-800 font-semibold mb-2">
-          Fecha y Hora del Partido *
-        </label>
+        <label className="block text-gray-800 font-semibold mb-2">Fecha y Hora del Partido *</label>
         <input
           type="datetime-local"
           name="startsAt"
           value={formData.startsAt}
           onChange={handleChange}
           required
-          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-uptc-yellow bg-white text-gray-900"
+          className="w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-uptc-yellow"
         />
       </div>
 
       {/* Escenario */}
       <div>
-        <label className="block text-gray-800 font-semibold mb-2">
-          Escenario (Opcional)
-        </label>
+        <label className="block text-gray-800 font-semibold mb-2">Escenario (Opcional)</label>
         <select
           name="scenarioId"
           value={formData.scenarioId || ''}
           onChange={handleChange}
-          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-uptc-yellow bg-white text-gray-900"
+          className="w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-uptc-yellow"
         >
           <option value="">-- Sin escenario asignado --</option>
           {scenarios.map(s => (
@@ -380,14 +321,12 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
 
       {/* Árbitro */}
       <div>
-        <label className="block text-gray-800 font-semibold mb-2">
-          Árbitro (Opcional)
-        </label>
+        <label className="block text-gray-800 font-semibold mb-2">Árbitro (Opcional)</label>
         <select
           name="refereeId"
           value={formData.refereeId || ''}
           onChange={handleChange}
-          className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-uptc-yellow bg-white text-gray-900"
+          className="w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-uptc-yellow"
         >
           <option value="">-- Sin árbitro asignado --</option>
           {referees.map(r => (
@@ -397,36 +336,6 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
           ))}
         </select>
       </div>
-
-      {/* Estado (solo en edición) */}
-      {matchId && (
-        <div>
-          <label className="block text-gray-800 font-semibold mb-2">
-            Estado
-          </label>
-          <select
-            name="status"
-            value={formData.status}
-            onChange={handleChange}
-            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-uptc-yellow bg-white text-gray-900"
-          >
-            <option value="SCHEDULED">Programado</option>
-            <option value="IN_PROGRESS">En Curso</option>
-            <option value="FINISHED">Finalizado</option>
-            <option value="CANCELLED">Cancelado</option>
-          </select>
-        </div>
-      )}
-
-      {/* Alerta si no hay equipos */}
-      {formData.tournamentId > 0 && formData.categoryId > 0 && teams.length === 0 && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
-          <p className="text-yellow-800 text-sm font-medium">
-            ⚠️ No hay equipos disponibles para este torneo y categoría.
-            Asegúrate de que haya equipos inscritos y aprobados.
-          </p>
-        </div>
-      )}
 
       {/* Botones */}
       <div className="flex gap-3 pt-4">
@@ -440,17 +349,10 @@ export default function MatchForm({ matchId, onSuccess, onCancel }: MatchFormPro
         </button>
         <button
           type="submit"
-          className="flex-1 px-6 py-3 bg-uptc-black text-uptc-yellow rounded-lg hover:bg-gray-800 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={loading || teams.length === 0}
+          className="flex-1 px-6 py-3 bg-uptc-black text-uptc-yellow rounded-lg hover:bg-gray-800 transition font-semibold disabled:opacity-50"
+          disabled={loading}
         >
-          {loading ? (
-            <>
-              <span className="inline-block animate-spin mr-2">⏳</span>
-              {matchId ? 'Actualizando...' : 'Creando...'}
-            </>
-          ) : (
-            matchId ? 'Actualizar Partido' : 'Crear Partido'
-          )}
+          {loading ? 'Guardando...' : matchId ? 'Actualizar Partido' : 'Crear Partido'}
         </button>
       </div>
     </form>

@@ -38,9 +38,9 @@ public class MatchEventController {
 
     @Operation(summary = "Crear un nuevo evento de partido", description = "Requiere rol REFEREE, ADMIN o SUPER_ADMIN")
     @ApiResponses({
-        @ApiResponse(responseCode = "201", description = "Evento creado exitosamente"),
-        @ApiResponse(responseCode = "400", description = "El jugador no pertenece al partido o el estado del partido es incorrecto"),
-        @ApiResponse(responseCode = "404", description = "Partido o jugador no encontrado")
+            @ApiResponse(responseCode = "201", description = "Evento creado exitosamente"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos o el jugador no pertenece al partido"),
+            @ApiResponse(responseCode = "404", description = "Partido o jugador no encontrado")
     })
     @PostMapping
     public ResponseEntity<MatchEventDTO> create(@RequestBody MatchEventDTO dto) {
@@ -50,8 +50,8 @@ public class MatchEventController {
 
     @Operation(summary = "Eliminar un evento de partido", description = "Requiere rol REFEREE, ADMIN o SUPER_ADMIN")
     @ApiResponses({
-        @ApiResponse(responseCode = "204", description = "Evento eliminado exitosamente"),
-        @ApiResponse(responseCode = "404", description = "Evento no encontrado")
+            @ApiResponse(responseCode = "204", description = "Evento eliminado exitosamente"),
+            @ApiResponse(responseCode = "404", description = "Evento no encontrado")
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {

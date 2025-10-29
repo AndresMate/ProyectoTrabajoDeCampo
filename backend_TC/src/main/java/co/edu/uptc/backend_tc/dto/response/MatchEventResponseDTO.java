@@ -18,5 +18,5 @@ public class MatchEventResponseDTO {
 
     // Información anidada
     private PlayerSummaryDTO player;
-    private TeamSummaryDTO team; // equipo al que pertenece el jugador
+    private TeamSummaryDTO team;
 }

@@ -16,6 +16,8 @@ public class MatchEventDTO {
     @NotNull(message = "Match ID is required")
     private Long matchId;
 
+    private Long teamId;
+
     @NotNull(message = "Player ID is required")
     private Long playerId;
 
@@ -31,3 +33,4 @@ public class MatchEventDTO {
 
     private LocalDateTime createdAt;
 }
+

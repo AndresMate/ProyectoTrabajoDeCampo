@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import matchesService, { Match } from '@/services/matchesService';
 import Modal from '@/components/Modal';
 import MatchForm from '@/components/forms/MatchForm';
@@ -9,6 +10,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export default function AdminPartidosPage() {
+  const router = useRouter();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
@@ -34,7 +36,7 @@ export default function AdminPartidosPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('¿Estás seguro de eliminar este partido?')) return;
+    if (!confirm('🗑️ ¿Estás seguro de eliminar este partido?')) return;
     try {
       await matchesService.delete(id);
       alert('✅ Partido eliminado exitosamente');
@@ -45,11 +47,11 @@ export default function AdminPartidosPage() {
     }
   };
 
-  const handleStartMatch = async (id: number) => {
-    if (!confirm('¿Quieres iniciar este partido?')) return;
+  const handleStartMatch = async (id: number, match: Match) => {
+    if (!confirm(`⚽ ¿Deseas iniciar el partido ${match.homeTeam.name} vs ${match.awayTeam.name}?`)) return;
     try {
       await matchesService.startMatch(id);
-      alert('✅ Partido iniciado');
+      alert(`✅ Partido ${match.homeTeam.name} vs ${match.awayTeam.name} iniciado`);
       fetchMatches();
     } catch (error) {
       console.error('Error al iniciar partido:', error);
@@ -57,11 +59,11 @@ export default function AdminPartidosPage() {
     }
   };
 
-  const handleFinishMatch = async (id: number) => {
-    if (!confirm('¿Quieres finalizar este partido?')) return;
+  const handleFinishMatch = async (id: number, match: Match) => {
+    if (!confirm(`🏁 ¿Confirmas que el partido ${match.homeTeam.name} vs ${match.awayTeam.name} ha finalizado?`)) return;
     try {
       await matchesService.finishMatch(id);
-      alert('✅ Partido finalizado');
+      alert(`✅ Partido ${match.homeTeam.name} vs ${match.awayTeam.name} finalizado`);
       fetchMatches();
     } catch (error) {
       console.error('Error al finalizar partido:', error);
@@ -78,10 +80,23 @@ export default function AdminPartidosPage() {
     ? matches
     : matches.filter(m => m.status === filterStatus);
 
+  const sortedMatches = [...filteredMatches].sort((a, b) => {
+  const toTime = (v: string | Date | null | undefined) => {
+    if (!v) return Number.POSITIVE_INFINITY;
+    return typeof v === 'string' ? Date.parse(v) : (v instanceof Date ? v.getTime() : Number.POSITIVE_INFINITY);
+  };
+
+  const ta = toTime(a.startsAt as any);
+  const tb = toTime(b.startsAt as any);
+
+  return ta - tb;
+  });
+
+
   const getStatusBadge = (status?: string) => {
     switch (status) {
       case 'SCHEDULED': return 'bg-blue-100 text-blue-700';
-      case 'IN_PROGRESS': return 'bg-green-100 text-green-700';
+      case 'IN_PROGRESS': return 'bg-green-100 text-green-700 animate-pulse';
       case 'FINISHED': return 'bg-gray-100 text-gray-700';
       case 'CANCELLED': return 'bg-red-100 text-red-700';
       default: return 'bg-gray-100 text-gray-700';
@@ -91,9 +106,9 @@ export default function AdminPartidosPage() {
   const getStatusText = (status?: string) => {
     switch (status) {
       case 'SCHEDULED': return 'Programado';
-      case 'IN_PROGRESS': return 'En curso';
-      case 'FINISHED': return 'Finalizado';
-      case 'CANCELLED': return 'Cancelado';
+      case 'IN_PROGRESS': return '🟢 En curso';
+      case 'FINISHED': return '⚪ Finalizado';
+      case 'CANCELLED': return '🔴 Cancelado';
       default: return status || 'N/A';
     }
   };
@@ -134,23 +149,23 @@ export default function AdminPartidosPage() {
 
       {/* Estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white rounded-lg shadow p-4 text-center">
           <div className="text-sm text-gray-600 font-semibold">Total Partidos</div>
           <div className="text-2xl font-bold text-gray-900">{matches.length}</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white rounded-lg shadow p-4 text-center">
           <div className="text-sm text-gray-600 font-semibold">Programados</div>
           <div className="text-2xl font-bold text-blue-600">
             {matches.filter(m => m.status === 'SCHEDULED').length}
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white rounded-lg shadow p-4 text-center">
           <div className="text-sm text-gray-600 font-semibold">En Curso</div>
           <div className="text-2xl font-bold text-green-600">
             {matches.filter(m => m.status === 'IN_PROGRESS').length}
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white rounded-lg shadow p-4 text-center">
           <div className="text-sm text-gray-600 font-semibold">Finalizados</div>
           <div className="text-2xl font-bold text-gray-900">
             {matches.filter(m => m.status === 'FINISHED').length}
@@ -160,7 +175,7 @@ export default function AdminPartidosPage() {
 
       {/* Filtros */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {['ALL', 'SCHEDULED', 'IN_PROGRESS', 'FINISHED', 'CANCELLED'].map(status => (
             <button
               key={status}
@@ -192,9 +207,9 @@ export default function AdminPartidosPage() {
           </thead>
 
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredMatches.map(match => (
-              <tr key={match.id} className="hover:bg-gray-50">
-                {/* Partido - ✅ CORREGIDO: usar homeTeam y awayTeam */}
+            {sortedMatches.map(match => (
+              <tr key={match.id} className="hover:bg-gray-50 transition">
+                {/* Partido */}
                 <td className="px-6 py-4">
                   <div className="flex flex-col">
                     <div className="font-semibold text-gray-900">
@@ -225,7 +240,7 @@ export default function AdminPartidosPage() {
 
                 {/* Lugar */}
                 <td className="px-6 py-4 text-sm text-gray-700">
-                  {match.scenario?.name || match.venue?.name || 'N/A'}
+                  {match.scenario?.name || 'N/A'}
                 </td>
 
                 {/* Estado */}
@@ -238,10 +253,19 @@ export default function AdminPartidosPage() {
                 {/* Acciones */}
                 <td className="px-6 py-4 text-right text-sm font-semibold">
                   <div className="flex items-center justify-end gap-3">
+                    {(match.status === 'SCHEDULED' || match.status === 'IN_PROGRESS') && (
+                      <button
+                        onClick={() => router.push(`/admin/partidos/${match.id}/live`)}
+                        className="text-purple-600 hover:text-purple-900 font-bold"
+                      >
+                        🎮 En Vivo
+                      </button>
+                    )}
+
                     {match.status === 'SCHEDULED' && (
                       <>
                         <button
-                          onClick={() => handleStartMatch(match.id)}
+                          onClick={() => handleStartMatch(match.id, match)}
                           className="text-green-600 hover:text-green-900"
                         >
                           ▶️ Iniciar
@@ -256,28 +280,20 @@ export default function AdminPartidosPage() {
                     )}
 
                     {match.status === 'IN_PROGRESS' && (
-                      <>
-                        <button
-                          onClick={() => handleFinishMatch(match.id)}
-                          className="text-purple-600 hover:text-purple-900"
-                        >
-                          🏁 Finalizar
-                        </button>
-                        <button
-                          onClick={() => openEditModal(match.id)}
-                          className="text-indigo-600 hover:text-indigo-900"
-                        >
-                          ✏️ Editar
-                        </button>
-                      </>
+                      <button
+                        onClick={() => handleFinishMatch(match.id, match)}
+                        className="text-orange-600 hover:text-orange-900"
+                      >
+                        🏁 Finalizar
+                      </button>
                     )}
 
                     {match.status === 'FINISHED' && (
                       <button
-                        onClick={() => alert('Ver resultado (implementar modal de resultados)')}
+                        onClick={() => router.push(`/admin/partidos/${match.id}/live`)}
                         className="text-blue-600 hover:text-blue-800"
                       >
-                        📊 Ver resultado
+                        📊 Ver detalles
                       </button>
                     )}
 
@@ -285,7 +301,7 @@ export default function AdminPartidosPage() {
                       onClick={() => handleDelete(match.id)}
                       className="text-red-600 hover:text-red-900"
                     >
-                      🗑️ Eliminar
+                      🗑️
                     </button>
                   </div>
                 </td>
@@ -295,7 +311,7 @@ export default function AdminPartidosPage() {
         </table>
       </div>
 
-      {filteredMatches.length === 0 && (
+      {sortedMatches.length === 0 && (
         <div className="bg-white rounded-lg shadow p-8 text-center mt-6">
           <p className="text-gray-500 font-medium">No hay partidos con ese estado</p>
         </div>

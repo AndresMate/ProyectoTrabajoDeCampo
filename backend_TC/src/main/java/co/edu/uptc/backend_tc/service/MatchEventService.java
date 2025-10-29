@@ -68,13 +68,13 @@ public class MatchEventService {
                 .orElseThrow(() -> new ResourceNotFoundException("Match", "id", dto.getMatchId()));
 
         // Solo se pueden agregar eventos a partidos IN_PROGRESS o FINISHED
-        if (match.getStatus() != MatchStatus.IN_PROGRESS &&
-                match.getStatus() != MatchStatus.FINISHED) {
+        if (match.getStatus() == MatchStatus.CANCELLED) {
             throw new BusinessException(
-                    "Can only add events to matches that are in progress or finished",
+                    "Cannot add events to a cancelled match",
                     "INVALID_MATCH_STATUS"
             );
         }
+
 
         // Verificar jugador
         Player player = playerRepository.findById(dto.getPlayerId())
