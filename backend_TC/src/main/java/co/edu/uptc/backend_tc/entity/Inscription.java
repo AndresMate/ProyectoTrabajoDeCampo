@@ -24,8 +24,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"tournament", "category", "delegate", "club", "players", "originatedTeam"})
-@EqualsAndHashCode(exclude = {"tournament", "category", "delegate", "club", "players", "originatedTeam"})
+@ToString(exclude = {"tournament", "category", "delegate", "club", "players", "originatedTeam", "availabilities"})  // ✅ AGREGAR availabilities
+@EqualsAndHashCode(exclude = {"tournament", "category", "delegate", "club", "players", "originatedTeam", "availabilities"})  // ✅ AGREGAR availabilities
 public class Inscription implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -70,10 +70,10 @@ public class Inscription implements Serializable {
     @JoinColumn(name = "club_id")
     private Club club;
 
+    // ✅ CAMBIO: Renombrar de 'availability' a 'availabilities'
     @OneToMany(mappedBy = "inscription", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<TeamAvailability> availability = new ArrayList<>();
-
-
+    @Builder.Default  // ✅ Añadir para que el builder use el valor por defecto
+    private List<TeamAvailability> availabilities = new ArrayList<>();
 
     @Column(length = 500)
     private String rejectionReason;
@@ -88,7 +88,6 @@ public class Inscription implements Serializable {
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
 
-
     @PrePersist
     protected void onCreate() {
         createdAt = OffsetDateTime.now();
@@ -102,6 +101,4 @@ public class Inscription implements Serializable {
 
     @OneToOne(mappedBy = "originInscription")
     private Team originatedTeam;
-
-
 }

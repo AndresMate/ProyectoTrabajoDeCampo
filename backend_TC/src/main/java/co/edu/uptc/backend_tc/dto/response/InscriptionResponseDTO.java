@@ -1,5 +1,6 @@
 package co.edu.uptc.backend_tc.dto.response;
 
+import co.edu.uptc.backend_tc.dto.TeamAvailabilityDTO;
 import co.edu.uptc.backend_tc.model.InscriptionStatus;
 import lombok.*;
 
@@ -32,4 +33,7 @@ public class InscriptionResponseDTO {
     // Lista de jugadores inscritos
     private List<PlayerSummaryDTO> players;
     private Integer playerCount;
+
+    // ✅ AGREGAR: Lista de disponibilidades
+    private List<TeamAvailabilityDTO> availabilities;
 }

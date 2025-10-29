@@ -1,6 +1,8 @@
 package co.edu.uptc.backend_tc.dto;
 
 import co.edu.uptc.backend_tc.model.InscriptionStatus;
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
@@ -38,6 +40,10 @@ public class InscriptionDTO {
 
     private InscriptionStatus status;
 
+    // ✅ SOLUCIÓN: Acepta tanto "availability" como "availabilities"
     @NotEmpty(message = "Availability is required (at least one per day)")
-    private List<TeamAvailabilityDTO> availability;
+    @JsonProperty("availabilities")  // Nombre oficial para serialización
+    @JsonAlias({"availability", "availabilities"})  // Acepta ambos al deserializar
+    private List<TeamAvailabilityDTO> availabilities;
+
 }

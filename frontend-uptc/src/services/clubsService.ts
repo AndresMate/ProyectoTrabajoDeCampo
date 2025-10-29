@@ -10,7 +10,6 @@ export interface Club {
 }
 
 const clubsService = {
-  // Obtener todos los clubes activos
   getAll: async (): Promise<Club[]> => {
     try {
       const res = await api.get<Club[]>("/clubs/active");

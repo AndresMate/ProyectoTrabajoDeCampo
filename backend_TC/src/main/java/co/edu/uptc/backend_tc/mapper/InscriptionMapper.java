@@ -17,15 +17,18 @@ public class InscriptionMapper {
     private final CategoryMapper categoryMapper;
     private final PlayerMapper playerMapper;
     private final ClubMapper clubMapper;
+    private final TeamAvailabilityMapper availabilityMapper;  // ✅ AGREGAR
 
     public InscriptionMapper(TournamentMapper tournamentMapper,
                              CategoryMapper categoryMapper,
                              PlayerMapper playerMapper,
-                             ClubMapper clubMapper) {
+                             ClubMapper clubMapper,
+                             TeamAvailabilityMapper availabilityMapper) {  // ✅ AGREGAR
         this.tournamentMapper = tournamentMapper;
         this.categoryMapper = categoryMapper;
         this.playerMapper = playerMapper;
         this.clubMapper = clubMapper;
+        this.availabilityMapper = availabilityMapper;  // ✅ AGREGAR
     }
 
     public InscriptionDTO toDTO(Inscription entity) {
@@ -63,6 +66,15 @@ public class InscriptionMapper {
                                 .toList()
                                 : Collections.emptyList()
                 )
+                // ✅ AGREGAR: Mapear disponibilidades
+                .availabilities(
+                        entity.getAvailabilities() != null
+                                ? entity.getAvailabilities().stream()
+                                .map(availabilityMapper::toDTO)
+                                .toList()
+                                : Collections.emptyList()
+                )
+                .playerCount(entity.getPlayers() != null ? entity.getPlayers().size() : 0)
                 .build();
     }
 }

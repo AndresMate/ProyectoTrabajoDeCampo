@@ -27,7 +27,7 @@ export interface InscriptionCreateDTO {
   delegatePhone: string;
   delegateIndex: number; // posición del jugador delegado
   players: PlayerInscriptionDTO[];
-  availability: TeamAvailabilityDTO[];
+  availabilities: TeamAvailabilityDTO[];
 }
 
 export interface PlayerSummaryDTO {
@@ -65,6 +65,7 @@ export interface InscriptionResponseDTO {
   };
   players: PlayerSummaryDTO[];
   playerCount: number;
+  availabilities: TeamAvailabilityDTO[];
 }
 
 // ========================

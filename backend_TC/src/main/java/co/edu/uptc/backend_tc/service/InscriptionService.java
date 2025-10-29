@@ -241,6 +241,20 @@ public class InscriptionService {
             inscriptionPlayerRepository.save(inscriptionPlayer);
         }
 
+        // ✅ 13. Guardar disponibilidades
+        if (dto.getAvailabilities() != null) {
+            for (TeamAvailabilityDTO availabilityDTO : dto.getAvailabilities()) {
+                TeamAvailability availability = TeamAvailability.builder()
+                        .inscription(inscription)
+                        .dayOfWeek(DayOfWeek.valueOf(availabilityDTO.getDayOfWeek()))
+                        .startTime(LocalTime.parse(availabilityDTO.getStartTime()))
+                        .endTime(LocalTime.parse(availabilityDTO.getEndTime()))
+                        .available(true)
+                        .build();
+                teamAvailabilityRepository.save(availability);
+            }
+        }
+
         return enrichResponseDTO(inscription);
     }
 

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import inscriptionsService from "@/services/inscriptionsService";
 import tournamentsService from "@/services/tournamentsService";
 import clubsService from "@/services/clubsService";
+import axios from "axios";
 
 type Player = {
   fullName: string;
@@ -13,10 +14,11 @@ type Player = {
   idCardPhotoUrl: string;
 };
 
-type Availability = {
+type Availabilities = {
   dayOfWeek: string;
   startTime: string;
   endTime: string;
+  available: boolean;
 };
 
 type Club = { id: number; name: string };
@@ -64,8 +66,7 @@ export default function InscriptionCompleteForm({
   const [clubs, setClubs] = useState<Club[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [delegateIndex, setDelegateIndex] = useState(0);
-  const [availability, setAvailability] = useState<Availability[]>([]);
-
+  const [availability, setAvailability] = useState<Availabilities[]>([]);
   const [formData, setFormData] = useState({
     teamName: "",
     clubId: 0,
@@ -107,6 +108,30 @@ export default function InscriptionCompleteForm({
     });
   };
 
+  // === Autocompletar jugador por cédula ===
+  const handleDocumentBlur = async (i: number, docNumber: string) => {
+    if (!docNumber.trim()) return;
+    try {
+      const existingPlayer = await inscriptionsService.findPlayerByDocument(docNumber);
+      if (existingPlayer) {
+        setPlayers((prev) => {
+          const updated = [...prev];
+          updated[i] = {
+            ...updated[i],
+            fullName: existingPlayer.fullName,
+            studentCode: existingPlayer.studentCode,
+            institutionalEmail: existingPlayer.institutionalEmail,
+            idCardPhotoUrl: existingPlayer.idCardPhotoUrl,
+          };
+          return updated;
+        });
+        alert(`✅ Jugador encontrado: ${existingPlayer.fullName}`);
+      }
+    } catch (e) {
+      console.log("Jugador no encontrado, se debe registrar normalmente.");
+    }
+  };
+
   // === Subir foto ===
   const handleFileUpload = async (index: number, file: File | null) => {
     if (!file) return;
@@ -134,7 +159,7 @@ export default function InscriptionCompleteForm({
     }
   };
 
-  // === Validar Paso 1 (datos del equipo) ===
+  // === Validar Paso 1 ===
   const validateStep1 = async () => {
     if (!formData.teamName.trim()) return alert("El nombre del equipo es requerido");
     if (!formData.delegatePhone.trim()) return alert("Teléfono del delegado requerido");
@@ -158,8 +183,12 @@ export default function InscriptionCompleteForm({
     setStep(2);
   };
 
-  // === Validar Paso 2 (jugadores) ===
+  // === Validar Paso 2 ===
   const validateStep2 = async () => {
+    const seenDocs = new Set<string>();
+    const seenEmails = new Set<string>();
+    const seenCodes = new Set<string>();
+
     for (let i = 0; i < players.length; i++) {
       const p = players[i];
       if (!p.fullName || !p.documentNumber || !p.studentCode || !p.institutionalEmail)
@@ -167,17 +196,31 @@ export default function InscriptionCompleteForm({
       if (p.idCardPhotoUrl === "UPLOADING...") return alert(`Foto en proceso del jugador ${i + 1}`);
       if (!p.idCardPhotoUrl) return alert(`Foto obligatoria para el jugador ${i + 1}`);
 
+      // 🚫 Verificar duplicados dentro del mismo formulario
+      if (seenDocs.has(p.documentNumber))
+        return alert(`⚠️ Documento repetido en jugador ${i + 1}`);
+      if (seenEmails.has(p.institutionalEmail))
+        return alert(`⚠️ Correo repetido en jugador ${i + 1}`);
+      if (seenCodes.has(p.studentCode))
+        return alert(`⚠️ Código estudiantil repetido en jugador ${i + 1}`);
+
+      seenDocs.add(p.documentNumber);
+      seenEmails.add(p.institutionalEmail);
+      seenCodes.add(p.studentCode);
+
+      // ✅ Verificar si ya está inscrito en otro equipo
       const available = await inscriptionsService.checkPlayer(
         Number(tournamentId),
         p.documentNumber
       );
       if (!available)
-        return alert(`El jugador ${p.fullName} ya está inscrito en otro equipo`);
+        return alert(`⚠️ El jugador ${p.fullName} ya está inscrito en otro equipo`);
     }
+
     setStep(3);
   };
 
-  // === Validar Paso 3 (disponibilidad) ===
+  // === Validar Paso 3 ===
   const validateStep3 = (): boolean => {
     const selectedDays = new Set(availability.map((a) => a.dayOfWeek));
     for (const d of DAYS) {
@@ -189,7 +232,7 @@ export default function InscriptionCompleteForm({
     return true;
   };
 
-  // === Enviar inscripción completa ===
+  // === Enviar inscripción ===
   const handleSubmit = async () => {
     if (!validateStep3()) return;
     setLoading(true);
@@ -204,6 +247,7 @@ export default function InscriptionCompleteForm({
         players,
         availability,
       };
+      console.log("📤 Enviando inscripción:", payload);
       await inscriptionsService.create(payload);
       alert("✅ Inscripción creada correctamente");
       onSuccess();
@@ -215,12 +259,12 @@ export default function InscriptionCompleteForm({
     }
   };
 
-  // === Renderizado de pasos ===
   if (!tournament)
     return <div className="p-6 text-center">Cargando datos del torneo...</div>;
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-lg space-y-6">
+      {/* === Paso 1 === */}
       {step === 1 && (
         <>
           <h2 className="text-xl font-bold mb-4">📋 Datos del Equipo</h2>
@@ -268,6 +312,7 @@ export default function InscriptionCompleteForm({
         </>
       )}
 
+      {/* === Paso 2 === */}
       {step === 2 && (
         <>
           <h2 className="text-xl font-bold mb-4">👥 Jugadores</h2>
@@ -286,27 +331,22 @@ export default function InscriptionCompleteForm({
               </div>
               <input
                 className="w-full border p-2 my-1"
-                placeholder="Nombre completo"
-                value={p.fullName}
-                onChange={(e) =>
-                  handlePlayerChange(i, "fullName", e.target.value)
-                }
+                placeholder="Documento"
+                value={p.documentNumber}
+                onChange={(e) => handlePlayerChange(i, "documentNumber", e.target.value)}
+                onBlur={(e) => handleDocumentBlur(i, e.target.value)}
               />
               <input
                 className="w-full border p-2 my-1"
-                placeholder="Documento"
-                value={p.documentNumber}
-                onChange={(e) =>
-                  handlePlayerChange(i, "documentNumber", e.target.value)
-                }
+                placeholder="Nombre completo"
+                value={p.fullName}
+                onChange={(e) => handlePlayerChange(i, "fullName", e.target.value)}
               />
               <input
                 className="w-full border p-2 my-1"
                 placeholder="Código estudiantil"
                 value={p.studentCode}
-                onChange={(e) =>
-                  handlePlayerChange(i, "studentCode", e.target.value)
-                }
+                onChange={(e) => handlePlayerChange(i, "studentCode", e.target.value)}
               />
               <input
                 className="w-full border p-2 my-1"
@@ -326,10 +366,7 @@ export default function InscriptionCompleteForm({
             </div>
           ))}
           <div className="flex justify-between">
-            <button
-              onClick={() => setStep(1)}
-              className="bg-gray-300 px-4 py-2 rounded"
-            >
+            <button onClick={() => setStep(1)} className="bg-gray-300 px-4 py-2 rounded">
               ⬅️ Volver
             </button>
             <button
@@ -342,6 +379,7 @@ export default function InscriptionCompleteForm({
         </>
       )}
 
+      {/* === Paso 3 === */}
       {step === 3 && (
         <>
           <h2 className="text-xl font-bold mb-4">🕐 Disponibilidad Horaria</h2>
@@ -387,7 +425,15 @@ export default function InscriptionCompleteForm({
                                       a.endTime === end
                                     )
                                 );
-                              return [...prev, { dayOfWeek: day, startTime: start, endTime: end }];
+                              return [
+                                ...prev,
+                                {
+                                  dayOfWeek: day,
+                                  startTime: start,
+                                  endTime: end,
+                                  available: true,
+                                },
+                              ];
                             });
                           }}
                         >
@@ -401,10 +447,7 @@ export default function InscriptionCompleteForm({
             </table>
           </div>
           <div className="flex justify-between mt-4">
-            <button
-              onClick={() => setStep(2)}
-              className="bg-gray-300 px-4 py-2 rounded"
-            >
+            <button onClick={() => setStep(2)} className="bg-gray-300 px-4 py-2 rounded">
               ⬅️ Volver
             </button>
             <button

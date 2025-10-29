@@ -1,5 +1,6 @@
 package co.edu.uptc.backend_tc.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -8,6 +9,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)  // ✅ Ignora campos desconocidos como "available"
 public class TeamAvailabilityDTO {
 
     private Long id;
