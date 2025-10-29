@@ -1,43 +1,36 @@
 import api from "./api";
 
 const teamsService = {
-  // 🔹 Obtener todos los equipos (usa paginación del backend)
   getAll: async () => {
     const response = await api.get("/teams");
-    // Si la API usa paginación, devolver el contenido directamente
     return response.data.content || response.data;
   },
 
-  // 🔹 Obtener un equipo por ID (incluye detalles y estadísticas)
   getById: async (teamId: number) => {
     const response = await api.get(`/teams/${teamId}`);
     return response.data;
   },
 
-  // 🔹 Obtener todos los equipos sin paginación (opcional)
   getAllList: async () => {
     const response = await api.get("/teams/all");
     return response.data;
   },
 
-  // 🔹 Crear un nuevo equipo
   create: async (teamData: any) => {
     const response = await api.post("/teams", teamData);
     return response.data;
   },
 
-  // 🔹 Actualizar equipo existente
   update: async (id: number, teamData: any) => {
     const response = await api.put(`/teams/${id}`, teamData);
     return response.data;
   },
 
-  // 🔹 Eliminar o desactivar un equipo (soft delete)
   delete: async (id: number) => {
     await api.delete(`/teams/${id}`);
   },
 
-  // 🔹 Obtener el roster (jugadores del equipo)
+  // ✅ CORREGIDO - usar el endpoint correcto del roster
   getRoster: async (teamId: number) => {
     try {
       const response = await api.get(`/teams/${teamId}/roster`);
@@ -48,19 +41,23 @@ const teamsService = {
     }
   },
 
-  // 🔹 Asignar capitán
+  // ✅ CORREGIDO - endpoint correcto
   setCaptain: async (teamId: number, playerId: number) => {
-    const response = await api.post(`/teams/${teamId}/set-captain`, { playerId });
+    const response = await api.post(`/teams/${teamId}/roster/captain/${playerId}`);
     return response.data;
   },
 
-  // 🔹 Eliminar jugador del equipo
+  // ✅ CORREGIDO - endpoint correcto
   removePlayer: async (teamId: number, playerId: number) => {
-    const response = await api.delete(`/teams/${teamId}/players/${playerId}`);
+    await api.delete(`/teams/${teamId}/roster/player/${playerId}`);
+  },
+
+  // ✅ AGREGAR - endpoint que faltaba
+  addPlayerToRoster: async (teamId: number, playerData: any) => {
+    const response = await api.post(`/teams/${teamId}/roster`, playerData);
     return response.data;
   },
 
-  // ✅ 🔹 Obtener equipos por torneo y categoría (usado en MatchForm)
   getByTournamentAndCategory: async (tournamentId: number, categoryId: number) => {
     const response = await api.get(`/teams/tournament/${tournamentId}/category/${categoryId}`);
     return response.data;

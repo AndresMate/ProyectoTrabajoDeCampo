@@ -53,14 +53,17 @@ const playersService = {
     }
   },
 
-    getAvailablePlayers: async (): Promise<any[]> => {
-    try {
-      const response = await api.get("/players/available");
-      return response.data;
-    } catch (error) {
-      console.error("Error al obtener jugadores disponibles:", error);
-      return [];
-    }
+  // ✅ ALTERNATIVA CORRECTA usando el endpoint real
+  getAvailablePlayers: async (): Promise<any[]> => {
+  try {
+    const response = await api.post("/players/search?page=0&size=100", {
+      isActive: true
+    });
+    return response.data.content || response.data;
+  } catch (error) {
+    console.error("Error al obtener jugadores disponibles:", error);
+    return [];
+  }
   },
 
   // Buscar jugadores con filtros

@@ -192,6 +192,20 @@ const inscriptionsService = {
     }
   },
 
+    // Eliminar inscripción
+  delete: async (id: number): Promise<void> => {
+      try {
+        await api.delete(`/inscriptions/${id}`);
+      } catch (error: unknown) {
+        if (axios.isAxiosError(error)) {
+          console.error("❌ Error al eliminar inscripción:", error.response?.data ?? error.message);
+          throw error;
+        }
+        console.error("❌ Error al eliminar inscripción:", error);
+        throw new Error(String(error));
+      }
+  },
+
   // Rechazar inscripción
   reject: async (id: number, reason: string): Promise<InscriptionResponseDTO> => {
     try {

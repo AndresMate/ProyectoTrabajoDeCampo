@@ -1,47 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import matchesService from '@/services/matchesService';
+import matchesService, { Match } from '@/services/matchesService';
 import Modal from '@/components/Modal';
 import MatchForm from '@/components/forms/MatchForm';
 import FixtureGenerator from '@/components/FixtureGenerator';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-interface Match {
-  id: number;
-  tournament?: { id: number; name: string };
-  category?: { id: number; name: string };
-  homeTeam?: {
-    id: number;
-    name: string;
-    club?: { id: number; name: string };
-  };
-  awayTeam?: {
-    id: number;
-    name: string;
-    club?: { id: number; name: string };
-  };
-  startsAt?: string | null;
-  status?: string;
-  scenario?: { id?: number; name?: string } | null;
-  venue?: { id?: number; name?: string } | null;
-}
-
-function getErrorMessage(err: unknown): string {
-  if (err instanceof Error) return err.message;
-  if (typeof err === 'object' && err !== null && 'response' in err) {
-    const resp = (err as Record<string, unknown>)['response'] as Record<string, unknown> | undefined;
-    const data = resp?.['data'] as Record<string, unknown> | undefined;
-    return (data?.['message'] as string) ?? String(err);
-  }
-  return String(err);
-}
-
 export default function AdminPartidosPage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [showMatchModal, setShowMatchModal] = useState<boolean>(false);
   const [editMatchId, setEditMatchId] = useState<number | null>(null);
@@ -55,23 +24,10 @@ export default function AdminPartidosPage() {
     setLoading(true);
     try {
       const data = await matchesService.getAll();
-      const maybe = data as unknown;
-      let list: Match[] = [];
-
-      if (Array.isArray(maybe)) {
-        list = maybe as Match[];
-      } else if (typeof maybe === 'object' && maybe !== null) {
-        const record = maybe as Record<string, unknown>;
-        const content = record['content'];
-        if (Array.isArray(content)) {
-          list = content as Match[];
-        }
-      }
-
-      setMatches(list);
-    } catch (err: unknown) {
-      console.error('Error al cargar partidos:', getErrorMessage(err));
-      alert('❌ Error al cargar partidos. Revisa la consola para más detalles.');
+      setMatches(data);
+    } catch (error) {
+      console.error('Error al cargar partidos:', error);
+      alert('❌ Error al cargar partidos');
     } finally {
       setLoading(false);
     }
@@ -83,29 +39,33 @@ export default function AdminPartidosPage() {
       await matchesService.delete(id);
       alert('✅ Partido eliminado exitosamente');
       fetchMatches();
-    } catch (error: unknown) {
-      console.error('Error al eliminar partido:', getErrorMessage(error));
-      alert(getErrorMessage(error) || '❌ Error al eliminar partido');
+    } catch (error) {
+      console.error('Error al eliminar partido:', error);
+      alert('❌ Error al eliminar partido');
     }
   };
 
   const handleStartMatch = async (id: number) => {
     if (!confirm('¿Quieres iniciar este partido?')) return;
     try {
-      const svc = matchesService as unknown as Record<string, unknown>;
-      const startFn = svc['start'] ?? svc['startMatch'];
+      await matchesService.startMatch(id);
+      alert('✅ Partido iniciado');
+      fetchMatches();
+    } catch (error) {
+      console.error('Error al iniciar partido:', error);
+      alert('❌ Error al iniciar partido');
+    }
+  };
 
-      if (typeof startFn === 'function') {
-        // Se asume que la función devuelve una Promise
-        await (startFn as (...args: unknown[]) => Promise<unknown>)(id);
-        alert('✅ Partido iniciado');
-        fetchMatches();
-      } else {
-        throw new Error('Función de inicio no disponible en matchesService');
-      }
-    } catch (error: unknown) {
-      console.error('Error al iniciar partido:', getErrorMessage(error));
-      alert(getErrorMessage(error) || '❌ Error al iniciar partido');
+  const handleFinishMatch = async (id: number) => {
+    if (!confirm('¿Quieres finalizar este partido?')) return;
+    try {
+      await matchesService.finishMatch(id);
+      alert('✅ Partido finalizado');
+      fetchMatches();
+    } catch (error) {
+      console.error('Error al finalizar partido:', error);
+      alert('❌ Error al finalizar partido');
     }
   };
 
@@ -114,35 +74,27 @@ export default function AdminPartidosPage() {
     setShowMatchModal(true);
   };
 
-  const filteredMatches = filterStatus === 'ALL' ? matches : matches.filter(m => m.status === filterStatus);
+  const filteredMatches = filterStatus === 'ALL'
+    ? matches
+    : matches.filter(m => m.status === filterStatus);
 
   const getStatusBadge = (status?: string) => {
     switch (status) {
-      case 'SCHEDULED':
-        return 'bg-blue-100 text-blue-700';
-      case 'IN_PROGRESS':
-        return 'bg-green-100 text-green-700';
-      case 'FINISHED':
-        return 'bg-gray-100 text-gray-700';
-      case 'CANCELLED':
-        return 'bg-red-100 text-red-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
+      case 'SCHEDULED': return 'bg-blue-100 text-blue-700';
+      case 'IN_PROGRESS': return 'bg-green-100 text-green-700';
+      case 'FINISHED': return 'bg-gray-100 text-gray-700';
+      case 'CANCELLED': return 'bg-red-100 text-red-700';
+      default: return 'bg-gray-100 text-gray-700';
     }
   };
 
   const getStatusText = (status?: string) => {
     switch (status) {
-      case 'SCHEDULED':
-        return 'Programado';
-      case 'IN_PROGRESS':
-        return 'En curso';
-      case 'FINISHED':
-        return 'Finalizado';
-      case 'CANCELLED':
-        return 'Cancelado';
-      default:
-        return status || 'N/A';
+      case 'SCHEDULED': return 'Programado';
+      case 'IN_PROGRESS': return 'En curso';
+      case 'FINISHED': return 'Finalizado';
+      case 'CANCELLED': return 'Cancelado';
+      default: return status || 'N/A';
     }
   };
 
@@ -160,9 +112,7 @@ export default function AdminPartidosPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Gestión de Partidos</h1>
-          <p className="text-sm text-gray-600">
-            Administra los partidos del sistema: generar fixture, crear, editar o eliminar partidos.
-          </p>
+          <p className="text-sm text-gray-600">Administra los partidos del sistema</p>
         </div>
 
         <div className="flex gap-3">
@@ -190,15 +140,21 @@ export default function AdminPartidosPage() {
         </div>
         <div className="bg-white rounded-lg shadow p-4">
           <div className="text-sm text-gray-600 font-semibold">Programados</div>
-          <div className="text-2xl font-bold text-blue-600">{matches.filter(m => m.status === 'SCHEDULED').length}</div>
+          <div className="text-2xl font-bold text-blue-600">
+            {matches.filter(m => m.status === 'SCHEDULED').length}
+          </div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
           <div className="text-sm text-gray-600 font-semibold">En Curso</div>
-          <div className="text-2xl font-bold text-green-600">{matches.filter(m => m.status === 'IN_PROGRESS').length}</div>
+          <div className="text-2xl font-bold text-green-600">
+            {matches.filter(m => m.status === 'IN_PROGRESS').length}
+          </div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
           <div className="text-sm text-gray-600 font-semibold">Finalizados</div>
-          <div className="text-2xl font-bold text-gray-900">{matches.filter(m => m.status === 'FINISHED').length}</div>
+          <div className="text-2xl font-bold text-gray-900">
+            {matches.filter(m => m.status === 'FINISHED').length}
+          </div>
         </div>
       </div>
 
@@ -238,7 +194,7 @@ export default function AdminPartidosPage() {
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredMatches.map(match => (
               <tr key={match.id} className="hover:bg-gray-50">
-                {/* Partido */}
+                {/* Partido - ✅ CORREGIDO: usar homeTeam y awayTeam */}
                 <td className="px-6 py-4">
                   <div className="flex flex-col">
                     <div className="font-semibold text-gray-900">
@@ -246,7 +202,6 @@ export default function AdminPartidosPage() {
                       <span className="mx-2 text-gray-500 font-normal">vs</span>
                       {match.awayTeam?.name || 'Equipo Visitante'}
                     </div>
-
                     <div className="text-sm text-gray-500">
                       {match.homeTeam?.club?.name && match.awayTeam?.club?.name
                         ? `${match.homeTeam.club.name} vs ${match.awayTeam.club.name}`
@@ -285,31 +240,51 @@ export default function AdminPartidosPage() {
                   <div className="flex items-center justify-end gap-3">
                     {match.status === 'SCHEDULED' && (
                       <>
-                        <button onClick={() => handleStartMatch(match.id)} className="text-green-600 hover:text-green-900">
+                        <button
+                          onClick={() => handleStartMatch(match.id)}
+                          className="text-green-600 hover:text-green-900"
+                        >
                           ▶️ Iniciar
                         </button>
-                        <button onClick={() => openEditModal(match.id)} className="text-indigo-600 hover:text-indigo-900">
+                        <button
+                          onClick={() => openEditModal(match.id)}
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
                           ✏️ Editar
                         </button>
                       </>
                     )}
 
                     {match.status === 'IN_PROGRESS' && (
-                      <button onClick={() => openEditModal(match.id)} className="text-indigo-600 hover:text-indigo-900">
-                        ✏️ Editar
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleFinishMatch(match.id)}
+                          className="text-purple-600 hover:text-purple-900"
+                        >
+                          🏁 Finalizar
+                        </button>
+                        <button
+                          onClick={() => openEditModal(match.id)}
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          ✏️ Editar
+                        </button>
+                      </>
                     )}
 
                     {match.status === 'FINISHED' && (
                       <button
-                        onClick={() => alert('Ver resultado (implementa vista de resultados si quieres)')}
+                        onClick={() => alert('Ver resultado (implementar modal de resultados)')}
                         className="text-blue-600 hover:text-blue-800"
                       >
                         📊 Ver resultado
                       </button>
                     )}
 
-                    <button onClick={() => handleDelete(match.id)} className="text-red-600 hover:text-red-900">
+                    <button
+                      onClick={() => handleDelete(match.id)}
+                      className="text-red-600 hover:text-red-900"
+                    >
                       🗑️ Eliminar
                     </button>
                   </div>
