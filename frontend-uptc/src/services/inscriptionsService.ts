@@ -16,6 +16,7 @@ export interface TeamAvailabilityDTO {
   dayOfWeek: string; // "MONDAY"
   startTime: string; // "11:00"
   endTime: string;   // "12:00"
+  avilable: boolean; // true si está disponible en ese horario
 }
 
 export interface InscriptionCreateDTO {
@@ -71,22 +72,27 @@ export interface InscriptionResponseDTO {
 // ========================
 
 const inscriptionsService = {
-  // Crear inscripción completa (jugadores + disponibilidad)
-  create: async (data: InscriptionCreateDTO): Promise<InscriptionResponseDTO> => {
-    try {
-      console.log("📤 Enviando inscripción al backend:", data);
-      const response = await api.post("/inscriptions", data);
-      console.log("📥 Respuesta inscripción:", response.data);
-      return response.data;
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        console.error("❌ Error al crear inscripción:", error.response?.data ?? error.message);
-        throw error;
-      }
-      console.error("❌ Error al crear inscripción:", error);
-      throw new Error(String(error));
+create: async (data: InscriptionCreateDTO): Promise<InscriptionResponseDTO> => {
+  try {
+    console.log("📤 Enviando inscripción al backend:", data);
+    const response = await api.post("/inscriptions", data);
+    console.log("📥 Respuesta inscripción:", response.data);
+    return response.data;
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      const backendMsg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message;
+      console.error("❌ Error al crear inscripción:", backendMsg);
+      alert(`⚠️ Error: ${backendMsg}`);
+      throw error;
     }
-  },
+    console.error("❌ Error al crear inscripción:", error);
+    throw new Error(String(error));
+  }
+},
+
 
   // Obtener inscripción por ID
   getById: async (id: number): Promise<InscriptionResponseDTO> => {

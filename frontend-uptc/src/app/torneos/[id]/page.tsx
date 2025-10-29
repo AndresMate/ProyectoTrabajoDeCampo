@@ -389,11 +389,23 @@ export default function TournamentDetailPage() {
                 {matches.length === 0 ? (
                   <div className="text-center py-12">
                     <div className="text-gray-400 mb-4">
-                      <svg className="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      <svg
+                        className="mx-auto h-16 w-16"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
                       </svg>
                     </div>
-                    <p className="text-gray-500 text-lg font-semibold">No hay partidos programados aún</p>
+                    <p className="text-gray-500 text-lg font-semibold">
+                      No hay partidos programados aún
+                    </p>
                     <p className="text-gray-400 text-sm mt-2">
                       Los partidos se programarán cuando el torneo esté en curso
                     </p>
@@ -402,7 +414,9 @@ export default function TournamentDetailPage() {
                   <>
                     <div className="mb-4 flex items-center justify-between">
                       <p className="text-sm text-gray-600">
-                        Mostrando <span className="font-semibold text-gray-900">{matches.length}</span> partidos de este torneo
+                        Mostrando{" "}
+                        <span className="font-semibold text-gray-900">{matches.length}</span>{" "}
+                        partidos de este torneo
                       </p>
                       <div className="flex gap-2">
                         <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
@@ -419,52 +433,95 @@ export default function TournamentDetailPage() {
 
                     <div className="space-y-4">
                       {matches.map((match: any) => (
-                        <div key={match.id} className="border rounded-lg p-4 hover:shadow-md transition bg-white">
+                        <div
+                          key={match.id}
+                          className="border rounded-lg p-4 hover:shadow-md transition bg-white"
+                        >
+                          {/* Estado y fecha */}
                           <div className="flex items-center justify-between mb-3">
-                            <span className={`text-xs px-3 py-1 rounded-full font-semibold ${getMatchStatusBadge(match.status)}`}>
+                            <span
+                              className={`text-xs px-3 py-1 rounded-full font-semibold ${getMatchStatusBadge(
+                                match.status
+                              )}`}
+                            >
                               {getMatchStatusText(match.status)}
                             </span>
                             <span className="text-sm text-gray-600 font-medium">
-                              {match.matchDate || match.startsAt
-                                ? new Date(match.matchDate || match.startsAt).toLocaleDateString('es-ES', {
-                                    day: '2-digit',
-                                    month: 'short',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
+                              {match.startsAt
+                                ? new Date(match.startsAt).toLocaleString("es-ES", {
+                                    day: "2-digit",
+                                    month: "short",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
                                   })
-                                : 'Fecha por definir'}
+                                : "Fecha por definir"}
                             </span>
                           </div>
 
+                          {/* Equipos y marcador */}
                           <div className="flex items-center justify-between">
                             <div className="flex-1 text-right pr-4">
                               <p className="font-semibold text-gray-900 text-lg">
-                                {match.homeTeam?.name || match.teamA?.name || 'Equipo Local'}
+                                {match.homeTeam?.name || "Equipo Local"}
                               </p>
                             </div>
+
                             <div className="px-4 text-center">
-                              <p className="text-2xl font-bold text-gray-800">VS</p>
+                              {match.status === "IN_PROGRESS" || match.status === "FINISHED" ? (
+                                <p className="text-2xl font-bold text-gray-800">
+                                  {match.result
+                                    ? `${match.result.homeScore} - ${match.result.awayScore}`
+                                    : "0 - 0"}
+                                </p>
+                              ) : (
+                                <p className="text-2xl font-bold text-gray-400">VS</p>
+                              )}
                             </div>
+
                             <div className="flex-1 text-left pl-4">
                               <p className="font-semibold text-gray-900 text-lg">
-                                {match.awayTeam?.name || match.teamB?.name || 'Equipo Visitante'}
+                                {match.awayTeam?.name || "Equipo Visitante"}
                               </p>
                             </div>
                           </div>
 
+                          {/* Lugar */}
                           {(match.venue || match.scenario) && (
                             <p className="text-center text-xs text-gray-500 mt-3">
-                              📍 {match.venue?.name || 'Sede por confirmar'}
+                              📍 {match.venue?.name || "Sede por confirmar"}
                               {match.scenario && ` - ${match.scenario.name}`}
                             </p>
                           )}
 
-                          {/* Información adicional si el partido está en curso o finalizado */}
-                          {match.status === 'FINISHED' && match.result && (
+                          {/* 🔹 Marcador final o en vivo */}
+                          {match.status === "IN_PROGRESS" && (
                             <div className="mt-3 pt-3 border-t text-center">
-                              <span className="text-sm font-semibold text-gray-700">
-                                Resultado: {match.result.homeScore} - {match.result.awayScore}
-                              </span>
+                              <p className="text-sm font-semibold text-green-600">
+                                🕒 Partido en curso
+                              </p>
+                              <Link
+                                href={`/admin/partidos/${match.id}/live`}
+                                className="mt-2 inline-block bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+                              >
+                                🎮 Ver en Vivo
+                              </Link>
+                            </div>
+                          )}
+
+                          {match.status === "FINISHED" && match.result && (
+                            <div className="mt-3 pt-3 border-t text-center">
+                              <p className="text-sm font-semibold text-gray-700">
+                                ✅ Resultado final:
+                                <span className="ml-2 font-bold">
+                                  {match.result.homeScore} - {match.result.awayScore}
+                                </span>
+                              </p>
+                              <Link
+                                href={`/admin/partidos/${match.id}/live`}
+                                className="mt-2 inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                              >
+                                📊 Ver Detalles
+                              </Link>
                             </div>
                           )}
                         </div>
@@ -474,6 +531,7 @@ export default function TournamentDetailPage() {
                 )}
               </div>
             )}
+
           </div>
         </div>
       </div>

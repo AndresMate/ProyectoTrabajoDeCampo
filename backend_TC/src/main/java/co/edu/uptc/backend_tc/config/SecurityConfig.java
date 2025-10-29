@@ -38,14 +38,17 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/api/auth/**",
                                 "/api/tournaments/public/**",
-                                "/api/matches/public/**",
+                                "/api/matches/**",
                                 "/api/standings/**",
                                 "/api/inscriptions/**",
                                 "/api/sports/public/**",
                                 "/api/venues/public/**",
                                 "/api/clubs/**",
                                 "/api/files/**",
-                                "/api/categories/**"
+                                "/api/categories/**",
+                                "/api/match-results/**",
+                                "/api/match-events/**",
+                                "/api/teams/**"
                                 ).permitAll()
                         .requestMatchers("/api/users/**").hasRole("SUPER_ADMIN")
                         .requestMatchers(
@@ -56,13 +59,9 @@ public class SecurityConfig {
                                 "/api/inscriptions/admin/**"
                         ).hasAnyRole("ADMIN", "SUPER_ADMIN")
                         .requestMatchers(
-                                "/api/matches/**",
-                                "/api/match-results/**",
-                                "/api/match-events/**",
                                 "/api/sanctions/**"
                         ).hasAnyRole("REFEREE", "ADMIN", "SUPER_ADMIN")
                         .requestMatchers(
-                                "/api/teams/**",
                                 "/api/players/**"
                         ).authenticated()
                         .anyRequest().authenticated()
