@@ -110,7 +110,7 @@ class InscriptionServiceTest {
                                 .build()
                 ))
                 .delegateIndex(0)
-                .availability(List.of(
+                .availabilities(List.of(
                         TeamAvailabilityDTO.builder()
                                 .dayOfWeek("MONDAY")
                                 .startTime("14:00")
