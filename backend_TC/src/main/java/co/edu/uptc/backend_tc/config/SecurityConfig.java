@@ -48,7 +48,8 @@ public class SecurityConfig {
                                 "/api/categories/**",
                                 "/api/match-results/**",
                                 "/api/match-events/**",
-                                "/api/teams/**"
+                                "/api/teams/**",
+                                "/api/players/document/**"
                                 ).permitAll()
                         .requestMatchers("/api/users/**").hasRole("SUPER_ADMIN")
                         .requestMatchers(

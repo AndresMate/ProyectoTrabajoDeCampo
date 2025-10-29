@@ -4,6 +4,7 @@ import co.edu.uptc.backend_tc.dto.PlayerDTO;
 import co.edu.uptc.backend_tc.dto.filter.PlayerFilterDTO;
 import co.edu.uptc.backend_tc.dto.page.PageResponseDTO;
 import co.edu.uptc.backend_tc.dto.response.PlayerResponseDTO;
+import co.edu.uptc.backend_tc.dto.response.PlayerSummaryDTO;
 import co.edu.uptc.backend_tc.entity.Player;
 import co.edu.uptc.backend_tc.exception.BusinessException;
 import co.edu.uptc.backend_tc.exception.ConflictException;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -189,4 +191,21 @@ public class PlayerService {
             return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
         };
     }
+
+    public Optional<Player> findByDocument(String documentNumber) {
+        return playerRepository.findByDocumentNumber(documentNumber);
+    }
+
+    public Optional<PlayerSummaryDTO> findSummaryByDocument(String documentNumber) {
+        return playerRepository.findByDocumentNumber(documentNumber)
+                .map(player -> new PlayerSummaryDTO(
+                        player.getId(),
+                        player.getFullName(),
+                        player.getDocumentNumber(),
+                        player.getStudentCode(),
+                        player.getInstitutionalEmail(),
+                        player.getIdCardPhotoUrl()
+                ));
+    }
+
 }

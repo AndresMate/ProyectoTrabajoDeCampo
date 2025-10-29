@@ -4,6 +4,8 @@ import co.edu.uptc.backend_tc.dto.PlayerDTO;
 import co.edu.uptc.backend_tc.dto.filter.PlayerFilterDTO;
 import co.edu.uptc.backend_tc.dto.page.PageResponseDTO;
 import co.edu.uptc.backend_tc.dto.response.PlayerResponseDTO;
+import co.edu.uptc.backend_tc.entity.Player;
+import co.edu.uptc.backend_tc.repository.PlayerRepository;
 import co.edu.uptc.backend_tc.service.PlayerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 public class PlayerController {
 
     private final PlayerService playerService;
+    private PlayerRepository playerRepository;
 
     @Operation(summary = "Obtener todos los jugadores paginados")
     @GetMapping
@@ -81,4 +84,12 @@ public class PlayerController {
         playerService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/document/{documentNumber}")
+    public ResponseEntity<?> getByDocument(@PathVariable String documentNumber) {
+        return playerService.findSummaryByDocument(documentNumber)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
 }

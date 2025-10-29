@@ -1,5 +1,5 @@
 import api from "./api";
-import axios from "axios";
+
 // ========================
 // Interfaces principales
 // ========================
@@ -16,7 +16,6 @@ export interface TeamAvailabilityDTO {
   dayOfWeek: string; // "MONDAY"
   startTime: string; // "11:00"
   endTime: string;   // "12:00"
-  avilable: boolean; // true si está disponible en ese horario
 }
 
 export interface InscriptionCreateDTO {
@@ -72,40 +71,27 @@ export interface InscriptionResponseDTO {
 // ========================
 
 const inscriptionsService = {
-create: async (data: InscriptionCreateDTO): Promise<InscriptionResponseDTO> => {
-  try {
-    console.log("📤 Enviando inscripción al backend:", data);
-    const response = await api.post("/inscriptions", data);
-    console.log("📥 Respuesta inscripción:", response.data);
-    return response.data;
-  } catch (error: unknown) {
-    if (axios.isAxiosError(error)) {
-      const backendMsg =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        error.message;
-      console.error("❌ Error al crear inscripción:", backendMsg);
-      alert(`⚠️ Error: ${backendMsg}`);
+  // Crear inscripción completa (jugadores + disponibilidad)
+  create: async (data: InscriptionCreateDTO): Promise<InscriptionResponseDTO> => {
+    try {
+      console.log("📤 Enviando inscripción al backend:", data);
+      const response = await api.post("/inscriptions", data);
+      console.log("📥 Respuesta inscripción:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ Error al crear inscripción:", error.response?.data || error);
       throw error;
     }
-    console.error("❌ Error al crear inscripción:", error);
-    throw new Error(String(error));
-  }
-},
-
+  },
 
   // Obtener inscripción por ID
   getById: async (id: number): Promise<InscriptionResponseDTO> => {
     try {
       const response = await api.get(`/inscriptions/${id}`);
       return response.data;
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        console.error("❌ Error al obtener inscripción:", error.response?.data ?? error.message);
-        throw error;
-      }
+    } catch (error: any) {
       console.error("❌ Error al obtener inscripción:", error);
-      throw new Error(String(error));
+      throw error;
     }
   },
 
@@ -120,12 +106,8 @@ create: async (data: InscriptionCreateDTO): Promise<InscriptionResponseDTO> => {
         params: { tournamentId, teamName }
       });
       return response.data?.isAvailable ?? false;
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        console.error("❌ Error al verificar nombre de equipo:", error.response?.data ?? error.message);
-      } else {
-        console.error("❌ Error al verificar nombre de equipo:", error);
-      }
+    } catch (error: any) {
+      console.error("❌ Error al verificar nombre de equipo:", error);
       return false;
     }
   },
@@ -137,12 +119,8 @@ create: async (data: InscriptionCreateDTO): Promise<InscriptionResponseDTO> => {
         params: { tournamentId, clubId }
       });
       return response.data?.isAvailable ?? false;
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        console.error("❌ Error al verificar club:", error.response?.data ?? error.message);
-      } else {
-        console.error("❌ Error al verificar club:", error);
-      }
+    } catch (error: any) {
+      console.error("❌ Error al verificar club:", error);
       return false;
     }
   },
@@ -154,12 +132,8 @@ create: async (data: InscriptionCreateDTO): Promise<InscriptionResponseDTO> => {
         params: { tournamentId, documentNumber }
       });
       return response.data?.isAvailable ?? false;
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        console.error("❌ Error al verificar jugador:", error.response?.data ?? error.message);
-      } else {
-        console.error("❌ Error al verificar jugador:", error);
-      }
+    } catch (error: any) {
+      console.error("❌ Error al verificar jugador:", error);
       return false;
     }
   },
@@ -173,13 +147,9 @@ create: async (data: InscriptionCreateDTO): Promise<InscriptionResponseDTO> => {
     try {
       const response = await api.get("/inscriptions/admin");
       return Array.isArray(response.data) ? response.data : [];
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        console.error("❌ Error al obtener inscripciones:", error.response?.data ?? error.message);
-        throw error;
-      }
+    } catch (error: any) {
       console.error("❌ Error al obtener inscripciones:", error);
-      throw new Error(String(error));
+      throw error;
     }
   },
 
@@ -188,28 +158,10 @@ create: async (data: InscriptionCreateDTO): Promise<InscriptionResponseDTO> => {
     try {
       const response = await api.post(`/inscriptions/admin/${id}/approve`);
       return response.data;
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        console.error("❌ Error al aprobar inscripción:", error.response?.data ?? error.message);
-        throw error;
-      }
+    } catch (error: any) {
       console.error("❌ Error al aprobar inscripción:", error);
-      throw new Error(String(error));
+      throw error;
     }
-  },
-
-    // Eliminar inscripción
-  delete: async (id: number): Promise<void> => {
-      try {
-        await api.delete(`/inscriptions/${id}`);
-      } catch (error: unknown) {
-        if (axios.isAxiosError(error)) {
-          console.error("❌ Error al eliminar inscripción:", error.response?.data ?? error.message);
-          throw error;
-        }
-        console.error("❌ Error al eliminar inscripción:", error);
-        throw new Error(String(error));
-      }
   },
 
   // Rechazar inscripción
@@ -217,13 +169,9 @@ create: async (data: InscriptionCreateDTO): Promise<InscriptionResponseDTO> => {
     try {
       const response = await api.post(`/inscriptions/admin/${id}/reject`, { reason });
       return response.data;
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        console.error("❌ Error al rechazar inscripción:", error.response?.data ?? error.message);
-        throw error;
-      }
+    } catch (error: any) {
       console.error("❌ Error al rechazar inscripción:", error);
-      throw new Error(String(error));
+      throw error;
     }
   }
 };

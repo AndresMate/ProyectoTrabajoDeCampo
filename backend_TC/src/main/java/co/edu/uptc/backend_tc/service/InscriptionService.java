@@ -131,7 +131,26 @@ public class InscriptionService {
             );
         }
 
-        // ✅ 6. Validar cantidad de jugadores
+        // ✅ 6. Validar jugadores duplicados en otros equipos del mismo torneo
+        for (PlayerInscriptionDTO playerDTO : dto.getPlayers()) {
+            if (playerRepository.existsByInstitutionalEmail(playerDTO.getInstitutionalEmail())) {
+                Player existing = playerRepository.findByInstitutionalEmail(playerDTO.getInstitutionalEmail()).orElse(null);
+                if (existing != null && teamRosterRepository.existsByPlayerIdAndTeam_TournamentId(existing.getId(), tournament.getId())) {
+                    throw new ConflictException(
+                            "El jugador " + playerDTO.getFullName() + " ya está inscrito en otro equipo de este torneo",
+                            "players",
+                            playerDTO.getInstitutionalEmail()
+                    );
+                }
+            }
+        }
+
+        // ✅ 7. Validar índice del delegado
+        if (dto.getDelegateIndex() == null || dto.getDelegateIndex() >= dto.getPlayers().size()) {
+            throw new BusinessException("El índice del delegado no es válido", "INVALID_DELEGATE_INDEX");
+        }
+
+        // ✅ 8. Validar cantidad de jugadores
         Integer maxPlayers = category.getMembersPerTeam();
         if (maxPlayers != null && dto.getPlayers().size() > maxPlayers) {
             throw new BusinessException(
@@ -145,45 +164,45 @@ public class InscriptionService {
             throw new BusinessException("Debe haber al menos un jugador en la inscripción", "NO_PLAYERS_PROVIDED");
         }
 
-        // ✅ 7. Validar índice del delegado
-        if (dto.getDelegateIndex() == null || dto.getDelegateIndex() >= dto.getPlayers().size()) {
-            throw new BusinessException("El índice del delegado no es válido", "INVALID_DELEGATE_INDEX");
-        }
-
-        // ✅ 8. Procesar jugadores
+        // ✅ 9. Procesar jugadores
         List<Player> players = new ArrayList<>();
         Player delegate = null;
 
         for (int i = 0; i < dto.getPlayers().size(); i++) {
             PlayerInscriptionDTO playerDTO = dto.getPlayers().get(i);
 
-            // Buscar jugador existente por documento o correo
+            // Buscar jugador existente o crear uno nuevo
             Player player = playerRepository.findByDocumentNumber(playerDTO.getDocumentNumber())
-                    .orElseGet(() -> playerRepository.findByInstitutionalEmail(playerDTO.getInstitutionalEmail()).orElse(null));
+                    .orElseGet(() -> {
+                        // Validar email único
+                        if (playerRepository.existsByInstitutionalEmail(playerDTO.getInstitutionalEmail())) {
+                            throw new ConflictException(
+                                    "Ya existe un jugador con este correo institucional",
+                                    "institutionalEmail",
+                                    playerDTO.getInstitutionalEmail()
+                            );
+                        }
 
-            if (player == null) {
-                // Si no existe, se crea un nuevo jugador
-                Player newPlayer = Player.builder()
-                        .documentNumber(playerDTO.getDocumentNumber())
-                        .studentCode(playerDTO.getStudentCode())
-                        .fullName(playerDTO.getFullName())
-                        .institutionalEmail(playerDTO.getInstitutionalEmail())
-                        .idCardPhotoUrl(playerDTO.getIdCardPhotoUrl())
-                        .isActive(true)
-                        .build();
+                        // Validar código único
+                        if (playerRepository.existsByStudentCode(playerDTO.getStudentCode())) {
+                            throw new ConflictException(
+                                    "Ya existe un jugador con este código estudiantil",
+                                    "studentCode",
+                                    playerDTO.getStudentCode()
+                            );
+                        }
 
-                player = playerRepository.save(newPlayer);
-            } else {
-                // Si ya existe, verificar que no esté inscrito en este mismo torneo
-                boolean alreadyInTournament = teamRosterRepository.existsByPlayerIdAndTeam_TournamentId(player.getId(), tournament.getId());
-                if (alreadyInTournament) {
-                    throw new ConflictException(
-                            "El jugador " + player.getFullName() + " ya está inscrito en otro equipo de este torneo",
-                            "players",
-                            playerDTO.getInstitutionalEmail()
-                    );
-                }
-            }
+                        Player newPlayer = Player.builder()
+                                .documentNumber(playerDTO.getDocumentNumber())
+                                .studentCode(playerDTO.getStudentCode())
+                                .fullName(playerDTO.getFullName())
+                                .institutionalEmail(playerDTO.getInstitutionalEmail())
+                                .idCardPhotoUrl(playerDTO.getIdCardPhotoUrl())
+                                .isActive(true)
+                                .build();
+
+                        return playerRepository.save(newPlayer);
+                    });
 
             players.add(player);
             if (i == dto.getDelegateIndex()) {
@@ -191,14 +210,14 @@ public class InscriptionService {
             }
         }
 
-        // ✅ 9. Obtener club si aplica
+        // ✅ 10. Obtener club si aplica
         Club club = null;
         if (dto.getClubId() != null) {
             club = clubRepository.findById(dto.getClubId())
                     .orElseThrow(() -> new ResourceNotFoundException("Club", "id", dto.getClubId()));
         }
 
-        // ✅ 10. Crear inscripción
+        // ✅ 11. Crear inscripción
         Inscription inscription = Inscription.builder()
                 .tournament(tournament)
                 .category(category)
@@ -213,26 +232,13 @@ public class InscriptionService {
 
         inscription = inscriptionRepository.save(inscription);
 
-        // ✅ 11. Asociar jugadores a la inscripción
+        // ✅ 12. Asociar jugadores a la inscripción
         for (Player player : players) {
             InscriptionPlayer inscriptionPlayer = InscriptionPlayer.builder()
                     .inscription(inscription)
                     .player(player)
                     .build();
             inscriptionPlayerRepository.save(inscriptionPlayer);
-        }
-
-        // ✅ 12. Guardar disponibilidad (si aplica)
-        if (dto.getAvailability() != null && !dto.getAvailability().isEmpty()) {
-            for (TeamAvailabilityDTO availabilityDTO : dto.getAvailability()) {
-                TeamAvailability availability = TeamAvailability.builder()
-                        .inscription(inscription)
-                        .dayOfWeek(DayOfWeek.valueOf(availabilityDTO.getDayOfWeek().toUpperCase()))
-                        .startTime(LocalTime.parse(availabilityDTO.getStartTime()))
-                        .endTime(LocalTime.parse(availabilityDTO.getEndTime()))
-                        .build();
-                teamAvailabilityRepository.save(availability);
-            }
         }
 
         return enrichResponseDTO(inscription);

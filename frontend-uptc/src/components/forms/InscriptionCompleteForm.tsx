@@ -17,7 +17,6 @@ type Availability = {
   dayOfWeek: string;
   startTime: string;
   endTime: string;
-  available: boolean; // ✅ corregido (antes "avilable")
 };
 
 type Club = { id: number; name: string };
@@ -205,7 +204,6 @@ export default function InscriptionCompleteForm({
         players,
         availability,
       };
-      console.log("📤 Enviando inscripción:", payload);
       await inscriptionsService.create(payload);
       alert("✅ Inscripción creada correctamente");
       onSuccess();
@@ -389,16 +387,7 @@ export default function InscriptionCompleteForm({
                                       a.endTime === end
                                     )
                                 );
-                              // ✅ Aquí agregamos available: true
-                              return [
-                                ...prev,
-                                {
-                                  dayOfWeek: day,
-                                  startTime: start,
-                                  endTime: end,
-                                  available: true,
-                                },
-                              ];
+                              return [...prev, { dayOfWeek: day, startTime: start, endTime: end }];
                             });
                           }}
                         >
