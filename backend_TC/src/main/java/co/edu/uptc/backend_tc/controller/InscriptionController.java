@@ -82,6 +82,12 @@ public class InscriptionController {
         return ResponseEntity.ok(inscriptionService.getById(id));
     }
 
+    @Operation(summary = "Obtener inscripciones por torneo")
+    @GetMapping("/tournament/{tournamentId}")
+    public ResponseEntity<List<InscriptionResponseDTO>> getByTournament(@PathVariable Long tournamentId) {
+        return ResponseEntity.ok(inscriptionService.getByTournament(tournamentId));
+    }
+
     @Operation(summary = "Obtener inscripciones aprobadas por torneo")
     @GetMapping("/tournament/{tournamentId}/approved")
     public ResponseEntity<List<InscriptionResponseDTO>> getApprovedByTournament(

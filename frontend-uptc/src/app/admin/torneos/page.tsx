@@ -1,4 +1,4 @@
-// typescript
+// src/app/admin/torneos/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -252,8 +252,9 @@ export default function AdminTorneosPage() {
                   )}
 
                   <div className="flex gap-2">
+                    {/* ✅ CORREGIDO: Redirige a la pestaña de equipos del torneo */}
                     <Link
-                      href={`/torneos/${tournament.id}`}
+                      href={`/admin/torneos/${tournament.id}/equipos`}
                       className="flex-1 bg-uptc-black text-uptc-yellow text-center py-2 rounded hover:bg-gray-800 transition text-sm font-semibold"
                     >
                       Ver detalles

@@ -1,4 +1,4 @@
-// frontend-uptc/src/app/torneos/[id]/page.tsx - ✅ VERSIÓN CORREGIDA
+// frontend-uptc/src/app/torneos/[matchId]/page.tsx - ✅ VERSIÓN CORREGIDA
 'use client';
 
 import { useEffect, useState } from 'react';

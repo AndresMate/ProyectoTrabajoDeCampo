@@ -1,3 +1,4 @@
+// src/app/admin/torneos/[tournamentId]/partidos/[matchId]/live/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -12,7 +13,8 @@ import LiveMatchScore from '@/components/LiveMatchScore';
 export default function LiveMatchPage() {
   const params = useParams();
   const router = useRouter();
-  const matchId = Number(params.id);
+  const tournamentId = Number(params.tournamentId);
+  const matchId = Number(params.matchId);
 
   const [match, setMatch] = useState<Match | null>(null);
   const [events, setEvents] = useState<MatchEvent[]>([]);
@@ -23,12 +25,10 @@ export default function LiveMatchPage() {
   const [matchStartTime, setMatchStartTime] = useState<Date | null>(null);
   const [liveScore, setLiveScore] = useState({ home: 0, away: 0 });
 
-  // 🔹 Cargar datos solo al montar o tras un cambio relevante
   useEffect(() => {
     if (matchId) loadMatchData();
   }, [matchId]);
 
-  // 🔹 Actualizar el minuto actual según el tiempo real del partido
   useEffect(() => {
     if (match?.status === 'IN_PROGRESS' && matchStartTime) {
       const interval = setInterval(() => {
@@ -40,14 +40,12 @@ export default function LiveMatchPage() {
     }
   }, [match?.status, matchStartTime]);
 
-  // 🔹 Cargar partido, eventos y equipos
   const loadMatchData = async () => {
     try {
       setLoading(true);
       const matchData = await matchesService.getById(matchId);
       setMatch(matchData);
 
-      // ⏱️ Usa la hora real de inicio para el reloj
       if (matchData.status === 'IN_PROGRESS' && matchData.startsAt) {
         setMatchStartTime(new Date(matchData.startsAt));
       }
@@ -72,10 +70,8 @@ export default function LiveMatchPage() {
     }
   };
 
-  // 🔹 Calcular marcador actual
   const calculateScore = (events: MatchEvent[], matchData: Match) => {
     const validGoals = ['GOAL', 'PENALTY', 'OWN_GOAL'];
-
     const filtered = events.filter(e => validGoals.includes(e.type));
     const homeId = matchData.homeTeam?.id;
     const awayId = matchData.awayTeam?.id;
@@ -91,7 +87,6 @@ export default function LiveMatchPage() {
     });
   };
 
-  // 🔹 Iniciar partido
   const handleStartMatch = async () => {
     if (!confirm('¿Iniciar el partido?')) return;
     try {
@@ -104,7 +99,6 @@ export default function LiveMatchPage() {
     }
   };
 
-  // 🔹 Finalizar partido y registrar resultado
   const handleFinishMatch = async () => {
     if (!confirm('¿Finalizar el partido y registrar el resultado?')) return;
     try {
@@ -125,14 +119,13 @@ export default function LiveMatchPage() {
 
       await matchesService.registerResult(result);
       alert('✅ Partido finalizado y resultado registrado');
-      router.push('/admin/partidos');
+      router.push(`/admin/torneos/${tournamentId}/partidos`);
     } catch (error) {
       console.error('Error al finalizar partido:', error);
       alert('❌ Error al finalizar partido');
     }
   };
 
-  // 🔹 Agregar evento sin recargar todo
   const handleAddEvent = async (event: MatchEvent) => {
     if (!event.team?.id || !event.player?.id || !event.type) {
       alert('⚠️ Debes seleccionar un jugador, equipo y tipo de evento');
@@ -159,7 +152,6 @@ export default function LiveMatchPage() {
     }
   };
 
-  // 🔹 Eliminar evento sin recargar todo
   const handleDeleteEvent = async (eventId: number) => {
     if (!confirm('¿Eliminar este evento?')) return;
     try {
@@ -184,6 +176,16 @@ export default function LiveMatchPage() {
 
   return (
     <div className="max-w-7xl mx-auto p-6">
+      {/* Breadcrumb */}
+      <div className="mb-4">
+        <button
+          onClick={() => router.push(`/admin/torneos/${tournamentId}/partidos`)}
+          className="text-uptc-yellow hover:text-yellow-600 font-semibold inline-flex items-center gap-2"
+        >
+          ← Volver a partidos
+        </button>
+      </div>
+
       {/* Encabezado del partido */}
       <div className="bg-uptc-black text-white rounded-lg shadow-xl p-6 mb-6">
         <div className="flex justify-between items-center mb-4">
@@ -195,12 +197,6 @@ export default function LiveMatchPage() {
               {match.tournament.name} - {match.category.name}
             </p>
           </div>
-          <button
-            onClick={() => router.push('/admin/partidos')}
-            className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition"
-          >
-            ← Volver
-          </button>
         </div>
 
         {/* Marcador */}

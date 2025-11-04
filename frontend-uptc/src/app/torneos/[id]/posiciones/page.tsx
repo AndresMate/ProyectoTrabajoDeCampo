@@ -1,5 +1,5 @@
 // typescript
-// src/app/torneos/[id]/posiciones/page.tsx
+// src/app/torneos/[matchId]/posiciones/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';

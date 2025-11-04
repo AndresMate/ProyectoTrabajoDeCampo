@@ -189,6 +189,16 @@ const inscriptionsService = {
             console.error("Error buscando jugador:", error);
             throw error;
         }
+    },
+
+    getByTournamentId: async (tournamentId: number): Promise<InscriptionResponseDTO[]> => {
+        try {
+            const response = await api.get(`/inscriptions/tournament/${tournamentId}`);
+            return Array.isArray(response.data) ? response.data : [];
+        } catch (error: any) {
+            console.error("❌ Error al obtener inscripciones por torneo:", error);
+            throw error;
+        }
     }
 };
 

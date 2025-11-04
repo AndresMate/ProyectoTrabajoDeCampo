@@ -1,4 +1,4 @@
-// frontend-uptc/src/components/layout/SidebarAdmin.tsx - VERSIÓN FINAL CORREGIDA
+// src/components/layout/SidebarAdmin.tsx
 'use client';
 
 import Link from 'next/link';
@@ -9,9 +9,6 @@ export default function SidebarAdmin() {
 
   const links = [
     { href: '/admin/torneos', label: 'Torneos', icon: '🏆' },
-    { href: '/admin/equipos', label: 'Equipos', icon: '⚽' },
-    { href: '/admin/partidos', label: 'Partidos', icon: '📅' },
-    { href: '/admin/inscripciones', label: 'Inscripciones', icon: '📋' },
     { href: '/admin/usuarios', label: 'Usuarios', icon: '👥' },
     { href: '/admin/reportes', label: 'Reportes', icon: '📊' },
   ];
@@ -35,7 +32,7 @@ export default function SidebarAdmin() {
       <nav className="p-4">
         <div className="space-y-2">
           {links.map(({ href, label, icon }) => {
-            const isActive = pathname === href;
+            const isActive = pathname.startsWith(href);
             return (
               <Link
                 key={href}

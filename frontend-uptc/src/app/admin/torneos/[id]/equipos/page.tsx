@@ -1,12 +1,13 @@
-// frontend-uptc/src/app/admin/equipos/page.tsx - VERSIÓN CORREGIDA
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import teamsService from '@/services/teamsService';
 import Modal from '@/components/Modal';
 import TeamForm from '@/components/forms/TeamForm';
 import TeamRosterModal from '@/components/TeamRosterModal';
-import axios from "axios";
+import TournamentTabs from '@/components/TournamentTabs';
+import axios from 'axios';
 
 interface Team {
   id: number;
@@ -20,6 +21,7 @@ interface Team {
 }
 
 export default function AdminEquiposPage() {
+  const { id } = useParams(); // id del torneo
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -29,12 +31,12 @@ export default function AdminEquiposPage() {
   const [rosterTeam, setRosterTeam] = useState<{ id: number; name: string } | null>(null);
 
   useEffect(() => {
-    fetchTeams();
-  }, []);
+    if (id) fetchTeams();
+  }, [id]);
 
   const fetchTeams = async () => {
     try {
-      const data = await teamsService.getAll();
+      const data = await teamsService.getByTournamentId(Number(id));
       setTeams(data.content || data);
     } catch (error) {
       console.error('Error al cargar equipos:', error);
@@ -48,24 +50,24 @@ export default function AdminEquiposPage() {
     setShowRosterModal(true);
   };
 
-  const handleDelete = async (id: number) => {
-      if (!confirm('¿Estás seguro de eliminar este equipo?')) return;
+  const handleDelete = async (teamId: number) => {
+    if (!confirm('¿Estás seguro de eliminar este equipo?')) return;
 
-      try {
-        await teamsService.delete(id);
-        alert('Equipo eliminado exitosamente');
-        fetchTeams();
-      } catch (error: unknown) {
-        if (axios.isAxiosError(error)) {
-          const message = error.response?.data?.message ?? error.message;
-          alert(message || 'Error al eliminar equipo');
-        } else if (error instanceof Error) {
-          alert(error.message);
-        } else {
-          alert('Error al eliminar equipo');
-        }
-        console.error('Error eliminando equipo:', error);
+    try {
+      await teamsService.delete(teamId);
+      alert('Equipo eliminado exitosamente');
+      fetchTeams();
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        const message = error.response?.data?.message ?? error.message;
+        alert(message || 'Error al eliminar equipo');
+      } else if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert('Error al eliminar equipo');
       }
+      console.error('Error eliminando equipo:', error);
+    }
   };
 
   const filteredTeams = teams.filter(
@@ -84,8 +86,13 @@ export default function AdminEquiposPage() {
 
   return (
     <div className="max-w-7xl mx-auto">
+      {/* 🔹 Tabs de navegación del torneo */}
+      <TournamentTabs tournamentId={Number(id)} activeTab="equipos" />
+
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Gestión de Equipos</h1>
+        <h1 className="text-3xl font-bold text-gray-800">
+          Gestión de Equipos del Torneo #{id}
+        </h1>
         <button
           onClick={() => {
             setSelectedTeam(undefined);
@@ -117,19 +124,19 @@ export default function AdminEquiposPage() {
         <div className="bg-white rounded-lg shadow p-4">
           <div className="text-gray-600 text-sm font-semibold">Equipos Activos</div>
           <div className="text-2xl font-bold text-green-600">
-            {teams.filter(t => t.isActive).length}
+            {teams.filter((t) => t.isActive).length}
           </div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
           <div className="text-gray-600 text-sm font-semibold">Equipos Inactivos</div>
           <div className="text-2xl font-bold text-red-600">
-            {teams.filter(t => !t.isActive).length}
+            {teams.filter((t) => !t.isActive).length}
           </div>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
           <div className="text-gray-600 text-sm font-semibold">Sin Torneo</div>
           <div className="text-2xl font-bold text-gray-600">
-            {teams.filter(t => !t.tournamentName).length}
+            {teams.filter((t) => !t.tournamentName).length}
           </div>
         </div>
       </div>
@@ -139,10 +146,18 @@ export default function AdminEquiposPage() {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-uptc-black">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-uptc-yellow uppercase">Equipo</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-uptc-yellow uppercase">Torneo</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-uptc-yellow uppercase">Estado</th>
-              <th className="px-6 py-3 text-right text-xs font-semibold text-uptc-yellow uppercase">Acciones</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-uptc-yellow uppercase">
+                Equipo
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-uptc-yellow uppercase">
+                Torneo
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-uptc-yellow uppercase">
+                Estado
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-semibold text-uptc-yellow uppercase">
+                Acciones
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -150,16 +165,24 @@ export default function AdminEquiposPage() {
               <tr key={team.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4">
                   <div className="font-semibold text-gray-900">{team.name}</div>
-                  <div className="text-sm text-gray-600 font-medium">{team.clubName || 'Sin club'}</div>
+                  <div className="text-sm text-gray-600 font-medium">
+                    {team.clubName || 'Sin club'}
+                  </div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="text-sm text-gray-900 font-medium">{team.tournamentName || 'N/A'}</div>
+                  <div className="text-sm text-gray-900 font-medium">
+                    {team.tournamentName || 'N/A'}
+                  </div>
                   <div className="text-sm text-gray-600">{team.categoryName || 'N/A'}</div>
                 </td>
                 <td className="px-6 py-4">
-                  <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
-                    team.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                  }`}>
+                  <span
+                    className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                      team.isActive
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-red-100 text-red-700'
+                    }`}
+                  >
                     {team.isActive ? 'Activo' : 'Inactivo'}
                   </span>
                 </td>
@@ -210,6 +233,7 @@ export default function AdminEquiposPage() {
       >
         <TeamForm
           teamId={selectedTeam}
+          tournamentId={Number(id)} // pasar id del torneo al formulario
           onSuccess={() => {
             setShowModal(false);
             setSelectedTeam(undefined);

@@ -62,6 +62,12 @@ const teamsService = {
     const response = await api.get(`/teams/tournament/${tournamentId}/category/${categoryId}`);
     return response.data;
   },
+
+  async getByTournamentId(tournamentId: number) {
+  const response = await api.get(`/teams/tournament/${tournamentId}`);
+  return response.data;
+}
+
 };
 
 export default teamsService;
