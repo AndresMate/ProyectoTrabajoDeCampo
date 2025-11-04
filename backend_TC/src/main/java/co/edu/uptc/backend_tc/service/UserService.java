@@ -94,14 +94,14 @@ public class UserService {
         }
 
         // Generar contraseña temporal segura
-        String temporaryPassword = passwordGeneratorService.generateSecurePassword();
+        String password = dto.getPassword();
 
         // Crear usuario con contraseña temporal
         User user = User.builder()
                 .fullName(dto.getFullName())
                 .email(dto.getEmail().toLowerCase())
                 .role(dto.getRole())
-                .passwordHash(passwordEncoder.encode(temporaryPassword))
+                .passwordHash(passwordEncoder.encode(password))
                 .isActive(true)
                 .forcePasswordChange(true) // Obligar a cambiar contraseña en primer login
                 .build();
@@ -114,7 +114,7 @@ public class UserService {
                 .fullName(user.getFullName())
                 .email(user.getEmail())
                 .role(user.getRole())
-                .temporaryPassword(temporaryPassword) // Solo se muestra una vez
+                .temporaryPassword(password)
                 .forcePasswordChange(true)
                 .build();
     }

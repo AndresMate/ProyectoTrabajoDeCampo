@@ -7,6 +7,7 @@ import co.edu.uptc.backend_tc.exception.ResourceNotFoundException;
 import co.edu.uptc.backend_tc.exception.UnauthorizedException;
 import co.edu.uptc.backend_tc.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
 
     private final AuthenticationManager authenticationManager;
@@ -25,29 +27,58 @@ public class AuthService {
 
     public LoginResponseDTO login(LoginRequestDTO request) {
         try {
-            // Autenticar usuario
+            log.info("🔐 Login attempt for: {}", request.getEmail());
+
+            // Buscar usuario primero
+            User user = userRepository.findByEmailIgnoreCase(request.getEmail())
+                    .orElseThrow(() -> {
+                        log.error("❌ User not found: {}", request.getEmail());
+                        return new UnauthorizedException("Invalid email or password");
+                    });
+
+            log.info("✅ User found: {} | Active: {} | Role: {}",
+                    user.getEmail(), user.getIsActive(), user.getRole());
+
+            // Verificar contraseña ANTES de autenticar
+            boolean passwordMatches = passwordEncoder.matches(
+                    request.getPassword(),
+                    user.getPasswordHash()
+            );
+            log.info("🔑 Password matches: {}", passwordMatches);
+
+            if (!passwordMatches) {
+                log.error("❌ Wrong password for: {}", request.getEmail());
+                throw new UnauthorizedException("Invalid email or password");
+            }
+
+            // Ahora sí, autenticar
             Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+                    new UsernamePasswordAuthenticationToken(
+                            request.getEmail(),
+                            request.getPassword()
+                    )
             );
 
+            log.info("✅ Authentication successful for: {}", request.getEmail());
+
             SecurityContextHolder.getContext().setAuthentication(authentication);
+            User authenticatedUser = (User) authentication.getPrincipal();
 
-            // Obtener usuario autenticado
-            User user = (User) authentication.getPrincipal();
-
-            // Generar token JWT
-            String token = jwtService.generateToken(user);
+            String token = jwtService.generateToken(authenticatedUser);
 
             return LoginResponseDTO.builder()
                     .token(token)
-                    .email(user.getEmail())
-                    .fullName(user.getFullName())
-                    .role(user.getRole())
-                    .forcePasswordChange(user.getForcePasswordChange()) // ✅
-                    .userId(user.getId())
+                    .email(authenticatedUser.getEmail())
+                    .fullName(authenticatedUser.getFullName())
+                    .role(authenticatedUser.getRole())
+                    .forcePasswordChange(authenticatedUser.getForcePasswordChange())
+                    .userId(authenticatedUser.getId())
                     .build();
 
+        } catch (UnauthorizedException e) {
+            throw e;
         } catch (Exception e) {
+            log.error("❌ Authentication error: {}", e.getMessage(), e);
             throw new UnauthorizedException("Invalid email or password");
         }
     }
@@ -59,5 +90,7 @@ public class AuthService {
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         user.setForcePasswordChange(false);
         userRepository.save(user);
+
+        log.info("✅ Password changed for user: {}", user.getEmail());
     }
 }

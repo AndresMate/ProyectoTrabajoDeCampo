@@ -28,7 +28,7 @@ export default function LoginPage() {
       } else if (response.role === 'SUPER_ADMIN' || response.role === 'ADMIN') {
         router.push('/admin/torneos');
       } else if (response.role === 'REFEREE') {
-        router.push('/referee/partidos');
+        router.push('/admin/partidos');
       } else {
         router.push('/');
       }

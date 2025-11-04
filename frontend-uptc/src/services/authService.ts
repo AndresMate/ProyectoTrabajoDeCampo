@@ -23,6 +23,10 @@ interface CurrentUser {
   forcePasswordChange: boolean;
 }
 
+interface PasswordChangeRequest {
+  newPassword: string;
+}
+
 export const authService = {
   login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
     try {
@@ -55,6 +59,41 @@ export const authService = {
     }
   },
 
+  // ✅ NUEVO: Método para cambio forzado de contraseña
+  forcePasswordChange: async (userId: number, newPassword: string): Promise<void> => {
+    try {
+      await api.post(`/auth/force-password-change/${userId}`, {
+        newPassword,
+      });
+
+      console.log("✅ Contraseña cambiada exitosamente");
+
+      // Actualizar el estado del usuario en localStorage
+      const user = authService.getCurrentUser();
+      if (user) {
+        const updatedUser = { ...user, forcePasswordChange: false };
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+      }
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("❌ Error al cambiar contraseña:", error.response?.data ?? error.message);
+        throw new Error(error.response?.data?.message || "Error al cambiar la contraseña");
+      }
+      console.error("❌ Error al cambiar contraseña:", error);
+      throw new Error("Error al cambiar la contraseña");
+    }
+  },
+
+  // ✅ NUEVO: Actualizar datos del usuario en localStorage
+  updateUserData: (updates: Partial<CurrentUser>): void => {
+    const user = authService.getCurrentUser();
+    if (user) {
+      const updatedUser = { ...user, ...updates };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      console.log("✅ Datos de usuario actualizados:", updatedUser);
+    }
+  },
+
   logout: () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -73,7 +112,7 @@ export const authService = {
     const userStr = localStorage.getItem("user");
     if (!userStr) return null;
     try {
-        return JSON.parse(userStr) as CurrentUser;
+      return JSON.parse(userStr) as CurrentUser;
     } catch (e) {
       console.error("❌ Error parseando usuario desde localStorage:", e);
       return null;
@@ -87,5 +126,11 @@ export const authService = {
   hasRole: (role: string): boolean => {
     const user = authService.getCurrentUser();
     return user?.role === role;
+  },
+
+  // ✅ NUEVO: Verificar si el usuario debe cambiar contraseña
+  mustChangePassword: (): boolean => {
+    const user = authService.getCurrentUser();
+    return user?.forcePasswordChange === true;
   },
 };

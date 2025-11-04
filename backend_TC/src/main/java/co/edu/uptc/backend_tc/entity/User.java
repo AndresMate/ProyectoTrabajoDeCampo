@@ -9,7 +9,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.io.Serializable;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -52,7 +51,12 @@ public class User implements UserDetails {
     private String passwordHash;
 
     @Column(name = "is_active", nullable = false)
+    @Builder.Default
     private Boolean isActive = true;
+
+    @Column(name = "force_password_change", nullable = false)
+    @Builder.Default
+    private Boolean forcePasswordChange = false;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
@@ -72,17 +76,19 @@ public class User implements UserDetails {
     protected void onCreate() {
         this.createdAt = OffsetDateTime.now();
         this.updatedAt = OffsetDateTime.now();
+
+        if (this.isActive == null) {
+            this.isActive = true;
+        }
+        if (this.forcePasswordChange == null) {
+            this.forcePasswordChange = false;
+        }
     }
 
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = OffsetDateTime.now();
     }
-
-    @Column(name = "force_password_change", nullable = false)
-    private Boolean forcePasswordChange = false;
-
-    // === MÉTODOS DE UserDetails ===
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -106,7 +112,7 @@ public class User implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return isActive;
+        return true;
     }
 
     @Override
@@ -116,6 +122,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return isActive;
+        return isActive != null && isActive;
     }
 }
