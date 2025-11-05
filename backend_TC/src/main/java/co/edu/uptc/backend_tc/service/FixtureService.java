@@ -11,7 +11,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.DayOfWeek;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -31,6 +34,17 @@ public class FixtureService {
      */
     @Transactional
     public int generateFixture(Long tournamentId, Long categoryId, String mode) {
+        // Validar parámetros de entrada
+        if (tournamentId == null) {
+            throw new BadRequestException("Tournament ID is required");
+        }
+        if (categoryId == null) {
+            throw new BadRequestException("Category ID is required");
+        }
+        if (mode == null || mode.trim().isEmpty()) {
+            throw new BadRequestException("Mode is required");
+        }
+
         // Verificar torneo
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tournament", "id", tournamentId));
@@ -72,6 +86,11 @@ public class FixtureService {
             default -> throw new BadRequestException("Modo de fixture inválido: " + mode);
         }
 
+        // Validar que la lista no sea null antes de guardar
+        if (generatedMatches == null || generatedMatches.isEmpty()) {
+            return 0;
+        }
+
         matchRepository.saveAll(generatedMatches);
         return generatedMatches.size();
     }
@@ -97,7 +116,7 @@ public class FixtureService {
 
                 if (home == null || away == null) continue; // bye
 
-                LocalDateTime matchTime = findCompatibleSlot(home, away);
+                LocalDateTime matchTime = findCompatibleSlot(home, away, tournament, matches);
 
                 matches.add(Match.builder()
                         .tournament(tournament)
@@ -129,7 +148,7 @@ public class FixtureService {
             Team home = teams.get(i);
             Team away = teams.get(i + 1);
 
-            LocalDateTime matchTime = findCompatibleSlot(home, away);
+            LocalDateTime matchTime = findCompatibleSlot(home, away, tournament, matches);
 
             matches.add(Match.builder()
                     .tournament(tournament)
@@ -146,8 +165,11 @@ public class FixtureService {
 
     /**
      * Busca un horario compatible entre dos equipos, considerando su disponibilidad semanal.
+     * Si no hay coincidencia, genera un horario por defecto dentro del rango del torneo.
+     * También valida que los equipos no tengan conflictos de horario con partidos ya generados.
      */
-    private LocalDateTime findCompatibleSlot(Team teamA, Team teamB) {
+    private LocalDateTime findCompatibleSlot(Team teamA, Team teamB, Tournament tournament, List<Match> existingMatches) {
+        // Primero intentar encontrar horario compatible basado en disponibilidad
         List<TeamAvailability> aAvail = availabilityRepository.findByTeamIdAndAvailableTrue(teamA.getId());
         List<TeamAvailability> bAvail = availabilityRepository.findByTeamIdAndAvailableTrue(teamB.getId());
 
@@ -157,25 +179,118 @@ public class FixtureService {
                         && a.getStartTime().equals(b.getStartTime())
                         && a.getEndTime().equals(b.getEndTime())) {
 
-                    LocalDateTime now = LocalDateTime.now();
-                    int today = now.getDayOfWeek().getValue();
-                    int matchDay = a.getDayOfWeek().getValue();
-                    int daysUntilMatch = (matchDay - today + 7) % 7;
-                    if (daysUntilMatch == 0) daysUntilMatch = 7; // siguiente semana
-
-                    return now.plusDays(daysUntilMatch)
-                            .withHour(a.getStartTime().getHour())
-                            .withMinute(a.getStartTime().getMinute())
-                            .withSecond(0)
-                            .withNano(0);
+                    LocalDateTime candidateTime = calculateNextMatchTime(a.getDayOfWeek(), a.getStartTime(), tournament);
+                    
+                    // Verificar que no haya conflicto con partidos ya generados
+                    if (!hasScheduleConflict(teamA, teamB, candidateTime, existingMatches)) {
+                        return candidateTime;
+                    }
                 }
             }
         }
 
-        throw new BusinessException(
-                String.format("No hay horarios compatibles entre %s y %s", teamA.getName(), teamB.getName()),
-                "NO_COMPATIBLE_TIME_SLOT"
-        );
+        // Si no hay coincidencia de disponibilidad, generar horario por defecto
+        // Usar horario predeterminado: Lunes a Viernes a las 14:00, dentro del rango del torneo
+        return generateDefaultMatchTime(tournament, existingMatches, teamA, teamB);
+    }
+
+    /**
+     * Calcula la próxima fecha y hora para un partido basado en el día de la semana y hora.
+     */
+    private LocalDateTime calculateNextMatchTime(DayOfWeek dayOfWeek, LocalTime startTime, Tournament tournament) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDate startDate = tournament.getStartDate();
+        
+        // Si la fecha de inicio del torneo es futura, usar esa como base
+        LocalDate baseDate = startDate.isAfter(now.toLocalDate()) ? startDate : now.toLocalDate();
+        LocalDateTime baseDateTime = baseDate.atTime(startTime);
+        
+        int todayValue = baseDateTime.getDayOfWeek().getValue();
+        int matchDayValue = dayOfWeek.getValue();
+        int daysUntilMatch = (matchDayValue - todayValue + 7) % 7;
+        
+        if (daysUntilMatch == 0) {
+            daysUntilMatch = 7; // siguiente semana
+        }
+        
+        LocalDateTime candidateTime = baseDateTime.plusDays(daysUntilMatch);
+        
+        // Asegurar que esté dentro del rango del torneo
+        if (candidateTime.toLocalDate().isAfter(tournament.getEndDate())) {
+            // Si se pasa del final, usar el primer día del torneo
+            candidateTime = tournament.getStartDate().atTime(startTime);
+        }
+        
+        return candidateTime.withSecond(0).withNano(0);
+    }
+
+    /**
+     * Genera un horario por defecto cuando no hay coincidencia de disponibilidad.
+     * Distribuye los partidos en diferentes días y horas para evitar conflictos.
+     */
+    private LocalDateTime generateDefaultMatchTime(Tournament tournament, List<Match> existingMatches, Team teamA, Team teamB) {
+        LocalDate startDate = tournament.getStartDate();
+        LocalDate endDate = tournament.getEndDate();
+        
+        // Horario por defecto: Lunes a Viernes, de 14:00 a 16:00, con intervalos de 2 horas
+        LocalTime[] timeSlots = {LocalTime.of(14, 0), LocalTime.of(16, 0)};
+        
+        LocalDate currentDate = startDate.isAfter(LocalDate.now()) ? startDate : LocalDate.now();
+        
+        // Intentar encontrar un horario sin conflicto
+        for (int dayOffset = 0; dayOffset <= 30; dayOffset++) {
+            LocalDate candidateDate = currentDate.plusDays(dayOffset);
+            
+            // Verificar que esté dentro del rango del torneo
+            if (candidateDate.isAfter(endDate)) {
+                break;
+            }
+            
+            DayOfWeek dayOfWeek = candidateDate.getDayOfWeek();
+            
+            // Solo considerar días laborables (Lunes a Viernes)
+            if (dayOfWeek.getValue() >= DayOfWeek.MONDAY.getValue() && 
+                dayOfWeek.getValue() <= DayOfWeek.FRIDAY.getValue()) {
+                
+                for (LocalTime timeSlot : timeSlots) {
+                    LocalDateTime candidateTime = candidateDate.atTime(timeSlot);
+                    
+                    if (!hasScheduleConflict(teamA, teamB, candidateTime, existingMatches)) {
+                        return candidateTime;
+                    }
+                }
+            }
+        }
+        
+        // Si no se encuentra ningún horario sin conflicto, usar el primer día del torneo
+        return tournament.getStartDate().atTime(LocalTime.of(14, 0));
+    }
+
+    /**
+     * Verifica si un equipo tiene conflicto de horario (ya tiene otro partido a la misma hora y día).
+     */
+    private boolean hasScheduleConflict(Team teamA, Team teamB, LocalDateTime matchTime, List<Match> existingMatches) {
+        // Verificar conflictos para ambos equipos
+        for (Match match : existingMatches) {
+            LocalDateTime existingTime = match.getStartsAt();
+            if (existingTime == null) continue;
+            
+            // Verificar si es el mismo día y hora (con margen de 2 horas para considerar duración del partido)
+            boolean sameDay = existingTime.toLocalDate().equals(matchTime.toLocalDate());
+            boolean timeOverlap = Math.abs(java.time.Duration.between(existingTime, matchTime).toHours()) < 2;
+            
+            if (sameDay && timeOverlap) {
+                // Verificar si alguno de los equipos ya tiene partido a esa hora
+                if (match.getHomeTeam().getId().equals(teamA.getId()) || 
+                    match.getAwayTeam().getId().equals(teamA.getId()) ||
+                    match.getHomeTeam().getId().equals(teamB.getId()) || 
+                    match.getAwayTeam().getId().equals(teamB.getId())) {
+                    return true; // Hay conflicto
+                }
+            }
+        }
+        
+        return false; // No hay conflicto
     }
 
     /**
