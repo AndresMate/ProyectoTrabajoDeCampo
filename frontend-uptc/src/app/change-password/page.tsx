@@ -31,7 +31,7 @@ export default function ChangePasswordPage() {
       if (currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'ADMIN') {
         router.push('/admin/torneos');
       } else if (currentUser?.role === 'REFEREE') {
-        router.push('/admin/partidos');
+        router.push('/admin/torneos');
       } else {
         router.push('/');
       }
@@ -102,7 +102,7 @@ export default function ChangePasswordPage() {
       if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') {
         router.push('/admin/torneos');
       } else if (user.role === 'REFEREE') {
-        router.push('/admin/partidos');
+        router.push('/admin/torneos');
       } else {
         router.push('/');
       }
