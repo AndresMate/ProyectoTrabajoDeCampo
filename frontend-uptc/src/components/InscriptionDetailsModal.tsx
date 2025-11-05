@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import inscriptionsService from '@/services/inscriptionsService';
 import { getStatusBadge, getStatusText } from '@/utils/inscriptionStatusUtils';
+import { toastWarning, toastPromise } from '@/utils/toast';
 
 interface InscriptionDetailsModalProps {
   inscriptionId: number;
@@ -38,24 +39,28 @@ export default function InscriptionDetailsModal({
       setInscription(inscriptionData);
     } catch (error) {
       console.error('Error al cargar detalles:', error);
-      alert('Error al cargar los detalles de la inscripción');
+      // El error ya se muestra en el interceptor de axios
     } finally {
       setLoading(false);
     }
   };
 
   const handleApprove = async () => {
-    if (!confirm('¿Está seguro de aprobar esta inscripción?')) return;
-
     try {
       setProcessing(true);
-      await inscriptionsService.approve(inscriptionId);
-      alert('Inscripción aprobada exitosamente');
+      await toastPromise(
+        inscriptionsService.approve(inscriptionId),
+        {
+          loading: 'Aprobando inscripción...',
+          success: 'Inscripción aprobada exitosamente',
+          error: (error: any) => error.response?.data?.message || 'Error al aprobar la inscripción'
+        }
+      );
       onStatusUpdated();
       onClose();
     } catch (error: any) {
       console.error('Error al aprobar:', error);
-      alert(error.response?.data?.message || 'Error al aprobar la inscripción');
+      // El error ya se muestra en el toastPromise
     } finally {
       setProcessing(false);
     }
@@ -63,19 +68,25 @@ export default function InscriptionDetailsModal({
 
   const handleReject = async () => {
     if (!rejectionReason.trim()) {
-      alert('Debe proporcionar un motivo de rechazo');
+      toastWarning('Debe proporcionar un motivo de rechazo');
       return;
     }
 
     try {
       setProcessing(true);
-      await inscriptionsService.reject(inscriptionId, rejectionReason);
-      alert('Inscripción rechazada');
+      await toastPromise(
+        inscriptionsService.reject(inscriptionId, rejectionReason),
+        {
+          loading: 'Rechazando inscripción...',
+          success: 'Inscripción rechazada',
+          error: (error: any) => error.response?.data?.message || 'Error al rechazar la inscripción'
+        }
+      );
       onStatusUpdated();
       onClose();
     } catch (error: any) {
       console.error('Error al rechazar:', error);
-      alert(error.response?.data?.message || 'Error al rechazar la inscripción');
+      // El error ya se muestra en el toastPromise
     } finally {
       setProcessing(false);
       setShowRejectModal(false);

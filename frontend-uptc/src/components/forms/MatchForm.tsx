@@ -7,6 +7,7 @@ import categoriesService from '@/services/categoriesService';
 import teamsService from '@/services/teamsService';
 import venuesService from '@/services/venuesService';
 import usersService from '@/services/usersService';
+import { toastWarning, toastPromise } from '@/utils/toast';
 
 interface MatchFormProps {
     matchId?: number,
@@ -89,7 +90,7 @@ export default function MatchForm({matchId, onSuccess, onCancel}: MatchFormProps
             setReferees(refereesData);
         } catch (error) {
             console.error('Error al cargar datos iniciales:', error);
-            alert('Error al cargar datos del formulario');
+            // El error ya se muestra en el interceptor de axios
         } finally {
             setLoadingData(false);
         }
@@ -110,7 +111,7 @@ export default function MatchForm({matchId, onSuccess, onCancel}: MatchFormProps
             });
         } catch (error) {
             console.error('Error al cargar partido:', error);
-            alert('Error al cargar datos del partido');
+            // El error ya se muestra en el interceptor de axios
         }
     };
 
@@ -158,7 +159,7 @@ export default function MatchForm({matchId, onSuccess, onCancel}: MatchFormProps
         e.preventDefault();
 
         if (!formData.startsAt) {
-            alert('Selecciona la fecha y hora del partido');
+            toastWarning('Selecciona la fecha y hora del partido');
             return;
         }
 
@@ -170,19 +171,29 @@ export default function MatchForm({matchId, onSuccess, onCancel}: MatchFormProps
             };
 
             if (matchId) {
-                await matchesService.update(matchId, dataToSend);
-                alert('✅ Partido actualizado correctamente');
+                await toastPromise(
+                    matchesService.update(matchId, dataToSend),
+                    {
+                        loading: 'Actualizando partido...',
+                        success: '✅ Partido actualizado correctamente',
+                        error: (error: any) => error.message || '❌ Error al guardar partido'
+                    }
+                );
             } else {
-                await matchesService.create(dataToSend);
-                alert('✅ Partido creado exitosamente');
+                await toastPromise(
+                    matchesService.create(dataToSend),
+                    {
+                        loading: 'Creando partido...',
+                        success: '✅ Partido creado exitosamente',
+                        error: (error: any) => error.message || '❌ Error al guardar partido'
+                    }
+                );
             }
 
             onSuccess();
         } catch (error: unknown) {
             console.error('Error al guardar partido:', error);
-            const message = error instanceof Error ? error.message : String(error);
-            alert(message || '❌ Error al guardar partido');
-
+            // El error ya se muestra en el toastPromise
         } finally {
             setLoading(false);
         }

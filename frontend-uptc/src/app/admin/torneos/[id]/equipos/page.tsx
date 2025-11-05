@@ -8,6 +8,7 @@ import TeamForm from '@/components/forms/TeamForm';
 import TeamRosterModal from '@/components/TeamRosterModal';
 import TournamentTabs from '@/components/TournamentTabs';
 import axios from 'axios';
+import { toastPromise } from '@/utils/toast';
 
 interface Team {
   id: number;
@@ -51,22 +52,26 @@ export default function AdminEquiposPage() {
   };
 
   const handleDelete = async (teamId: number) => {
-    if (!confirm('¿Estás seguro de eliminar este equipo?')) return;
-
     try {
-      await teamsService.delete(teamId);
-      alert('Equipo eliminado exitosamente');
+      await toastPromise(
+        teamsService.delete(teamId),
+        {
+          loading: 'Eliminando equipo...',
+          success: 'Equipo eliminado exitosamente',
+          error: (error: unknown) => {
+            if (axios.isAxiosError(error)) {
+              return error.response?.data?.message ?? error.message || 'Error al eliminar equipo';
+            } else if (error instanceof Error) {
+              return error.message;
+            }
+            return 'Error al eliminar equipo';
+          }
+        }
+      );
       fetchTeams();
     } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        const message = error.response?.data?.message ?? error.message;
-        alert(message || 'Error al eliminar equipo');
-      } else if (error instanceof Error) {
-        alert(error.message);
-      } else {
-        alert('Error al eliminar equipo');
-      }
       console.error('Error eliminando equipo:', error);
+      // El error ya se muestra en el toastPromise
     }
   };
 

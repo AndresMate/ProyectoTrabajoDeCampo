@@ -2,13 +2,14 @@
 import React from "react";
 import { useParams, useRouter } from "next/navigation";
 import InscriptionCompleteForm from "@/components/forms/InscriptionCompleteForm";
+import { toastSuccess } from "@/utils/toast";
 
 export default function InscripcionPage() {
   const { id } = useParams();
   const router = useRouter();
 
   const handleSuccess = () => {
-    alert("Inscripción completada con éxito ✅");
+    toastSuccess("Inscripción completada con éxito ✅");
     router.push("/torneos");
   };
 

@@ -20,9 +20,7 @@ export default function NavbarAdmin() {
   }, [router]);
 
   const handleLogout = () => {
-    if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
-      authService.logout();
-    }
+    authService.logout();
   };
 
   const getRoleLabel = (role: string) => {

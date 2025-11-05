@@ -9,6 +9,7 @@ import teamsService from '@/services/teamsService';
 import LiveMatchControl from '@/components/LiveMatchControl';
 import MatchEventsTimeline from '@/components/MatchEventsTimeline';
 import LiveMatchScore from '@/components/LiveMatchScore';
+import { toastWarning, toastPromise } from '@/utils/toast';
 
 export default function LiveMatchPage() {
   const params = useParams();
@@ -64,7 +65,7 @@ export default function LiveMatchPage() {
       }
     } catch (error) {
       console.error('Error al cargar datos:', error);
-      alert('❌ Error al cargar datos del partido');
+      // El error ya se muestra en el interceptor de axios
     } finally {
       setLoading(false);
     }
@@ -88,19 +89,23 @@ export default function LiveMatchPage() {
   };
 
   const handleStartMatch = async () => {
-    if (!confirm('¿Iniciar el partido?')) return;
     try {
-      await matchesService.startMatch(matchId);
+      await toastPromise(
+        matchesService.startMatch(matchId),
+        {
+          loading: 'Iniciando partido...',
+          success: '✅ Partido iniciado',
+          error: '❌ Error al iniciar partido'
+        }
+      );
       await loadMatchData();
-      alert('✅ Partido iniciado');
     } catch (error) {
       console.error('Error al iniciar partido:', error);
-      alert('❌ Error al iniciar partido');
+      // El error ya se muestra en el toastPromise
     }
   };
 
   const handleFinishMatch = async () => {
-    if (!confirm('¿Finalizar el partido y registrar el resultado?')) return;
     try {
       await matchesService.finishMatch(matchId);
 
@@ -117,18 +122,24 @@ export default function LiveMatchPage() {
         notes: `Partido finalizado. Eventos registrados: ${events.length}`
       };
 
-      await matchesService.registerResult(result);
-      alert('✅ Partido finalizado y resultado registrado');
+      await toastPromise(
+        matchesService.registerResult(result),
+        {
+          loading: 'Finalizando partido...',
+          success: '✅ Partido finalizado y resultado registrado',
+          error: '❌ Error al finalizar partido'
+        }
+      );
       router.push(`/admin/torneos/${tournamentId}/partidos`);
     } catch (error) {
       console.error('Error al finalizar partido:', error);
-      alert('❌ Error al finalizar partido');
+      // El error ya se muestra en el toastPromise
     }
   };
 
   const handleAddEvent = async (event: MatchEvent) => {
     if (!event.team?.id || !event.player?.id || !event.type) {
-      alert('⚠️ Debes seleccionar un jugador, equipo y tipo de evento');
+      toastWarning('Debes seleccionar un jugador, equipo y tipo de evento');
       return;
     }
 
@@ -142,27 +153,38 @@ export default function LiveMatchPage() {
         description: event.description || '',
       };
 
-      const newEvent = await matchEventsService.create(payload);
+      const newEvent = await toastPromise(
+        matchEventsService.create(payload),
+        {
+          loading: 'Registrando evento...',
+          success: '✅ Evento registrado',
+          error: (error: any) => error?.response?.data?.message || '❌ Error al registrar evento'
+        }
+      );
       setEvents(prev => [...prev, newEvent]);
       calculateScore([...events, newEvent], match!);
-      alert('✅ Evento registrado');
     } catch (error: any) {
       console.error('Error al agregar evento:', error);
-      alert(error?.response?.data?.message || '❌ Error al registrar evento');
+      // El error ya se muestra en el toastPromise
     }
   };
 
   const handleDeleteEvent = async (eventId: number) => {
-    if (!confirm('¿Eliminar este evento?')) return;
     try {
-      await matchEventsService.delete(eventId);
+      await toastPromise(
+        matchEventsService.delete(eventId),
+        {
+          loading: 'Eliminando evento...',
+          success: '✅ Evento eliminado',
+          error: '❌ Error al eliminar evento'
+        }
+      );
       const updated = events.filter(e => e.id !== eventId);
       setEvents(updated);
       calculateScore(updated, match!);
-      alert('✅ Evento eliminado');
     } catch (error) {
       console.error('Error al eliminar evento:', error);
-      alert('❌ Error al eliminar evento');
+      // El error ya se muestra en el toastPromise
     }
   };
 

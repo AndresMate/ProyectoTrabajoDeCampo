@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { toastWarning, toastSuccess } from '@/utils/toast';
 
 interface Sanction {
   id: number;
@@ -63,7 +64,7 @@ export default function SanctionsManager({ entityType, entityId, onClose }: Sanc
     e.preventDefault();
 
     if (!formData.reason.trim()) {
-      alert('Debes proporcionar un motivo');
+      toastWarning('Debes proporcionar un motivo');
       return;
     }
 
@@ -74,24 +75,22 @@ export default function SanctionsManager({ entityType, entityId, onClose }: Sanc
       };
 
       // await sanctionsService.create(payload);
-      alert('✅ Sanción agregada exitosamente');
+      toastSuccess('✅ Sanción agregada exitosamente');
       setShowAddForm(false);
       setFormData({ type: 'WARNING', reason: '', validUntil: '' });
       fetchSanctions();
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Error al agregar sanción');
+      // El error ya se muestra en el interceptor de axios
     }
   };
 
   const handleDeleteSanction = async (id: number) => {
-    if (!confirm('¿Eliminar esta sanción?')) return;
-
     try {
       // await sanctionsService.delete(id);
-      alert('Sanción eliminada');
+      toastSuccess('Sanción eliminada');
       fetchSanctions();
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Error al eliminar sanción');
+      // El error ya se muestra en el interceptor de axios
     }
   };
 

@@ -9,6 +9,7 @@ import TournamentTabs from '@/components/TournamentTabs';
 import PlayerSelectionModal from '@/components/PlayerSelectionModal';
 import InscriptionDetailsModal from '@/components/InscriptionDetailsModal';
 import { getStatusBadge, getStatusText } from '@/utils/inscriptionStatusUtils';
+import { toastPromise } from '@/utils/toast';
 
 type FilterStatus = 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED';
 
@@ -49,7 +50,7 @@ export default function TournamentInscriptionsPage() {
       setInscriptions(inscriptionsData);
     } catch (error) {
       console.error('Error al cargar inscripciones:', error);
-      alert('Error al cargar las inscripciones');
+      // El error ya se muestra en el interceptor de axios
     } finally {
       setLoading(false);
     }
@@ -85,15 +86,19 @@ export default function TournamentInscriptionsPage() {
   };
 
   const handleQuickApprove = async (inscriptionId: number) => {
-    if (!confirm('¿Está seguro de aprobar esta inscripción?')) return;
-
     try {
-      await inscriptionsService.approve(inscriptionId);
-      alert('Inscripción aprobada exitosamente');
+      await toastPromise(
+        inscriptionsService.approve(inscriptionId),
+        {
+          loading: 'Aprobando inscripción...',
+          success: 'Inscripción aprobada exitosamente',
+          error: (error: any) => error.response?.data?.message || 'Error al aprobar la inscripción'
+        }
+      );
       fetchData();
     } catch (error: any) {
       console.error('Error al aprobar:', error);
-      alert(error.response?.data?.message || 'Error al aprobar la inscripción');
+      // El error ya se muestra en el toastPromise
     }
   };
 

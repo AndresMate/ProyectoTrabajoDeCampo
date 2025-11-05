@@ -5,6 +5,7 @@ import inscriptionsService from "@/services/inscriptionsService";
 import tournamentsService from "@/services/tournamentsService";
 import clubsService from "@/services/clubsService";
 import axios from "axios";
+import { toastWarning, toastSuccess, toastError, toastPromise } from "@/utils/toast";
 
 type Player = {
   fullName: string;
@@ -125,7 +126,7 @@ export default function InscriptionCompleteForm({
           };
           return updated;
         });
-        alert(`✅ Jugador encontrado: ${existingPlayer.fullName}`);
+        toastSuccess(`✅ Jugador encontrado: ${existingPlayer.fullName}`);
       }
     } catch (e) {
       console.log("Jugador no encontrado, se debe registrar normalmente.");
@@ -136,11 +137,11 @@ export default function InscriptionCompleteForm({
   const handleFileUpload = async (index: number, file: File | null) => {
     if (!file) return;
     if (!["image/jpeg", "image/jpg", "image/png"].includes(file.type)) {
-      alert("Solo se permiten JPG o PNG");
+      toastWarning("Solo se permiten JPG o PNG");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      alert("El archivo no puede superar los 5MB");
+      toastWarning("El archivo no puede superar los 5MB");
       return;
     }
     handlePlayerChange(index, "idCardPhotoUrl", "UPLOADING...");
@@ -155,29 +156,39 @@ export default function InscriptionCompleteForm({
       handlePlayerChange(index, "idCardPhotoUrl", json.url || "");
     } catch (e) {
       handlePlayerChange(index, "idCardPhotoUrl", "");
-      alert("Error al subir la foto");
+      toastError("Error al subir la foto");
     }
   };
 
   // === Validar Paso 1 ===
   const validateStep1 = async () => {
-    if (!formData.teamName.trim()) return alert("El nombre del equipo es requerido");
-    if (!formData.delegatePhone.trim()) return alert("Teléfono del delegado requerido");
+    if (!formData.teamName.trim()) {
+      toastWarning("El nombre del equipo es requerido");
+      return;
+    }
+    if (!formData.delegatePhone.trim()) {
+      toastWarning("Teléfono del delegado requerido");
+      return;
+    }
 
     const isTeamNameAvailable = await inscriptionsService.checkTeamName(
       Number(tournamentId),
       formData.teamName
     );
-    if (!isTeamNameAvailable)
-      return alert("❌ Este nombre de equipo ya está registrado en este torneo");
+    if (!isTeamNameAvailable) {
+      toastError("❌ Este nombre de equipo ya está registrado en este torneo");
+      return;
+    }
 
     if (formData.clubId) {
       const isClubAvailable = await inscriptionsService.checkClub(
         Number(tournamentId),
         formData.clubId
       );
-      if (!isClubAvailable)
-        return alert("❌ Este club ya tiene un equipo inscrito en este torneo");
+      if (!isClubAvailable) {
+        toastError("❌ Este club ya tiene un equipo inscrito en este torneo");
+        return;
+      }
     }
 
     setStep(2);
@@ -191,18 +202,32 @@ export default function InscriptionCompleteForm({
 
     for (let i = 0; i < players.length; i++) {
       const p = players[i];
-      if (!p.fullName || !p.documentNumber || !p.studentCode || !p.institutionalEmail)
-        return alert(`Faltan datos del jugador ${i + 1}`);
-      if (p.idCardPhotoUrl === "UPLOADING...") return alert(`Foto en proceso del jugador ${i + 1}`);
-      if (!p.idCardPhotoUrl) return alert(`Foto obligatoria para el jugador ${i + 1}`);
+      if (!p.fullName || !p.documentNumber || !p.studentCode || !p.institutionalEmail) {
+        toastWarning(`Faltan datos del jugador ${i + 1}`);
+        return;
+      }
+      if (p.idCardPhotoUrl === "UPLOADING...") {
+        toastWarning(`Foto en proceso del jugador ${i + 1}`);
+        return;
+      }
+      if (!p.idCardPhotoUrl) {
+        toastWarning(`Foto obligatoria para el jugador ${i + 1}`);
+        return;
+      }
 
       // 🚫 Verificar duplicados dentro del mismo formulario
-      if (seenDocs.has(p.documentNumber))
-        return alert(`⚠️ Documento repetido en jugador ${i + 1}`);
-      if (seenEmails.has(p.institutionalEmail))
-        return alert(`⚠️ Correo repetido en jugador ${i + 1}`);
-      if (seenCodes.has(p.studentCode))
-        return alert(`⚠️ Código estudiantil repetido en jugador ${i + 1}`);
+      if (seenDocs.has(p.documentNumber)) {
+        toastWarning(`⚠️ Documento repetido en jugador ${i + 1}`);
+        return;
+      }
+      if (seenEmails.has(p.institutionalEmail)) {
+        toastWarning(`⚠️ Correo repetido en jugador ${i + 1}`);
+        return;
+      }
+      if (seenCodes.has(p.studentCode)) {
+        toastWarning(`⚠️ Código estudiantil repetido en jugador ${i + 1}`);
+        return;
+      }
 
       seenDocs.add(p.documentNumber);
       seenEmails.add(p.institutionalEmail);
@@ -213,8 +238,10 @@ export default function InscriptionCompleteForm({
         Number(tournamentId),
         p.documentNumber
       );
-      if (!available)
-        return alert(`⚠️ El jugador ${p.fullName} ya está inscrito en otro equipo`);
+      if (!available) {
+        toastError(`⚠️ El jugador ${p.fullName} ya está inscrito en otro equipo`);
+        return;
+      }
     }
 
     setStep(3);
@@ -225,7 +252,7 @@ export default function InscriptionCompleteForm({
     const selectedDays = new Set(availability.map((a) => a.dayOfWeek));
     for (const d of DAYS) {
       if (!selectedDays.has(d)) {
-        alert(`Debe seleccionar al menos un horario para ${d}`);
+        toastWarning(`Debe seleccionar al menos un horario para ${d}`);
         return false;
       }
     }
@@ -248,12 +275,18 @@ export default function InscriptionCompleteForm({
         availability,
       };
       console.log("📤 Enviando inscripción:", payload);
-      await inscriptionsService.create(payload);
-      alert("✅ Inscripción creada correctamente");
+      await toastPromise(
+        inscriptionsService.create(payload),
+        {
+          loading: 'Creando inscripción...',
+          success: "✅ Inscripción creada correctamente",
+          error: "❌ Error al crear inscripción"
+        }
+      );
       onSuccess();
     } catch (e) {
       console.error(e);
-      alert("❌ Error al crear inscripción");
+      // El error ya se muestra en el toastPromise
     } finally {
       setLoading(false);
     }

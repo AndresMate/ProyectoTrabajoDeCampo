@@ -11,6 +11,7 @@ import MatchForm from '@/components/forms/MatchForm';
 import FixtureGenerator from '@/components/FixtureGenerator';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { toastSuccess, toastPromise } from '@/utils/toast';
 
 export default function TournamentMatchesPage() {
   const params = useParams();
@@ -44,45 +45,60 @@ export default function TournamentMatchesPage() {
       setMatches(filtered);
     } catch (error) {
       console.error('Error al cargar partidos:', error);
-      alert('❌ Error al cargar partidos');
+      // El error ya se muestra en el interceptor de axios
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('🗑️ ¿Estás seguro de eliminar este partido?')) return;
     try {
-      await matchesService.delete(id);
-      alert('✅ Partido eliminado exitosamente');
+      await toastPromise(
+        matchesService.delete(id),
+        {
+          loading: 'Eliminando partido...',
+          success: '✅ Partido eliminado exitosamente',
+          error: '❌ Error al eliminar partido'
+        }
+      );
       fetchData();
     } catch (error) {
       console.error('Error al eliminar partido:', error);
-      alert('❌ Error al eliminar partido');
+      // El error ya se muestra en el toastPromise
     }
   };
 
   const handleStartMatch = async (id: number, match: Match) => {
-    if (!confirm(`⚽ ¿Deseas iniciar el partido ${match.homeTeam.name} vs ${match.awayTeam.name}?`)) return;
     try {
-      await matchesService.startMatch(id);
-      alert(`✅ Partido ${match.homeTeam.name} vs ${match.awayTeam.name} iniciado`);
+      await toastPromise(
+        matchesService.startMatch(id),
+        {
+          loading: 'Iniciando partido...',
+          success: `✅ Partido ${match.homeTeam.name} vs ${match.awayTeam.name} iniciado`,
+          error: '❌ Error al iniciar partido'
+        }
+      );
       fetchData();
     } catch (error) {
       console.error('Error al iniciar partido:', error);
-      alert('❌ Error al iniciar partido');
+      // El error ya se muestra en el toastPromise
     }
   };
 
   const handleFinishMatch = async (id: number, match: Match) => {
-    if (!confirm(`🏁 ¿Confirmas que el partido ${match.homeTeam.name} vs ${match.awayTeam.name} ha finalizado?`)) return;
     try {
-      await matchesService.finishMatch(id);
-      alert(`✅ Partido ${match.homeTeam.name} vs ${match.awayTeam.name} finalizado`);
+      await toastPromise(
+        matchesService.finishMatch(id),
+        {
+          loading: 'Finalizando partido...',
+          success: `✅ Partido ${match.homeTeam.name} vs ${match.awayTeam.name} finalizado`,
+          error: '❌ Error al finalizar partido'
+        }
+      );
       fetchData();
     } catch (error) {
       console.error('Error al finalizar partido:', error);
-      alert('❌ Error al finalizar partido');
+      // El error ya se muestra en el toastPromise
     }
   };
 

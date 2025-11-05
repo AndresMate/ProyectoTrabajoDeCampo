@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import inscriptionPlayerService from '@/services/inscriptionPlayerService';
 import playersService from '@/services/playersService';
+import { toastWarning, toastSuccess, toastPromise } from '@/utils/toast';
 
 interface PlayerSelectionModalProps {
   inscriptionId: number;
@@ -46,30 +47,40 @@ export default function PlayerSelectionModal({
   const handleAddPlayer = async (playerId: number) => {
     // ⚡ VALIDAR LÍMITE EN EL FRONTEND
     if (currentPlayers.length >= maxPlayers) {
-      alert(`Ya se alcanzó el límite de ${maxPlayers} jugadores`);
+      toastWarning(`Ya se alcanzó el límite de ${maxPlayers} jugadores`);
       return;
     }
 
     try {
-      await inscriptionPlayerService.addPlayer(inscriptionId, playerId);
-      alert('✅ Jugador agregado');
+      await toastPromise(
+        inscriptionPlayerService.addPlayer(inscriptionId, playerId),
+        {
+          loading: 'Agregando jugador...',
+          success: '✅ Jugador agregado',
+          error: (error: any) => error.message || 'Error al agregar jugador'
+        }
+      );
       loadData();
       onPlayersUpdated();
     } catch (error: any) {
-      alert(error.message || 'Error al agregar jugador');
+      // El error ya se muestra en el toastPromise
     }
   };
 
   const handleRemovePlayer = async (playerId: number) => {
-    if (!confirm('¿Eliminar este jugador?')) return;
-
     try {
-      await inscriptionPlayerService.removePlayer(inscriptionId, playerId);
-      alert('✅ Jugador eliminado');
+      await toastPromise(
+        inscriptionPlayerService.removePlayer(inscriptionId, playerId),
+        {
+          loading: 'Eliminando jugador...',
+          success: '✅ Jugador eliminado',
+          error: 'Error al eliminar jugador'
+        }
+      );
       loadData();
       onPlayersUpdated();
     } catch (error) {
-      alert('Error al eliminar jugador');
+      // El error ya se muestra en el toastPromise
     }
   };
 

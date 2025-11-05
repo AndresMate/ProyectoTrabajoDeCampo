@@ -6,6 +6,7 @@ import { tournamentsService } from '@/services/tournamentsService';
 import sportsService from '@/services/sportsService';
 import categoriesService from '@/services/categoriesService';
 import { authService } from '@/services/authService';
+import { toastError, toastWarning, toastPromise } from '@/utils/toast';
 
 type Modality = 'DIURNO' | 'NOCTURNO';
 type Status =
@@ -178,7 +179,7 @@ export default function TournamentForm({ tournamentId, onSuccess, onCancel }: Pr
     try {
       const user = authService.getCurrentUser();
       if (!user?.userId) {
-        alert('Error: usuario no autenticado');
+        toastError('Error: usuario no autenticado');
         setLoading(false);
         return;
       }
@@ -189,17 +190,29 @@ export default function TournamentForm({ tournamentId, onSuccess, onCancel }: Pr
       };
 
       if (tournamentId) {
-        await tournamentsService.update(tournamentId, payload);
-        alert('✅ Torneo actualizado correctamente');
+        await toastPromise(
+          tournamentsService.update(tournamentId, payload),
+          {
+            loading: 'Actualizando torneo...',
+            success: '✅ Torneo actualizado correctamente',
+            error: 'Error al guardar el torneo'
+          }
+        );
       } else {
-        await tournamentsService.create(payload);
-        alert('✅ Torneo creado correctamente');
+        await toastPromise(
+          tournamentsService.create(payload),
+          {
+            loading: 'Creando torneo...',
+            success: '✅ Torneo creado correctamente',
+            error: 'Error al guardar el torneo'
+          }
+        );
       }
 
       onSuccess();
     } catch (error: unknown) {
       console.error('❌ Error al guardar torneo:', error);
-      alert('Error al guardar el torneo. Revisa la consola.');
+      // El error ya se muestra en el toastPromise
     } finally {
       setLoading(false);
     }

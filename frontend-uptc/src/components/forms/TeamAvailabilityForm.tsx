@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { toastWarning, toastSuccess, toastPromise } from '@/utils/toast';
+import teamAvailabilityService from '@/services/teamAvailabilityService';
 
 interface TimeSlot {
   dayOfWeek: string;
@@ -65,7 +67,7 @@ export default function TeamAvailabilityForm({
     const slotsForDay = availabilities.filter(a => a.dayOfWeek === dayOfWeek);
 
     if (slotsForDay.length === 1) {
-      alert('Cada día debe tener al menos un horario disponible');
+      toastWarning('Cada día debe tener al menos un horario disponible');
       return;
     }
 
@@ -83,7 +85,7 @@ export default function TeamAvailabilityForm({
     for (const day of DAYS_OF_WEEK) {
       const slotsForDay = availabilities.filter(a => a.dayOfWeek === day.value);
       if (slotsForDay.length === 0) {
-        alert(`Falta configurar horarios para ${day.label}`);
+        toastWarning(`Falta configurar horarios para ${day.label}`);
         return false;
       }
     }
@@ -91,12 +93,12 @@ export default function TeamAvailabilityForm({
     // Verificar que los horarios estén en rango
     for (const slot of availabilities) {
       if (slot.startTime < minTime || slot.endTime > maxTime) {
-        alert(`Los horarios deben estar entre ${minTime} y ${maxTime}`);
+        toastWarning(`Los horarios deben estar entre ${minTime} y ${maxTime}`);
         return false;
       }
 
       if (slot.startTime >= slot.endTime) {
-        alert('La hora de inicio debe ser menor a la hora de fin');
+        toastWarning('La hora de inicio debe ser menor a la hora de fin');
         return false;
       }
     }
@@ -112,17 +114,26 @@ export default function TeamAvailabilityForm({
     setLoading(true);
 
     try {
-    alert('✅ Disponibilidad guardada correctamente');
-    onSuccess();
-  } catch (error: unknown) {
-        if (error instanceof Error && (error as any).response?.data?.message) {
-          alert((error as any).response.data.message);
-        } else {
-          alert('Error al guardar disponibilidad');
+      const dtoList = availabilities.map(a => ({
+        dayOfWeek: a.dayOfWeek,
+        startTime: a.startTime,
+        endTime: a.endTime
+      }));
+
+      await toastPromise(
+        teamAvailabilityService.saveAvailabilities(teamId, dtoList, isNocturno),
+        {
+          loading: 'Guardando disponibilidad...',
+          success: '✅ Disponibilidad guardada correctamente',
+          error: (error: any) => error.response?.data?.message || 'Error al guardar disponibilidad'
         }
-  } finally {
-    setLoading(false);
-  }
+      );
+      onSuccess();
+    } catch (error: unknown) {
+      // El error ya se muestra en el toastPromise
+    } finally {
+      setLoading(false);
+    }
 };
 
   return (

@@ -7,6 +7,7 @@ import { authService } from '@/services/authService';
 import { useRouter } from 'next/navigation';
 import Modal from '@/components/Modal';
 import UserForm from '@/components/forms/UserForm';
+import { toastError, toastSuccess, toastPromise } from '@/utils/toast';
 
 interface User {
   id: number;
@@ -54,10 +55,10 @@ export default function AdminUsuariosPage() {
     } catch (error: any) {
       console.error('Error en fetchUsers:', error);
       if (error.response?.status === 401) {
-        alert('Sesión expirada. Serás redirigido al login.');
+        toastError('Sesión expirada. Serás redirigido al login.');
         authService.logout();
       } else {
-        alert(`Error: ${error.response?.data?.message || error.message}`);
+        // El error ya se muestra en el interceptor de axios
       }
     } finally {
       setLoading(false);
@@ -65,25 +66,33 @@ export default function AdminUsuariosPage() {
   };
 
   const handleDeactivate = async (id: number) => {
-    if (!confirm('¿Estás seguro de desactivar este usuario?')) return;
-
     try {
-      await usersService.deactivateUser(id);
-      alert('Usuario desactivado exitosamente');
+      await toastPromise(
+        usersService.deactivateUser(id),
+        {
+          loading: 'Desactivando usuario...',
+          success: 'Usuario desactivado exitosamente',
+          error: (error: any) => error.response?.data?.message || 'Error al desactivar usuario'
+        }
+      );
       fetchUsers();
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Error al desactivar usuario');
+      // El error ya se muestra en el toastPromise
     }
   };
 
   const handleResetPassword = async (id: number) => {
-    if (!confirm('¿Resetear la contraseña de este usuario? Se generará una contraseña temporal.')) return;
-
     try {
-      const tempPassword = await usersService.resetPassword(id);
-      alert(`Contraseña reseteada exitosamente.\n\nContraseña temporal: ${tempPassword}\n\nAsegúrate de compartirla con el usuario de forma segura.`);
+      const tempPassword = await toastPromise(
+        usersService.resetPassword(id),
+        {
+          loading: 'Reseteando contraseña...',
+          success: (pwd: string) => `Contraseña reseteada exitosamente.\n\nContraseña temporal: ${pwd}\n\nAsegúrate de compartirla con el usuario de forma segura.`,
+          error: (error: any) => error.response?.data?.message || 'Error al resetear contraseña'
+        }
+      );
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Error al resetear contraseña');
+      // El error ya se muestra en el toastPromise
     }
   };
 

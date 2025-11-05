@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import usersService, { UserCreateDTO, UserUpdateDTO } from '@/services/usersService';
+import { toastWarning, toastPromise } from '@/utils/toast';
 
 interface UserFormProps {
   userId?: number;
@@ -81,7 +82,7 @@ export default function UserForm({ userId, onSuccess, onCancel }: UserFormProps)
     e.preventDefault();
 
     if (!validateForm()) {
-      alert('Por favor corrige los errores en el formulario');
+      toastWarning('Por favor corrige los errores en el formulario');
       return;
     }
 
@@ -94,8 +95,14 @@ export default function UserForm({ userId, onSuccess, onCancel }: UserFormProps)
           email: formData.email,
           role: formData.role
         };
-        await usersService.updateUser(userId!, updateData);
-        alert('Usuario actualizado exitosamente');
+        await toastPromise(
+          usersService.updateUser(userId!, updateData),
+          {
+            loading: 'Actualizando usuario...',
+            success: 'Usuario actualizado exitosamente',
+            error: (error: any) => error.response?.data?.message || 'Error al guardar el usuario'
+          }
+        );
       } else {
         const createData: UserCreateDTO = {
           fullName: formData.fullName,
@@ -103,13 +110,19 @@ export default function UserForm({ userId, onSuccess, onCancel }: UserFormProps)
           role: formData.role,
           password: formData.password
         };
-        await usersService.createUser(createData);
-        alert('Usuario creado exitosamente');
+        await toastPromise(
+          usersService.createUser(createData),
+          {
+            loading: 'Creando usuario...',
+            success: 'Usuario creado exitosamente',
+            error: (error: any) => error.response?.data?.message || 'Error al guardar el usuario'
+          }
+        );
       }
       onSuccess();
     } catch (error: any) {
       console.error('Error al guardar usuario:', error);
-      alert(error.response?.data?.message || 'Error al guardar el usuario');
+      // El error ya se muestra en el toastPromise
     } finally {
       setLoading(false);
     }

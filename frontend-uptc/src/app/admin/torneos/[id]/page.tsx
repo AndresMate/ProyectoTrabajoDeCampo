@@ -12,6 +12,7 @@ import Modal from '@/components/Modal';
 import TeamForm from '@/components/forms/TeamForm';
 import TeamRosterModal from '@/components/TeamRosterModal';
 import axios from "axios";
+import { toastPromise } from '@/utils/toast';
 
 interface Team {
   id: number;
@@ -60,7 +61,7 @@ export default function TournamentTeamsPage() {
       setTeams(filteredTeams);
     } catch (error) {
       console.error('Error al cargar datos:', error);
-      alert('Error al cargar los datos del torneo');
+      // El error ya se muestra en el interceptor de axios
     } finally {
       setLoading(false);
     }
@@ -72,22 +73,26 @@ export default function TournamentTeamsPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('¿Estás seguro de eliminar este equipo?')) return;
-
     try {
-      await teamsService.delete(id);
-      alert('Equipo eliminado exitosamente');
+      await toastPromise(
+        teamsService.delete(id),
+        {
+          loading: 'Eliminando equipo...',
+          success: 'Equipo eliminado exitosamente',
+          error: (error: unknown) => {
+            if (axios.isAxiosError(error)) {
+              return error.response?.data?.message ?? error.message || 'Error al eliminar equipo';
+            } else if (error instanceof Error) {
+              return error.message;
+            }
+            return 'Error al eliminar equipo';
+          }
+        }
+      );
       fetchData();
     } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        const message = error.response?.data?.message ?? error.message;
-        alert(message || 'Error al eliminar equipo');
-      } else if (error instanceof Error) {
-        alert(error.message);
-      } else {
-        alert('Error al eliminar equipo');
-      }
       console.error('Error eliminando equipo:', error);
+      // El error ya se muestra en el toastPromise
     }
   };
 

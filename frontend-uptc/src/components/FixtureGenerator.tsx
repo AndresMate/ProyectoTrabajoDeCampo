@@ -4,6 +4,7 @@ import {useState, useEffect} from 'react';
 import {tournamentsService} from '@/services/tournamentsService';
 import categoriesService from '@/services/categoriesService';
 import fixtureService from '@/services/fixtureService';
+import { toastWarning, toastPromise } from '@/utils/toast';
 
 interface FixtureGeneratorProps {
     onClose: () => void,
@@ -53,37 +54,29 @@ export default function FixtureGenerator({onClose, onSuccess, tournamentId}: Fix
     // 🔹 Generar fixture
     const handleGenerate = async () => {
         if (!selectedTournament || !selectedCategory) {
-            alert('Selecciona torneo y categoría');
+            toastWarning('Selecciona torneo y categoría');
             return;
         }
 
-        if (
-            !confirm(
-                `¿Generar fixture con modo ${
-                    selectedMode === 'round_robin'
-                        ? 'Round Robin (Todos contra todos)'
-                        : 'Knockout (Eliminación directa)'
-                }?`
-            )
-        )
-            return;
 
         setLoading(true);
         try {
-            const response = await fixtureService.generate(
-                selectedTournament,
-                selectedCategory,
-                selectedMode
-            );
-
-            alert(
-                `✅ Fixture generado exitosamente.\n\n🗓️ Partidos creados: ${response.matchesCreated}`
+            const response = await toastPromise(
+                fixtureService.generate(
+                    selectedTournament,
+                    selectedCategory,
+                    selectedMode
+                ),
+                {
+                    loading: 'Generando fixture...',
+                    success: (data) => `✅ Fixture generado exitosamente.\n🗓️ Partidos creados: ${data.matchesCreated}`,
+                    error: (error: any) => error.response?.data?.message || 'Error al generar el fixture.'
+                }
             );
             onSuccess();
         } catch (error: any) {
-            const msg = error.response?.data?.message || 'Error al generar el fixture.';
-            alert(`❌ ${msg}`);
             console.error('Error generando fixture:', error);
+            // El error ya se muestra en el toastPromise
         } finally {
             setLoading(false);
         }
@@ -92,29 +85,28 @@ export default function FixtureGenerator({onClose, onSuccess, tournamentId}: Fix
     // 🔹 Eliminar fixture
     const handleDelete = async () => {
         if (!selectedTournament || !selectedCategory) {
-            alert('Selecciona torneo y categoría');
+            toastWarning('Selecciona torneo y categoría');
             return;
         }
 
-        if (
-            !confirm(
-                '¿Estás seguro de eliminar el fixture actual? Esta acción no se puede deshacer.'
-            )
-        )
-            return;
 
         setLoading(true);
         try {
-            const response = await fixtureService.delete(
-                selectedTournament,
-                selectedCategory
+            await toastPromise(
+                fixtureService.delete(
+                    selectedTournament,
+                    selectedCategory
+                ),
+                {
+                    loading: 'Eliminando fixture...',
+                    success: '✅ Fixture eliminado exitosamente',
+                    error: (error: any) => error.response?.data?.message || 'Error al eliminar fixture.'
+                }
             );
-            alert(response.message || '✅ Fixture eliminado exitosamente');
             onSuccess();
         } catch (error: any) {
-            const msg = error.response?.data?.message || 'Error al eliminar fixture.';
-            alert(`❌ ${msg}`);
             console.error('Error eliminando fixture:', error);
+            // El error ya se muestra en el toastPromise
         } finally {
             setLoading(false);
         }

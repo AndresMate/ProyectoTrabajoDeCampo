@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import teamsService from '@/services/teamsService';
+import { toastError } from '@/utils/toast';
 
 interface ClubInfo {
   id: number;
@@ -54,7 +55,7 @@ export default function TeamRosterModal({ teamId, teamName, onClose }: TeamRoste
       setTeamData(data);
     } catch (error) {
       console.error('❌ Error al cargar roster:', error);
-      alert('Error al cargar datos del equipo.');
+      // El error ya se muestra en el interceptor de axios
     } finally {
       setLoading(false);
     }

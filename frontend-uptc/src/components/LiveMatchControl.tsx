@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { MatchEvent } from '@/services/matchEventsService';
+import { toastWarning } from '@/utils/toast';
 
 interface LiveMatchControlProps {
   match: any;
@@ -41,7 +42,7 @@ export default function LiveMatchControl({
     e.preventDefault();
 
     if (!selectedPlayer) {
-      alert('Selecciona un jugador');
+      toastWarning('Selecciona un jugador');
       return;
     }
 

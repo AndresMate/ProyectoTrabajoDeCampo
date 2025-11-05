@@ -6,6 +6,7 @@ import { tournamentsService } from '@/services/tournamentsService';
 import Modal from '@/components/Modal';
 import TournamentForm from '@/components/forms/TournamentForm';
 import Link from 'next/link';
+import { toastSuccess, toastPromise } from '@/utils/toast';
 
 interface Tournament {
   id: number;
@@ -54,35 +55,39 @@ export default function AdminTorneosPage() {
   };
 
   const handleChangeStatus = async (id: number, action: 'start' | 'complete' | 'cancel') => {
-    const confirmMessages = {
-      start: '¿Iniciar este torneo?',
-      complete: '¿Marcar este torneo como finalizado?',
-      cancel: '¿Cancelar este torneo?'
-    };
-
-    if (!confirm(confirmMessages[action])) return;
-
     try {
-      if (action === 'start') await tournamentsService.startTournament(id);
-      if (action === 'complete') await tournamentsService.completeTournament(id);
-      if (action === 'cancel') await tournamentsService.cancelTournament(id);
+      let promise;
+      if (action === 'start') promise = tournamentsService.startTournament(id);
+      else if (action === 'complete') promise = tournamentsService.completeTournament(id);
+      else promise = tournamentsService.cancelTournament(id);
 
-      alert('Estado actualizado exitosamente');
+      await toastPromise(
+        promise!,
+        {
+          loading: 'Actualizando estado...',
+          success: 'Estado actualizado exitosamente',
+          error: (error: unknown) => getErrorMessage(error) || 'Error al cambiar el estado'
+        }
+      );
       fetchTournaments();
     } catch (error: unknown) {
-      alert(getErrorMessage(error) || 'Error al cambiar el estado');
+      // El error ya se muestra en el toastPromise
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('¿Estás seguro de eliminar este torneo? Esta acción no se puede deshacer.')) return;
-
     try {
-      await tournamentsService.delete(id);
-      alert('Torneo eliminado exitosamente');
+      await toastPromise(
+        tournamentsService.delete(id),
+        {
+          loading: 'Eliminando torneo...',
+          success: 'Torneo eliminado exitosamente',
+          error: (error: unknown) => getErrorMessage(error) || 'Error al eliminar el torneo'
+        }
+      );
       fetchTournaments();
     } catch (error: unknown) {
-      alert(getErrorMessage(error) || 'Error al eliminar el torneo');
+      // El error ya se muestra en el toastPromise
     }
   };
 

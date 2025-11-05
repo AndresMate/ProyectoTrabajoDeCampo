@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/services/authService';
+import { toastSuccess, toastPromise } from '@/utils/toast';
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -94,9 +95,14 @@ export default function ChangePasswordPage() {
     setIsLoading(true);
 
     try {
-      await authService.forcePasswordChange(user.userId, formData.newPassword);
-
-      alert('✅ Contraseña cambiada exitosamente');
+      await toastPromise(
+        authService.forcePasswordChange(user.userId, formData.newPassword),
+        {
+          loading: 'Cambiando contraseña...',
+          success: '✅ Contraseña cambiada exitosamente',
+          error: (error) => error.message || 'Error al cambiar la contraseña'
+        }
+      );
 
       // Redirigir según rol
       if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') {

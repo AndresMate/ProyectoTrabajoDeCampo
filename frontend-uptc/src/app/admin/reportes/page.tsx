@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { tournamentsService } from '@/services/tournamentsService';
 import categoriesService from '@/services/categoriesService';
 import reportsService from '@/services/reportsService';
+import { toastWarning, toastSuccess, toastError } from '@/utils/toast';
 
 interface Tournament {
   id: number;
@@ -111,7 +112,7 @@ export default function AdminReportesPage() {
   // --- CAMBIO 4: LÓGICA DE GENERACIÓN ---
   const handleGenerateExcel = async () => {
     if (!selectedReport) {
-      alert('Selecciona un tipo de reporte');
+      toastWarning('Selecciona un tipo de reporte');
       return;
     }
 
@@ -125,7 +126,7 @@ export default function AdminReportesPage() {
         // ESTE ES EL NUEVO CASO (reemplaza 'standings')
         case 'multiTournament':
           if (selectedTournaments.length === 0) {
-            alert('Selecciona al menos un torneo para este reporte');
+            toastWarning('Selecciona al menos un torneo para este reporte');
             setLoading(false); // Detenemos el loading
             return;
           }
@@ -137,7 +138,7 @@ export default function AdminReportesPage() {
         // ESTE CASO SE QUEDA IGUAL
         case 'inscriptions':
           if (!selectedTournament) {
-            alert('Selecciona un torneo');
+            toastWarning('Selecciona un torneo');
             setLoading(false); // Detenemos el loading
             return;
           }
@@ -146,17 +147,17 @@ export default function AdminReportesPage() {
           break;
 
         default:
-          alert('Tipo de reporte no implementado aún');
+          toastWarning('Tipo de reporte no implementado aún');
           setLoading(false); // Detenemos el loading
           return;
       }
 
       // El resto de la lógica es la misma
       reportsService.downloadReport(blob, filename);
-      alert('✅ Reporte generado exitosamente');
+      toastSuccess('✅ Reporte generado exitosamente');
     } catch (error: any) {
       console.error('Error al generar reporte:', error);
-      alert('❌ Error al generar el reporte');
+      toastError('❌ Error al generar el reporte');
     } finally {
       setLoading(false);
     }
@@ -164,7 +165,7 @@ export default function AdminReportesPage() {
   // --- FIN CAMBIO 4 ---
 
   const handleGeneratePDF = () => {
-    alert('La generación de PDFs estará disponible próximamente');
+    toastWarning('La generación de PDFs estará disponible próximamente');
   };
 
   return (

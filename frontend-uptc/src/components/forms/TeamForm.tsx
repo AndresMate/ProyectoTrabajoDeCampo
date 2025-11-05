@@ -5,6 +5,7 @@ import teamsService from '@/services/teamsService';
 import {tournamentsService} from '@/services/tournamentsService';
 import categoriesService from '@/services/categoriesService';
 import clubsService from '@/services/clubsService';
+import { toastWarning, toastPromise } from '@/utils/toast';
 
 interface TeamFormProps {
     teamId?: number,
@@ -129,7 +130,7 @@ export default function TeamForm({teamId, onSuccess, onCancel, tournamentId}: Te
         e.preventDefault();
 
         if (!validateForm()) {
-            alert('Por favor corrige los errores en el formulario');
+            toastWarning('Por favor corrige los errores en el formulario');
             return;
         }
 
@@ -137,16 +138,28 @@ export default function TeamForm({teamId, onSuccess, onCancel, tournamentId}: Te
 
         try {
             if (teamId) {
-                await teamsService.update(teamId, formData);
-                alert('✅ Equipo actualizado correctamente');
+                await toastPromise(
+                    teamsService.update(teamId, formData),
+                    {
+                        loading: 'Actualizando equipo...',
+                        success: '✅ Equipo actualizado correctamente',
+                        error: (error: any) => error.response?.data?.message || 'Error al actualizar el equipo'
+                    }
+                );
             } else {
-                await teamsService.create(formData);
-                alert('✅ Equipo creado correctamente');
+                await toastPromise(
+                    teamsService.create(formData),
+                    {
+                        loading: 'Creando equipo...',
+                        success: '✅ Equipo creado correctamente',
+                        error: (error: any) => error.response?.data?.message || 'Error al crear el equipo'
+                    }
+                );
             }
             onSuccess();
         } catch (error: any) {
             console.error('Error al guardar equipo:', error);
-            alert(error.response?.data?.message || 'Error al guardar el equipo');
+            // El error ya se muestra en el toastPromise
         } finally {
             setLoading(false);
         }
