@@ -2,6 +2,7 @@ package co.edu.uptc.backend_tc.repository;
 
 import co.edu.uptc.backend_tc.entity.Inscription;
 import co.edu.uptc.backend_tc.model.InscriptionStatus;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -15,6 +16,7 @@ public interface InscriptionRepository extends JpaRepository<Inscription, Long>,
         JpaSpecificationExecutor<Inscription> {
 
     // Por torneo
+    @EntityGraph(attributePaths = {"club", "category", "players"})
     List<Inscription> findByTournamentId(Long tournamentId);
 
     // Por torneo y categoría
