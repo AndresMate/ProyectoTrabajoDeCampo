@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.ByteArrayInputStream;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/reports")
@@ -32,25 +33,38 @@ public class ReportController {
     })
     @GetMapping("/standings/excel")
     public ResponseEntity<Resource> generateStandingsExcel(
-            @RequestParam Long tournamentId,
-            @RequestParam Long categoryId) {
-        try {
-            String filename = "standings_t" + tournamentId + "_c" + categoryId + ".xlsx";
-            ByteArrayInputStream in = reportService.generateStandingsExcel(tournamentId, categoryId);
-            
-            HttpHeaders headers = new HttpHeaders();
-            headers.add("Content-Disposition", "attachment; filename=" + filename);
+                
+                // --- INICIO DE CAMBIOS ---
+                
+                // 1. Cambiamos los parámetros
+                //    Quitamos: @RequestParam Long tournamentId,
+                //    Quitamos: @RequestParam Long categoryId
+                //    Añadimos:
+                @RequestParam List<Long> tournamentIds
+                
+                // --- FIN DE CAMBIOS ---
+        
+        ) {
+            try {
+                // 2. Actualizamos el nombre del archivo (ahora es genérico)
+                String filename = "reporte_consolidado_torneos.xlsx";
 
-            return ResponseEntity
-                    .ok()
-                    .headers(headers)
-                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-                    .body(new InputStreamResource(in));
-        } catch (Exception e) {
-            // Log the exception e
-            return ResponseEntity.status(500).build();
+                // 3. Llamamos al nuevo método del servicio (el que tú creaste)
+                ByteArrayInputStream in = reportService.generateStandingsExcel(tournamentIds);
+                
+                HttpHeaders headers = new HttpHeaders();
+                headers.add("Content-Disposition", "attachment; filename=" + filename);
+
+                return ResponseEntity
+                        .ok()
+                        .headers(headers)
+                        .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                        .body(new InputStreamResource(in));
+            } catch (Exception e) {
+                // Log the exception e
+                return ResponseEntity.status(500).build();
+            }
         }
-    }
 
     @Operation(summary = "Generar reporte de inscripciones en Excel", description = "Requiere rol ADMIN o SUPER_ADMIN")
     @ApiResponses({
