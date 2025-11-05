@@ -8,7 +8,7 @@ import Link from 'next/link';
 interface Tournament {
   id: number;
   name: string;
-  description: string;
+  description?: string;
   startDate: string;
   endDate: string;
   status: string;

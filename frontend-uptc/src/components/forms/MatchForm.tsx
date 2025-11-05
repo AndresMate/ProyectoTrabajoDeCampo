@@ -40,7 +40,7 @@ interface Referee {
     fullName: string;
 }
 
-export default function MatchForm({matchId, onSuccess, onCancel, tournamentId}: MatchFormProps) {
+export default function MatchForm({matchId, onSuccess, onCancel}: MatchFormProps) {
     const [formData, setFormData] = useState<MatchCreateDTO>({
         tournamentId: 0,
         categoryId: 0,
@@ -178,9 +178,11 @@ export default function MatchForm({matchId, onSuccess, onCancel, tournamentId}: 
             }
 
             onSuccess();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error al guardar partido:', error);
-            alert(error.response?.data?.message || '❌ Error al guardar partido');
+            const message = error instanceof Error ? error.message : String(error);
+            alert(message || '❌ Error al guardar partido');
+
         } finally {
             setLoading(false);
         }
@@ -201,7 +203,7 @@ export default function MatchForm({matchId, onSuccess, onCancel, tournamentId}: 
             {/* ⚠️ Aviso cuando el partido no está programado */}
             {!isScheduled && (
                 <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded-lg">
-                    <p className="font-semibold">⚠️ Este partido no está en estado "Programado".</p>
+                    <p className="font-semibold">⚠️ Este partido no está en estado &quot;Programado&quot;.</p>
                     <p className="text-sm">
                         Solo puedes modificar la <strong>fecha y hora</strong>, el <strong>escenario</strong> o
                         el <strong>árbitro</strong>.
@@ -296,7 +298,7 @@ export default function MatchForm({matchId, onSuccess, onCancel, tournamentId}: 
                 <input
                     type="datetime-local"
                     name="startsAt"
-                    value={formData.startsAt}
+                    value={formData.startsAt ?? ''}
                     onChange={handleChange}
                     required
                     className="w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-uptc-yellow"

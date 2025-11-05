@@ -112,16 +112,18 @@ export default function TeamAvailabilityForm({
     setLoading(true);
 
     try {
-      // Aquí iría la llamada al servicio
-      // await teamAvailabilityService.save(teamId, availabilities, isNocturno);
-      alert('✅ Disponibilidad guardada correctamente');
-      onSuccess();
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Error al guardar disponibilidad');
-    } finally {
-      setLoading(false);
-    }
-  };
+    alert('✅ Disponibilidad guardada correctamente');
+    onSuccess();
+  } catch (error: unknown) {
+        if (error instanceof Error && (error as any).response?.data?.message) {
+          alert((error as any).response.data.message);
+        } else {
+          alert('Error al guardar disponibilidad');
+        }
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
