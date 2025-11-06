@@ -3,41 +3,54 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import PermissionGate from '@/components/PermissionGate';
+import { authService } from '@/services/authService';
 
 export default function SidebarAdmin() {
   const pathname = usePathname();
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const user = authService.getCurrentUser();
+    setUserRole(user?.role || null);
+  }, []);
 
   const links = [
     {
       href: '/admin/torneos',
       label: 'Torneos',
       icon: '🏆',
-      permission: 'tournaments.view' as const
+      permission: 'tournaments.view' as const,
+      roles: null // Todos los roles con permiso pueden verlo
     },
     {
       href: '/admin/deportes',
       label: 'Deportes',
       icon: '⚽',
-      permission: 'tournaments.view' as const
+      permission: 'tournaments.view' as const,
+      roles: ['ADMIN', 'SUPER_ADMIN'] // Solo ADMIN y SUPER_ADMIN
     },
     {
       href: '/admin/categorias',
       label: 'Categorías',
       icon: '🏅',
-      permission: 'tournaments.view' as const
+      permission: 'tournaments.view' as const,
+      roles: ['ADMIN', 'SUPER_ADMIN'] // Solo ADMIN y SUPER_ADMIN
     },
     {
       href: '/admin/usuarios',
       label: 'Usuarios',
       icon: '👥',
-      permission: 'users.view' as const
+      permission: 'users.view' as const,
+      roles: null // Todos los roles con permiso pueden verlo
     },
     {
       href: '/admin/reportes',
       label: 'Reportes',
       icon: '📊',
-      permission: 'reports.view' as const
+      permission: 'reports.view' as const,
+      roles: null // Todos los roles con permiso pueden verlo
     },
   ];
 
@@ -59,8 +72,15 @@ export default function SidebarAdmin() {
       {/* Navegación con control de permisos */}
       <nav className="p-4">
         <div className="space-y-2">
-          {links.map(({ href, label, icon, permission }) => {
+          {links.map(({ href, label, icon, permission, roles }) => {
             const isActive = pathname.startsWith(href);
+            
+            // Verificar si el link debe mostrarse según el rol
+            const shouldShow = roles === null || (userRole && roles.includes(userRole));
+
+            if (!shouldShow) {
+              return null;
+            }
 
             return (
               <PermissionGate key={href} permission={permission}>

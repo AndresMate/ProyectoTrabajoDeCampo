@@ -65,6 +65,12 @@ export function middleware(request: NextRequest) {
 
       // REFEREE solo puede acceder a partidos
       if (role === 'REFEREE') {
+        // Bloquear acceso a deportes y categorías (solo ADMIN y SUPER_ADMIN)
+        if (pathname.startsWith('/admin/deportes') || pathname.startsWith('/admin/categorias')) {
+          console.log('⚠️ REFEREE: bloqueado acceso a deportes/categorías, redirigiendo a torneos');
+          return NextResponse.redirect(new URL('/admin/torneos', request.url));
+        }
+
         if (
           pathname.startsWith('/admin/torneos') &&
           (pathname.includes('/partidos') || pathname.includes('/live'))

@@ -16,7 +16,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
@@ -45,7 +44,6 @@ public class SecurityConfig {
                                 "/api/venues/public/**",
                                 "/api/clubs/**",
                                 "/api/files/**",
-                                "/api/categories/**",
                                 "/api/match-results/**",
                                 "/api/match-events/**",
                                 "/api/teams/**",
@@ -55,6 +53,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/tournaments/**",
                                 "/api/sports/**",
+                                "/api/categories/**",
                                 "/api/venues/**",
                                 "/api/scenarios/**",
                                 "/api/inscriptions/admin/**"
