@@ -1,4 +1,4 @@
-// src/app/admin/torneos/[matchId]/partidos/page.tsx
+// src/app/admin/torneos/[id]/partidos/page.tsx - CON CONTROL DE PERMISOS
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -9,9 +9,10 @@ import TournamentTabs from '@/components/TournamentTabs';
 import Modal from '@/components/Modal';
 import MatchForm from '@/components/forms/MatchForm';
 import FixtureGenerator from '@/components/FixtureGenerator';
+import PermissionGate from '@/components/PermissionGate';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { toastSuccess, toastPromise } from '@/utils/toast';
+import { toastPromise } from '@/utils/toast';
 
 export default function TournamentMatchesPage() {
   const params = useParams();
@@ -37,15 +38,14 @@ export default function TournamentMatchesPage() {
         tournamentsService.getById(tournamentId),
         matchesService.getAll()
       ]);
-      
+
       setTournament(tournamentData);
-      
+
       // Filtrar partidos por este torneo
       const filtered = matchesData.filter((m: Match) => m.tournament?.id === tournamentId);
       setMatches(filtered);
     } catch (error) {
       console.error('Error al cargar partidos:', error);
-      // El error ya se muestra en el interceptor de axios
     } finally {
       setLoading(false);
     }
@@ -64,7 +64,6 @@ export default function TournamentMatchesPage() {
       fetchData();
     } catch (error) {
       console.error('Error al eliminar partido:', error);
-      // El error ya se muestra en el toastPromise
     }
   };
 
@@ -81,7 +80,6 @@ export default function TournamentMatchesPage() {
       fetchData();
     } catch (error) {
       console.error('Error al iniciar partido:', error);
-      // El error ya se muestra en el toastPromise
     }
   };
 
@@ -98,7 +96,6 @@ export default function TournamentMatchesPage() {
       fetchData();
     } catch (error) {
       console.error('Error al finalizar partido:', error);
-      // El error ya se muestra en el toastPromise
     }
   };
 
@@ -159,20 +156,25 @@ export default function TournamentMatchesPage() {
             <p className="text-sm text-gray-600">Administra el calendario de partidos</p>
           </div>
 
+          {/* 🔒 BOTONES PROTEGIDOS POR PERMISOS */}
           <div className="flex gap-3">
-            <button
-              onClick={() => setShowFixtureGenerator(true)}
-              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition font-semibold"
-            >
-              ⚡ Generar Fixture
-            </button>
+            <PermissionGate permission="matches.create">
+              <button
+                onClick={() => setShowFixtureGenerator(true)}
+                className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition font-semibold"
+              >
+                ⚡ Generar Fixture
+              </button>
+            </PermissionGate>
 
-            <button
-              onClick={() => openEditModal(undefined)}
-              className="bg-uptc-black text-uptc-yellow px-4 py-2 rounded-lg hover:bg-gray-800 transition font-semibold"
-            >
-              + Nuevo Partido
-            </button>
+            <PermissionGate permission="matches.create">
+              <button
+                onClick={() => openEditModal(undefined)}
+                className="bg-uptc-black text-uptc-yellow px-4 py-2 rounded-lg hover:bg-gray-800 transition font-semibold"
+              >
+                + Nuevo Partido
+              </button>
+            </PermissionGate>
           </div>
         </div>
 
@@ -276,56 +278,73 @@ export default function TournamentMatchesPage() {
 
                     <td className="px-6 py-4 text-right text-sm font-semibold">
                       <div className="flex items-center justify-end gap-3">
+                        {/* 🔒 BOTÓN "EN VIVO" - Accesible para ADMIN, SUPER_ADMIN y REFEREE */}
                         {(match.status === 'SCHEDULED' || match.status === 'IN_PROGRESS') && (
-                          <button
-                            onClick={() => router.push(`/admin/torneos/${tournamentId}/partidos/${match.id}/live`)}
-                            className="text-purple-600 hover:text-purple-900 font-bold"
-                          >
-                            🎮 En Vivo
-                          </button>
+                          <PermissionGate permission="matches.manage_results">
+                            <button
+                              onClick={() => router.push(`/admin/torneos/${tournamentId}/partidos/${match.id}/live`)}
+                              className="text-purple-600 hover:text-purple-900 font-bold"
+                            >
+                              🎮 En Vivo
+                            </button>
+                          </PermissionGate>
                         )}
 
+                        {/* 🔒 ACCIONES SOLO PARA ADMIN Y SUPER_ADMIN */}
                         {match.status === 'SCHEDULED' && (
                           <>
-                            <button
-                              onClick={() => handleStartMatch(match.id, match)}
-                              className="text-green-600 hover:text-green-900"
-                            >
-                              ▶️ Iniciar
-                            </button>
-                            <button
-                              onClick={() => openEditModal(match.id)}
-                              className="text-indigo-600 hover:text-indigo-900"
-                            >
-                              ✏️ Editar
-                            </button>
+                            <PermissionGate permission="matches.start_finish">
+                              <button
+                                onClick={() => handleStartMatch(match.id, match)}
+                                className="text-green-600 hover:text-green-900"
+                              >
+                                ▶️ Iniciar
+                              </button>
+                            </PermissionGate>
+
+                            <PermissionGate permission="matches.edit">
+                              <button
+                                onClick={() => openEditModal(match.id)}
+                                className="text-indigo-600 hover:text-indigo-900"
+                              >
+                                ✏️ Editar
+                              </button>
+                            </PermissionGate>
                           </>
                         )}
 
                         {match.status === 'IN_PROGRESS' && (
-                          <button
-                            onClick={() => handleFinishMatch(match.id, match)}
-                            className="text-orange-600 hover:text-orange-900"
-                          >
-                            🏁 Finalizar
-                          </button>
+                          <PermissionGate permission="matches.start_finish">
+                            <button
+                              onClick={() => handleFinishMatch(match.id, match)}
+                              className="text-orange-600 hover:text-orange-900"
+                            >
+                              🏁 Finalizar
+                            </button>
+                          </PermissionGate>
                         )}
 
+                        {/* 🔒 VER DETALLES - Accesible para todos los que pueden ver resultados */}
                         {match.status === 'FINISHED' && (
-                          <button
-                            onClick={() => router.push(`/admin/torneos/${tournamentId}/partidos/${match.id}/live`)}
-                            className="text-blue-600 hover:text-blue-800"
-                          >
-                            📊 Ver detalles
-                          </button>
+                          <PermissionGate permission="matches.view">
+                            <button
+                              onClick={() => router.push(`/admin/torneos/${tournamentId}/partidos/${match.id}/live`)}
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              📊 Ver detalles
+                            </button>
+                          </PermissionGate>
                         )}
 
-                        <button
-                          onClick={() => handleDelete(match.id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          🗑️
-                        </button>
+                        {/* 🔒 ELIMINAR - Solo ADMIN y SUPER_ADMIN */}
+                        <PermissionGate permission="matches.delete">
+                          <button
+                            onClick={() => handleDelete(match.id)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            🗑️
+                          </button>
+                        </PermissionGate>
                       </div>
                     </td>
                   </tr>
@@ -340,41 +359,45 @@ export default function TournamentMatchesPage() {
         )}
       </div>
 
-      {/* Modal crear/editar partido */}
-      <Modal
-        isOpen={showMatchModal}
-        onClose={() => {
-          setShowMatchModal(false);
-          setEditMatchId(null);
-        }}
-        title={editMatchId ? 'Editar Partido' : 'Crear Partido'}
-        size="lg"
-      >
-        <MatchForm
-          matchId={editMatchId ?? undefined}
-          tournamentId={tournamentId}
-          onSuccess={() => {
-            setShowMatchModal(false);
-            setEditMatchId(null);
-            fetchData();
-          }}
-          onCancel={() => {
+      {/* 🔒 MODAL PROTEGIDO - Solo se abre si tiene permiso */}
+      <PermissionGate permission="matches.create">
+        <Modal
+          isOpen={showMatchModal}
+          onClose={() => {
             setShowMatchModal(false);
             setEditMatchId(null);
           }}
-        />
-      </Modal>
+          title={editMatchId ? 'Editar Partido' : 'Crear Partido'}
+          size="lg"
+        >
+          <MatchForm
+            matchId={editMatchId ?? undefined}
+            tournamentId={tournamentId}
+            onSuccess={() => {
+              setShowMatchModal(false);
+              setEditMatchId(null);
+              fetchData();
+            }}
+            onCancel={() => {
+              setShowMatchModal(false);
+              setEditMatchId(null);
+            }}
+          />
+        </Modal>
+      </PermissionGate>
 
-      {/* Modal generador de fixture */}
+      {/* 🔒 MODAL GENERADOR DE FIXTURE - Solo ADMIN y SUPER_ADMIN */}
       {showFixtureGenerator && (
-        <FixtureGenerator
-          tournamentId={tournamentId}
-          onClose={() => setShowFixtureGenerator(false)}
-          onSuccess={() => {
-            setShowFixtureGenerator(false);
-            fetchData();
-          }}
-        />
+        <PermissionGate permission="matches.create">
+          <FixtureGenerator
+            tournamentId={tournamentId}
+            onClose={() => setShowFixtureGenerator(false)}
+            onSuccess={() => {
+              setShowFixtureGenerator(false);
+              fetchData();
+            }}
+          />
+        </PermissionGate>
       )}
     </div>
   );

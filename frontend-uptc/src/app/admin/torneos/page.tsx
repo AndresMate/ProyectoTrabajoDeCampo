@@ -257,7 +257,7 @@ export default function AdminTorneosPage() {
                   )}
 
                   <div className="flex gap-2">
-                    {/* ✅ CORREGIDO: Redirige a la pestaña de equipos del torneo */}
+                    {/* Redirige a la pestaña de equipos del torneo */}
                     <Link
                       href={`/admin/torneos/${tournament.id}/equipos`}
                       className="flex-1 bg-uptc-black text-uptc-yellow text-center py-2 rounded hover:bg-gray-800 transition text-sm font-semibold"

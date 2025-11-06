@@ -25,3 +25,4 @@ export { default as TeamRosterModal } from './TeamRosterModal';
 export { default as FixtureGenerator } from './FixtureGenerator';
 export { default as SanctionsManager } from './SanctionsManager';
 export { default as TeamAvailabilityForm } from './forms/TeamAvailabilityForm';
+export { default as PermissionGate } from './PermissionGate';

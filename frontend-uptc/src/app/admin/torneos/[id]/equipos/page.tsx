@@ -60,7 +60,8 @@ export default function AdminEquiposPage() {
           success: 'Equipo eliminado exitosamente',
           error: (error: unknown) => {
             if (axios.isAxiosError(error)) {
-              return error.response?.data?.message ?? error.message || 'Error al eliminar equipo';
+              // ✅ CORRECTO
+              return (error.response?.data?.message ?? error.message) || 'Error al eliminar equipo';
             } else if (error instanceof Error) {
               return error.message;
             }

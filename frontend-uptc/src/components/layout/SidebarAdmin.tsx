@@ -1,16 +1,32 @@
-// src/components/layout/SidebarAdmin.tsx
+// frontend-uptc/src/components/layout/SidebarAdmin.tsx
 'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import PermissionGate from '@/components/PermissionGate';
 
 export default function SidebarAdmin() {
   const pathname = usePathname();
 
   const links = [
-    { href: '/admin/torneos', label: 'Torneos', icon: '🏆' },
-    { href: '/admin/usuarios', label: 'Usuarios', icon: '👥' },
-    { href: '/admin/reportes', label: 'Reportes', icon: '📊' },
+    {
+      href: '/admin/torneos',
+      label: 'Torneos',
+      icon: '🏆',
+      permission: 'tournaments.view' as const
+    },
+    {
+      href: '/admin/usuarios',
+      label: 'Usuarios',
+      icon: '👥',
+      permission: 'users.view' as const
+    },
+    {
+      href: '/admin/reportes',
+      label: 'Reportes',
+      icon: '📊',
+      permission: 'reports.view' as const
+    },
   ];
 
   return (
@@ -28,28 +44,30 @@ export default function SidebarAdmin() {
         </div>
       </div>
 
-      {/* Navegación */}
+      {/* Navegación con control de permisos */}
       <nav className="p-4">
         <div className="space-y-2">
-          {links.map(({ href, label, icon }) => {
+          {links.map(({ href, label, icon, permission }) => {
             const isActive = pathname.startsWith(href);
+
             return (
-              <Link
-                key={href}
-                href={href}
-                className={`
-                  flex items-center gap-3 px-4 py-3 rounded-lg
-                  transition-all duration-200 font-bold text-base
-                  ${
-                    isActive
-                      ? 'bg-uptc-yellow text-uptc-black shadow-xl scale-105'
-                      : 'text-uptc-yellow bg-gray-900 hover:bg-uptc-yellow hover:text-uptc-black hover:scale-105 shadow-md'
-                  }
-                `}
-              >
-                <span className="text-2xl">{icon}</span>
-                <span>{label}</span>
-              </Link>
+              <PermissionGate key={href} permission={permission}>
+                <Link
+                  href={href}
+                  className={`
+                    flex items-center gap-3 px-4 py-3 rounded-lg
+                    transition-all duration-200 font-bold text-base
+                    ${
+                      isActive
+                        ? 'bg-uptc-yellow text-uptc-black shadow-xl scale-105'
+                        : 'text-uptc-yellow bg-gray-900 hover:bg-uptc-yellow hover:text-uptc-black hover:scale-105 shadow-md'
+                    }
+                  `}
+                >
+                  <span className="text-2xl">{icon}</span>
+                  <span>{label}</span>
+                </Link>
+              </PermissionGate>
             );
           })}
         </div>
