@@ -4,7 +4,6 @@ export interface Sport {
   id: number;
   name: string;
   description?: string;
-  rules?: string;
   isActive: boolean;
   createdAt?: string;
 }
@@ -12,7 +11,7 @@ export interface Sport {
 export interface SportCreateDTO {
   name: string;
   description?: string;
-  rules?: string;
+  isActive?: boolean;
 }
 
 const sportsService = {
@@ -81,6 +80,22 @@ const sportsService = {
       await api.delete(`/sports/${id}`);
     } catch (error) {
       console.error("Error al desactivar deporte:", error);
+      throw error;
+    }
+  },
+
+  // Reactivar deporte
+  reactivate: async (id: number): Promise<Sport> => {
+    try {
+      const sport = await sportsService.getById(id);
+      const response = await api.put(`/sports/${id}`, {
+        name: sport.name,
+        description: sport.description,
+        isActive: true
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error al reactivar deporte:", error);
       throw error;
     }
   }

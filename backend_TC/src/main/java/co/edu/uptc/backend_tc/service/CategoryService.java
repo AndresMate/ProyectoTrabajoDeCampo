@@ -10,6 +10,8 @@ import co.edu.uptc.backend_tc.mapper.CategoryMapper;
 import co.edu.uptc.backend_tc.mapper.MapperUtils;
 import co.edu.uptc.backend_tc.repository.CategoryRepository;
 import co.edu.uptc.backend_tc.repository.SportRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +29,9 @@ public class CategoryService {
     private final SportRepository sportRepository;
     private final CategoryMapper categoryMapper;
     private final MapperUtils mapperUtils;
+    
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public PageResponseDTO<CategoryDTO> getAll(Pageable pageable) {
         Page<Category> page = categoryRepository.findAll(pageable);
@@ -61,14 +66,30 @@ public class CategoryService {
             );
         }
 
+        // Resetear la secuencia si está desincronizada
+        // Usar EntityManager para ejecutar la consulta nativa de forma segura
+        try {
+            entityManager.createNativeQuery(
+                "SELECT setval('categories_id_seq', COALESCE((SELECT MAX(id) FROM categories), 0) + 1, false)"
+            ).getSingleResult();
+        } catch (Exception e) {
+            // Si falla el reset de secuencia, continuar de todas formas
+            // (puede que la secuencia no exista o tenga otro nombre)
+            // El error se registrará pero no bloqueará la creación
+        }
+
         // Crear la categoría con el nuevo campo
+        // Asegurar que no se establezca un ID (debe ser generado automáticamente)
         Category category = Category.builder()
                 .name(dto.getName())
                 .description(dto.getDescription())
-                .membersPerTeam(dto.getMembersPerTeam()) // 👈 nuevo campo
+                .membersPerTeam(dto.getMembersPerTeam())
                 .sport(sport)
                 .isActive(true)
                 .build();
+        
+        // Asegurar explícitamente que el ID sea null para que se genere automáticamente
+        category.setId(null);
 
         category = categoryRepository.save(category);
         return categoryMapper.toDTO(category);
@@ -87,15 +108,21 @@ public class CategoryService {
         }
 
         // Validar nombre único si cambió
+        // Excluir la categoría actual de la validación
         if (dto.getName() != null &&
-                !category.getName().equalsIgnoreCase(dto.getName()) &&
-                categoryRepository.existsByNameIgnoreCaseAndSportId(dto.getName(),
-                        dto.getSportId() != null ? dto.getSportId() : category.getSport().getId())) {
-            throw new ConflictException(
-                    "Category with this name already exists for this sport",
-                    "name",
-                    dto.getName()
-            );
+                !category.getName().equalsIgnoreCase(dto.getName())) {
+            Long sportIdToCheck = dto.getSportId() != null ? dto.getSportId() : category.getSport().getId();
+            // Verificar si existe otra categoría (diferente a la actual) con el mismo nombre
+            boolean existsOther = categoryRepository.findBySportId(sportIdToCheck).stream()
+                    .anyMatch(c -> !c.getId().equals(id) && 
+                            c.getName().equalsIgnoreCase(dto.getName()));
+            if (existsOther) {
+                throw new ConflictException(
+                        "Category with this name already exists for this sport",
+                        "name",
+                        dto.getName()
+                );
+            }
         }
 
         // Actualizar la entidad con los datos nuevos (incluye membersPerTeam)

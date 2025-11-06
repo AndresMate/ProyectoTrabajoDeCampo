@@ -65,13 +65,19 @@ public class SportService {
                 .orElseThrow(() -> new ResourceNotFoundException("Sport", "id", id));
 
         // Validar nombre único si cambió
-        if (!sport.getName().equalsIgnoreCase(dto.getName()) &&
-                sportRepository.existsByNameIgnoreCase(dto.getName())) {
-            throw new ConflictException(
-                    "A sport with this name already exists",
-                    "name",
-                    dto.getName()
-            );
+        // Excluir el deporte actual de la validación
+        if (!sport.getName().equalsIgnoreCase(dto.getName())) {
+            // Verificar si existe otro deporte (diferente al actual) con el mismo nombre
+            boolean existsOther = sportRepository.findAll().stream()
+                    .anyMatch(s -> !s.getId().equals(id) && 
+                            s.getName().equalsIgnoreCase(dto.getName()));
+            if (existsOther) {
+                throw new ConflictException(
+                        "A sport with this name already exists",
+                        "name",
+                        dto.getName()
+                );
+            }
         }
 
         sportMapper.updateEntityFromDTO(dto, sport);

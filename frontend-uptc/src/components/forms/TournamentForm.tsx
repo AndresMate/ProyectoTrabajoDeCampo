@@ -147,7 +147,13 @@ export default function TournamentForm({ tournamentId, onSuccess, onCancel }: Pr
     if (!formData.startDate) newErrors.startDate = 'La fecha de inicio es requerida';
     if (!formData.endDate) newErrors.endDate = 'La fecha de fin es requerida';
     if (!formData.sportId) newErrors.sportId = 'Selecciona un deporte';
-    if (!formData.categoryId) newErrors.categoryId = 'Selecciona una categoría';
+    if (!formData.categoryId) {
+      if (formData.sportId && categories.length === 0) {
+        newErrors.categoryId = 'Este deporte no tiene categorías. Por favor, crea al menos una categoría primero.';
+      } else {
+        newErrors.categoryId = 'Selecciona una categoría';
+      }
+    }
     if (formData.maxTeams <= 0) newErrors.maxTeams = 'Debe haber al menos un equipo permitido';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -312,21 +318,40 @@ export default function TournamentForm({ tournamentId, onSuccess, onCancel }: Pr
       {/* Categoría */}
       <div>
         <label className="block font-semibold mb-1">Categoría *</label>
-        <select
-          name="categoryId"
-          value={formData.categoryId}
-          onChange={handleChange}
-          required
-          className="w-full border p-2 rounded"
-        >
-          <option value={0}>Selecciona una categoría</option>
-          {categories.map(c => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-        {errors.categoryId && <p className="text-red-500 text-sm">{errors.categoryId}</p>}
+        {formData.sportId && categories.length === 0 ? (
+          <div className="w-full border-2 border-yellow-400 bg-yellow-50 p-3 rounded">
+            <p className="text-yellow-800 text-sm font-medium">
+              ⚠️ Este deporte no tiene categorías disponibles. Por favor, crea al menos una categoría para este deporte antes de crear el torneo.
+            </p>
+          </div>
+        ) : (
+          <>
+            <select
+              name="categoryId"
+              value={formData.categoryId}
+              onChange={handleChange}
+              required
+              disabled={!formData.sportId || categories.length === 0}
+              className={`w-full border p-2 rounded ${
+                !formData.sportId || categories.length === 0 ? 'bg-gray-100 cursor-not-allowed' : ''
+              }`}
+            >
+              <option value={0}>
+                {!formData.sportId 
+                  ? 'Primero selecciona un deporte' 
+                  : categories.length === 0 
+                    ? 'No hay categorías disponibles' 
+                    : 'Selecciona una categoría'}
+              </option>
+              {categories.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            {errors.categoryId && <p className="text-red-500 text-sm">{errors.categoryId}</p>}
+          </>
+        )}
       </div>
 
       {/* Fechas */}

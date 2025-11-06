@@ -16,6 +16,18 @@ export default function SidebarAdmin() {
       permission: 'tournaments.view' as const
     },
     {
+      href: '/admin/deportes',
+      label: 'Deportes',
+      icon: '⚽',
+      permission: 'tournaments.view' as const
+    },
+    {
+      href: '/admin/categorias',
+      label: 'Categorías',
+      icon: '🏅',
+      permission: 'tournaments.view' as const
+    },
+    {
       href: '/admin/usuarios',
       label: 'Usuarios',
       icon: '👥',

@@ -6,6 +6,7 @@ export interface Category {
   description?: string;
   sportId: number;
   sportName?: string;
+  membersPerTeam?: number;
   minAge?: number;
   maxAge?: number;
   gender?: string;
@@ -16,9 +17,7 @@ export interface CategoryCreateDTO {
   name: string;
   description?: string;
   sportId: number;
-  minAge?: number;
-  maxAge?: number;
-  gender?: string;
+  membersPerTeam: number;
 }
 
 const categoriesService = {
@@ -83,6 +82,24 @@ const categoriesService = {
       await api.delete(`/categories/${id}`);
     } catch (error) {
       console.error("Error al desactivar categoría:", error);
+      throw error;
+    }
+  },
+
+  // Reactivar categoría
+  reactivate: async (id: number): Promise<Category> => {
+    try {
+      const category = await categoriesService.getById(id);
+      const response = await api.put(`/categories/${id}`, {
+        name: category.name,
+        description: category.description,
+        sportId: category.sportId,
+        membersPerTeam: category.membersPerTeam,
+        isActive: true
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error al reactivar categoría:", error);
       throw error;
     }
   }
