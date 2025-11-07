@@ -28,6 +28,10 @@ public class TournamentDTO {
     @NotNull(message = "End date is required")
     private LocalDate endDate;
 
+    private LocalDate inscriptionStartDate;
+
+    private LocalDate inscriptionEndDate;
+
     @NotNull(message = "Modality is required")
     private Modality modality;
 

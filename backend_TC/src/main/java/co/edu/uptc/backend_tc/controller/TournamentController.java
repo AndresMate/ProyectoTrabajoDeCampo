@@ -91,6 +91,13 @@ public class TournamentController {
         return ResponseEntity.ok(updated);
     }
 
+    @Operation(summary = "Abrir inscripciones", description = "Cambia el estado a OPEN_FOR_INSCRIPTION")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/{id}/open-inscriptions")
+    public ResponseEntity<TournamentResponseDTO> openInscriptions(@PathVariable Long id) {
+        return ResponseEntity.ok(tournamentService.openInscriptions(id));
+    }
+
     @Operation(summary = "Iniciar un torneo", description = "Cambia el estado de PLANNING a IN_PROGRESS")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/{id}/start")

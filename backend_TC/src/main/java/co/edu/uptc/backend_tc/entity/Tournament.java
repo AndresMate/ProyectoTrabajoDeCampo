@@ -54,6 +54,12 @@ public class Tournament implements Serializable {
     @Column(name = "end_date", nullable = false)
     private LocalDate endDate;
 
+    @Column(name = "inscription_start_date")
+    private LocalDate inscriptionStartDate;
+
+    @Column(name = "inscription_end_date")
+    private LocalDate inscriptionEndDate;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Modality modality;
@@ -104,7 +110,22 @@ public class Tournament implements Serializable {
     @PreUpdate
     protected void validateDates() {
         if (endDate != null && startDate != null && endDate.isBefore(startDate)) {
-            throw new IllegalStateException("End date cannot be before start date");
+            throw new IllegalStateException(
+                    "La fecha de fin del torneo debe ser posterior o igual a la fecha de inicio. La fecha de fin (" + 
+                    endDate.toString() + ") no puede ser anterior a la fecha de inicio (" + startDate.toString() + ")"
+            );
+        }
+        
+        // Validar orden de fechas de inscripción
+        if (inscriptionStartDate != null && inscriptionEndDate != null 
+                && inscriptionEndDate.isBefore(inscriptionStartDate)) {
+            throw new IllegalStateException("Inscription end date cannot be before inscription start date");
+        }
+        
+        // Validar que fechas de inscripción sean anteriores al inicio del torneo
+        if (inscriptionEndDate != null && startDate != null 
+                && !inscriptionEndDate.isBefore(startDate)) {
+            throw new IllegalStateException("Inscription end date must be before tournament start date");
         }
     }
 }

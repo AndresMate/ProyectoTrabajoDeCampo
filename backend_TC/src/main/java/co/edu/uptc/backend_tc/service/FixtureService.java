@@ -6,6 +6,7 @@ import co.edu.uptc.backend_tc.exception.BusinessException;
 import co.edu.uptc.backend_tc.exception.ResourceNotFoundException;
 import co.edu.uptc.backend_tc.model.InscriptionStatus;
 import co.edu.uptc.backend_tc.model.MatchStatus;
+import co.edu.uptc.backend_tc.model.TournamentStatus;
 import co.edu.uptc.backend_tc.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -48,6 +49,15 @@ public class FixtureService {
         // Verificar torneo
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tournament", "id", tournamentId));
+
+        // Validar que el torneo no esté en estado inconsistente (OPEN_FOR_INSCRIPTION con startDate pasada)
+        if (tournament.getStatus() == TournamentStatus.OPEN_FOR_INSCRIPTION 
+                && tournament.getStartDate().isBefore(LocalDate.now())) {
+            throw new BusinessException(
+                    "No se puede generar el fixture: el torneo está en estado 'Inscripciones Abiertas' pero la fecha de inicio ya pasó. Por favor, cambie el estado del torneo a 'En Curso' primero",
+                    "INCONSISTENT_TOURNAMENT_STATUS"
+            );
+        }
 
         // Verificar categoría
         Category category = categoryRepository.findById(categoryId)

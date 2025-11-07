@@ -54,11 +54,12 @@ export default function AdminTorneosPage() {
     }
   };
 
-  const handleChangeStatus = async (id: number, action: 'start' | 'complete' | 'cancel') => {
+  const handleChangeStatus = async (id: number, action: 'start' | 'complete' | 'cancel' | 'openInscriptions') => {
     try {
       let promise;
       if (action === 'start') promise = tournamentsService.startTournament(id);
       else if (action === 'complete') promise = tournamentsService.completeTournament(id);
+      else if (action === 'openInscriptions') promise = tournamentsService.openInscriptions(id);
       else promise = tournamentsService.cancelTournament(id);
 
       await toastPromise(
@@ -239,12 +240,20 @@ export default function AdminTorneosPage() {
                 {/* Acciones según estado */}
                 <div className="space-y-2">
                   {tournament.status === 'PLANNING' && (
-                    <button
-                      onClick={() => handleChangeStatus(tournament.id, 'start')}
-                      className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition text-sm font-semibold"
-                    >
-                      Iniciar Torneo
-                    </button>
+                    <>
+                      <button
+                        onClick={() => handleChangeStatus(tournament.id, 'openInscriptions')}
+                        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition text-sm font-semibold"
+                      >
+                        Abrir Inscripciones
+                      </button>
+                      <button
+                        onClick={() => handleChangeStatus(tournament.id, 'start')}
+                        className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition text-sm font-semibold"
+                      >
+                        Iniciar Torneo
+                      </button>
+                    </>
                   )}
 
                   {tournament.status === 'IN_PROGRESS' && (

@@ -31,6 +31,8 @@ public class TournamentMapper {
                 .maxTeams(entity.getMaxTeams())
                 .startDate(entity.getStartDate())
                 .endDate(entity.getEndDate())
+                .inscriptionStartDate(entity.getInscriptionStartDate())
+                .inscriptionEndDate(entity.getInscriptionEndDate())
                 .modality(entity.getModality()) // <-- incluido
                 .status(entity.getStatus())
                 .sportId(entity.getSport() != null ? entity.getSport().getId() : null)
@@ -48,6 +50,8 @@ public class TournamentMapper {
                 .maxTeams(entity.getMaxTeams())
                 .startDate(entity.getStartDate())
                 .endDate(entity.getEndDate())
+                .inscriptionStartDate(entity.getInscriptionStartDate())
+                .inscriptionEndDate(entity.getInscriptionEndDate())
                 .modality(entity.getModality()) // <-- incluido
                 .status(entity.getStatus())
                 .createdAt(entity.getCreatedAt())
@@ -76,6 +80,8 @@ public class TournamentMapper {
         if (dto.getMaxTeams() != null) entity.setMaxTeams(dto.getMaxTeams());
         if (dto.getStartDate() != null) entity.setStartDate(dto.getStartDate());
         if (dto.getEndDate() != null) entity.setEndDate(dto.getEndDate());
+        if (dto.getInscriptionStartDate() != null) entity.setInscriptionStartDate(dto.getInscriptionStartDate());
+        if (dto.getInscriptionEndDate() != null) entity.setInscriptionEndDate(dto.getInscriptionEndDate());
         if (dto.getModality() != null) entity.setModality(dto.getModality()); // <-- aplicado
         if (dto.getStatus() != null) entity.setStatus(dto.getStatus());
         if (sport != null) entity.setSport(sport);

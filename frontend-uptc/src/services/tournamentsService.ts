@@ -11,6 +11,8 @@ export interface Tournament {
   maxTeams: number;
   startDate: string;
   endDate: string;
+  inscriptionStartDate?: string;
+  inscriptionEndDate?: string;
   modality: "DIURNO" | "NOCTURNO";
   status: "PLANNING" | "OPEN_FOR_INSCRIPTION" | "IN_PROGRESS" | "FINISHED" | "CANCELLED";
   sport: {
@@ -35,6 +37,8 @@ export interface TournamentCreateDTO {
   maxTeams: number;
   startDate: string;
   endDate: string;
+  inscriptionStartDate?: string;
+  inscriptionEndDate?: string;
   modality: "DIURNO" | "NOCTURNO";
   status: "PLANNING" | "OPEN_FOR_INSCRIPTION" | "IN_PROGRESS" | "FINISHED" | "CANCELLED";
   sportId: number;
@@ -224,6 +228,20 @@ export const tournamentsService = {
         console.error("Error al cancelar torneo:", error.response?.data ?? error.message);
       } else {
         console.error("Error al cancelar torneo:", error);
+      }
+      throw error;
+    }
+  },
+
+  openInscriptions: async (id: number | string): Promise<Tournament> => {
+    try {
+      const response = await api.post<Tournament>(`/tournaments/${id}/open-inscriptions`);
+      return response.data;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("Error al abrir inscripciones:", error.response?.data ?? error.message);
+      } else {
+        console.error("Error al abrir inscripciones:", error);
       }
       throw error;
     }

@@ -17,6 +17,8 @@ public class TournamentResponseDTO {
     private Integer maxTeams;
     private LocalDate startDate;
     private LocalDate endDate;
+    private LocalDate inscriptionStartDate;
+    private LocalDate inscriptionEndDate;
     private Modality modality;
     private TournamentStatus status;
     private OffsetDateTime createdAt;
