@@ -81,7 +81,7 @@ export const tournamentsService = {
   // ENDPOINTS PÚBLICOS
   // ======================
 
-  getAll: async (page = 0, size = 10): Promise<Tournament[]> => {
+  getAll: async (page = 0, size = 100): Promise<Tournament[]> => {
     try {
       const response = await api.get<PageResponse<Tournament> | Tournament[]>(`/tournaments/public?page=${page}&size=${size}`);
       const data = response.data;
