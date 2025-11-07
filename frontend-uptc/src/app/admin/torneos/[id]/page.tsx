@@ -1,6 +1,4 @@
-// src/app/admin/torneos/
-//
-// [matchId]/equipos/page.tsx
+// frontend-uptc/src/app/admin/torneos/[id]/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -11,6 +9,7 @@ import TournamentTabs from '@/components/TournamentTabs';
 import Modal from '@/components/Modal';
 import TeamForm from '@/components/forms/TeamForm';
 import TeamRosterModal from '@/components/TeamRosterModal';
+import PermissionGate from '@/components/PermissionGate';
 import axios from "axios";
 import { toastPromise } from '@/utils/toast';
 
@@ -117,15 +116,19 @@ export default function TournamentTeamsPage() {
       <div className="bg-white rounded-lg shadow-lg p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800">Equipos Inscritos</h2>
-          <button
-            onClick={() => {
-              setSelectedTeam(undefined);
-              setShowModal(true);
-            }}
-            className="bg-uptc-black text-uptc-yellow px-6 py-2 rounded-lg hover:bg-gray-800 transition font-semibold"
-          >
-            + Nuevo Equipo
-          </button>
+
+          {/* 🔒 PROTEGER BOTÓN DE CREAR */}
+          <PermissionGate permission="teams.create">
+            <button
+              onClick={() => {
+                setSelectedTeam(undefined);
+                setShowModal(true);
+              }}
+              className="bg-uptc-black text-uptc-yellow px-6 py-2 rounded-lg hover:bg-gray-800 transition font-semibold"
+            >
+              + Nuevo Equipo
+            </button>
+          </PermissionGate>
         </div>
 
         {/* Barra de búsqueda */}
@@ -190,27 +193,36 @@ export default function TournamentTeamsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right text-sm font-semibold">
+                      {/* ✅ VER ROSTER - Todos pueden verlo */}
                       <button
                         onClick={() => handleViewRoster(team)}
                         className="text-blue-600 hover:text-blue-800 mr-3"
                       >
                         👥 Ver Roster
                       </button>
-                      <button
-                        onClick={() => {
-                          setSelectedTeam(team.id);
-                          setShowModal(true);
-                        }}
-                        className="text-indigo-600 hover:text-indigo-900 mr-3"
-                      >
-                        ✏️ Editar
-                      </button>
-                      <button
-                        onClick={() => handleDelete(team.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        🗑️ Eliminar
-                      </button>
+
+                      {/* 🔒 EDITAR - Solo con permiso */}
+                      <PermissionGate permission="teams.edit">
+                        <button
+                          onClick={() => {
+                            setSelectedTeam(team.id);
+                            setShowModal(true);
+                          }}
+                          className="text-indigo-600 hover:text-indigo-900 mr-3"
+                        >
+                          ✏️ Editar
+                        </button>
+                      </PermissionGate>
+
+                      {/* 🔒 ELIMINAR - Solo con permiso */}
+                      <PermissionGate permission="teams.delete">
+                        <button
+                          onClick={() => handleDelete(team.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          🗑️ Eliminar
+                        </button>
+                      </PermissionGate>
                     </td>
                   </tr>
                 ))}
@@ -226,32 +238,36 @@ export default function TournamentTeamsPage() {
         )}
       </div>
 
-      {/* Modal crear/editar equipo */}
-      <Modal
-        isOpen={showModal}
-        onClose={() => {
-          setShowModal(false);
-          setSelectedTeam(undefined);
-        }}
-        title={selectedTeam ? 'Editar Equipo' : 'Crear Nuevo Equipo'}
-        size="lg"
-      >
-        <TeamForm
-          teamId={selectedTeam}
-          tournamentId={tournamentId}
-          onSuccess={() => {
-            setShowModal(false);
-            setSelectedTeam(undefined);
-            fetchData();
-          }}
-          onCancel={() => {
-            setShowModal(false);
-            setSelectedTeam(undefined);
-          }}
-        />
-      </Modal>
+      {/* 🔒 MODAL PROTEGIDO */}
+      {showModal && (
+        <PermissionGate permission="teams.create">
+          <Modal
+            isOpen={showModal}
+            onClose={() => {
+              setShowModal(false);
+              setSelectedTeam(undefined);
+            }}
+            title={selectedTeam ? 'Editar Equipo' : 'Crear Nuevo Equipo'}
+            size="lg"
+          >
+            <TeamForm
+              teamId={selectedTeam}
+              tournamentId={tournamentId}
+              onSuccess={() => {
+                setShowModal(false);
+                setSelectedTeam(undefined);
+                fetchData();
+              }}
+              onCancel={() => {
+                setShowModal(false);
+                setSelectedTeam(undefined);
+              }}
+            />
+          </Modal>
+        </PermissionGate>
+      )}
 
-      {/* Modal ver roster */}
+      {/* Modal ver roster - No necesita protección */}
       {showRosterModal && rosterTeam && (
         <TeamRosterModal
           teamId={rosterTeam.id}

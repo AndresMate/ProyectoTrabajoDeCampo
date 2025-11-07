@@ -6,6 +6,7 @@ import categoriesService, { Category } from '@/services/categoriesService';
 import sportsService from '@/services/sportsService';
 import Modal from '@/components/Modal';
 import CategoryForm from '@/components/forms/CategoryForm';
+import PermissionGate from '@/components/PermissionGate';
 import { toastPromise } from '@/utils/toast';
 
 export default function AdminCategoriasPage() {
@@ -79,7 +80,7 @@ export default function AdminCategoriasPage() {
       category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (category.description && category.description.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesStatus = filterStatus === 'ALL' || 
+    const matchesStatus = filterStatus === 'ALL' ||
       (filterStatus === 'ACTIVE' && category.isActive) ||
       (filterStatus === 'INACTIVE' && !category.isActive);
 
@@ -99,7 +100,7 @@ export default function AdminCategoriasPage() {
   }, {} as Record<number, Category[]>);
 
   // Obtener deportes que tienen categorías filtradas
-  const sportsWithCategories = sports.filter(sport => 
+  const sportsWithCategories = sports.filter(sport =>
     categoriesBySport[sport.id] && categoriesBySport[sport.id].length > 0
   );
 
@@ -115,15 +116,19 @@ export default function AdminCategoriasPage() {
     <div className="max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Gestión de Categorías</h1>
-        <button
-          onClick={() => {
-            setSelectedCategory(undefined);
-            setShowModal(true);
-          }}
-          className="bg-uptc-black text-uptc-yellow px-6 py-2 rounded-lg hover:bg-gray-800 transition font-semibold"
-        >
-          + Nueva Categoría
-        </button>
+
+        {/* 🔒 PROTEGER BOTÓN DE CREAR */}
+        <PermissionGate permission="tournaments.create">
+          <button
+            onClick={() => {
+              setSelectedCategory(undefined);
+              setShowModal(true);
+            }}
+            className="bg-uptc-black text-uptc-yellow px-6 py-2 rounded-lg hover:bg-gray-800 transition font-semibold"
+          >
+            + Nueva Categoría
+          </button>
+        </PermissionGate>
       </div>
 
       {/* Estadísticas */}
@@ -271,29 +276,37 @@ export default function AdminCategoriasPage() {
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold">
-                            <button
-                              onClick={() => {
-                                setSelectedCategory(category.id);
-                                setShowModal(true);
-                              }}
-                              className="text-indigo-600 hover:text-indigo-900 mr-3 transition-colors"
-                            >
-                              Editar
-                            </button>
+                            {/* 🔒 PROTEGER BOTONES DE ACCIÓN */}
+                            <PermissionGate permission="tournaments.edit">
+                              <button
+                                onClick={() => {
+                                  setSelectedCategory(category.id);
+                                  setShowModal(true);
+                                }}
+                                className="text-indigo-600 hover:text-indigo-900 mr-3 transition-colors"
+                              >
+                                Editar
+                              </button>
+                            </PermissionGate>
+
                             {category.isActive ? (
-                              <button
-                                onClick={() => handleDelete(category.id)}
-                                className="text-red-600 hover:text-red-800 transition-colors"
-                              >
-                                Desactivar
-                              </button>
+                              <PermissionGate permission="tournaments.delete">
+                                <button
+                                  onClick={() => handleDelete(category.id)}
+                                  className="text-red-600 hover:text-red-800 transition-colors"
+                                >
+                                  Desactivar
+                                </button>
+                              </PermissionGate>
                             ) : (
-                              <button
-                                onClick={() => handleReactivate(category.id)}
-                                className="text-green-600 hover:text-green-800 transition-colors"
-                              >
-                                Reactivar
-                              </button>
+                              <PermissionGate permission="tournaments.edit">
+                                <button
+                                  onClick={() => handleReactivate(category.id)}
+                                  className="text-green-600 hover:text-green-800 transition-colors"
+                                >
+                                  Reactivar
+                                </button>
+                              </PermissionGate>
                             )}
                           </td>
                         </tr>
@@ -307,32 +320,34 @@ export default function AdminCategoriasPage() {
         </div>
       )}
 
-
-      {/* Modal para crear/editar categoría */}
-      <Modal
-        isOpen={showModal}
-        onClose={() => {
-          setShowModal(false);
-          setSelectedCategory(undefined);
-        }}
-        title={selectedCategory ? 'Editar Categoría' : 'Crear Nueva Categoría'}
-        size="md"
-      >
-        <CategoryForm
-          categoryId={selectedCategory}
-          sports={sports}
-          onSuccess={() => {
-            setShowModal(false);
-            setSelectedCategory(undefined);
-            fetchData();
-          }}
-          onCancel={() => {
-            setShowModal(false);
-            setSelectedCategory(undefined);
-          }}
-        />
-      </Modal>
+      {/* 🔒 PROTEGER MODAL */}
+      {showModal && (
+        <PermissionGate permission="tournaments.create">
+          <Modal
+            isOpen={showModal}
+            onClose={() => {
+              setShowModal(false);
+              setSelectedCategory(undefined);
+            }}
+            title={selectedCategory ? 'Editar Categoría' : 'Crear Nueva Categoría'}
+            size="md"
+          >
+            <CategoryForm
+              categoryId={selectedCategory}
+              sports={sports}
+              onSuccess={() => {
+                setShowModal(false);
+                setSelectedCategory(undefined);
+                fetchData();
+              }}
+              onCancel={() => {
+                setShowModal(false);
+                setSelectedCategory(undefined);
+              }}
+            />
+          </Modal>
+        </PermissionGate>
+      )}
     </div>
   );
 }
-

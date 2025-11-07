@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import sportsService, { Sport } from '@/services/sportsService';
 import Modal from '@/components/Modal';
 import SportForm from '@/components/forms/SportForm';
+import PermissionGate from '@/components/PermissionGate';
 import { toastPromise } from '@/utils/toast';
 
 export default function AdminDeportesPage() {
@@ -67,7 +68,7 @@ export default function AdminDeportesPage() {
       sport.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (sport.description && sport.description.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesStatus = filterStatus === 'ALL' || 
+    const matchesStatus = filterStatus === 'ALL' ||
       (filterStatus === 'ACTIVE' && sport.isActive) ||
       (filterStatus === 'INACTIVE' && !sport.isActive);
 
@@ -86,15 +87,19 @@ export default function AdminDeportesPage() {
     <div className="max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Gestión de Deportes</h1>
-        <button
-          onClick={() => {
-            setSelectedSport(undefined);
-            setShowModal(true);
-          }}
-          className="bg-uptc-black text-uptc-yellow px-6 py-2 rounded-lg hover:bg-gray-800 transition font-semibold"
-        >
-          + Nuevo Deporte
-        </button>
+
+        {/* 🔒 PROTEGER BOTÓN DE CREAR */}
+        <PermissionGate permission="tournaments.create">
+          <button
+            onClick={() => {
+              setSelectedSport(undefined);
+              setShowModal(true);
+            }}
+            className="bg-uptc-black text-uptc-yellow px-6 py-2 rounded-lg hover:bg-gray-800 transition font-semibold"
+          >
+            + Nuevo Deporte
+          </button>
+        </PermissionGate>
       </div>
 
       {/* Estadísticas */}
@@ -187,29 +192,37 @@ export default function AdminDeportesPage() {
                   {sport.createdAt ? new Date(sport.createdAt).toLocaleDateString('es-ES') : 'N/A'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold">
-                  <button
-                    onClick={() => {
-                      setSelectedSport(sport.id);
-                      setShowModal(true);
-                    }}
-                    className="text-indigo-600 hover:text-indigo-900 mr-3 transition-colors"
-                  >
-                    Editar
-                  </button>
+                  {/* 🔒 PROTEGER BOTONES DE ACCIÓN */}
+                  <PermissionGate permission="tournaments.edit">
+                    <button
+                      onClick={() => {
+                        setSelectedSport(sport.id);
+                        setShowModal(true);
+                      }}
+                      className="text-indigo-600 hover:text-indigo-900 mr-3 transition-colors"
+                    >
+                      Editar
+                    </button>
+                  </PermissionGate>
+
                   {sport.isActive ? (
-                    <button
-                      onClick={() => handleDelete(sport.id)}
-                      className="text-red-600 hover:text-red-800 transition-colors"
-                    >
-                      Desactivar
-                    </button>
+                    <PermissionGate permission="tournaments.delete">
+                      <button
+                        onClick={() => handleDelete(sport.id)}
+                        className="text-red-600 hover:text-red-800 transition-colors"
+                      >
+                        Desactivar
+                      </button>
+                    </PermissionGate>
                   ) : (
-                    <button
-                      onClick={() => handleReactivate(sport.id)}
-                      className="text-green-600 hover:text-green-800 transition-colors"
-                    >
-                      Reactivar
-                    </button>
+                    <PermissionGate permission="tournaments.edit">
+                      <button
+                        onClick={() => handleReactivate(sport.id)}
+                        className="text-green-600 hover:text-green-800 transition-colors"
+                      >
+                        Reactivar
+                      </button>
+                    </PermissionGate>
                   )}
                 </td>
               </tr>
@@ -227,30 +240,33 @@ export default function AdminDeportesPage() {
         </div>
       )}
 
-      {/* Modal para crear/editar deporte */}
-      <Modal
-        isOpen={showModal}
-        onClose={() => {
-          setShowModal(false);
-          setSelectedSport(undefined);
-        }}
-        title={selectedSport ? 'Editar Deporte' : 'Crear Nuevo Deporte'}
-        size="md"
-      >
-        <SportForm
-          sportId={selectedSport}
-          onSuccess={() => {
-            setShowModal(false);
-            setSelectedSport(undefined);
-            fetchSports();
-          }}
-          onCancel={() => {
-            setShowModal(false);
-            setSelectedSport(undefined);
-          }}
-        />
-      </Modal>
+      {/* 🔒 PROTEGER MODAL */}
+      {showModal && (
+        <PermissionGate permission="tournaments.create">
+          <Modal
+            isOpen={showModal}
+            onClose={() => {
+              setShowModal(false);
+              setSelectedSport(undefined);
+            }}
+            title={selectedSport ? 'Editar Deporte' : 'Crear Nuevo Deporte'}
+            size="md"
+          >
+            <SportForm
+              sportId={selectedSport}
+              onSuccess={() => {
+                setShowModal(false);
+                setSelectedSport(undefined);
+                fetchSports();
+              }}
+              onCancel={() => {
+                setShowModal(false);
+                setSelectedSport(undefined);
+              }}
+            />
+          </Modal>
+        </PermissionGate>
+      )}
     </div>
   );
 }
-

@@ -1,4 +1,4 @@
-// src/app/admin/torneos/[matchId]/inscripciones/page.tsx
+// src/app/admin/torneos/[id]/inscripciones/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -8,6 +8,7 @@ import inscriptionsService from '@/services/inscriptionsService';
 import TournamentTabs from '@/components/TournamentTabs';
 import PlayerSelectionModal from '@/components/PlayerSelectionModal';
 import InscriptionDetailsModal from '@/components/InscriptionDetailsModal';
+import PermissionGate from '@/components/PermissionGate';
 import { getStatusBadge, getStatusText } from '@/utils/inscriptionStatusUtils';
 import { toastPromise } from '@/utils/toast';
 
@@ -40,7 +41,6 @@ export default function TournamentInscriptionsPage() {
     try {
       setLoading(true);
 
-      // ✅ Carga optimizada — solo inscripciones del torneo actual
       const [tournamentData, inscriptionsData] = await Promise.all([
         tournamentsService.getById(tournamentId),
         inscriptionsService.getByTournamentId(tournamentId)
@@ -50,7 +50,6 @@ export default function TournamentInscriptionsPage() {
       setInscriptions(inscriptionsData);
     } catch (error) {
       console.error('Error al cargar inscripciones:', error);
-      // El error ya se muestra en el interceptor de axios
     } finally {
       setLoading(false);
     }
@@ -98,7 +97,6 @@ export default function TournamentInscriptionsPage() {
       fetchData();
     } catch (error: any) {
       console.error('Error al aprobar:', error);
-      // El error ya se muestra en el toastPromise
     }
   };
 
@@ -249,20 +247,25 @@ export default function TournamentInscriptionsPage() {
 
                     <td className="px-6 py-4">
                       <div className="flex justify-center gap-2">
+                        {/* ✅ VER DETALLES - Todos pueden verlo */}
                         <button
                           onClick={() => handleViewDetails(inscription.id)}
                           className="px-3 py-1 bg-uptc-black hover:bg-uptc-yellow hover:text-uptc-black text-uptc-yellow font-semibold text-sm rounded transition"
                         >
                           Ver Detalles
                         </button>
+
+                        {/* 🔒 APROBAR - Solo con permiso */}
                         {inscription.status === 'PENDING' &&
                          inscription.playerCount >= inscription.category?.membersPerTeam && (
-                          <button
-                            onClick={() => handleQuickApprove(inscription.id)}
-                            className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white font-semibold text-sm rounded transition"
-                          >
-                            Aprobar
-                          </button>
+                          <PermissionGate permission="inscriptions.approve">
+                            <button
+                              onClick={() => handleQuickApprove(inscription.id)}
+                              className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white font-semibold text-sm rounded transition"
+                            >
+                              Aprobar
+                            </button>
+                          </PermissionGate>
                         )}
                       </div>
                     </td>

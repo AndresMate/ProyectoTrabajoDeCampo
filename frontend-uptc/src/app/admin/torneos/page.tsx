@@ -5,8 +5,9 @@ import { useEffect, useState } from 'react';
 import { tournamentsService } from '@/services/tournamentsService';
 import Modal from '@/components/Modal';
 import TournamentForm from '@/components/forms/TournamentForm';
+import PermissionGate from '@/components/PermissionGate';
 import Link from 'next/link';
-import { toastSuccess, toastPromise } from '@/utils/toast';
+import { toastPromise } from '@/utils/toast';
 
 interface Tournament {
   id: number;
@@ -131,15 +132,19 @@ export default function AdminTorneosPage() {
     <div className="max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Gestión de Torneos</h1>
-        <button
-          onClick={() => {
-            setSelectedTournament(undefined);
-            setShowModal(true);
-          }}
-          className="bg-uptc-black text-uptc-yellow px-6 py-2 rounded-lg hover:bg-gray-800 transition font-semibold"
-        >
-          + Nuevo Torneo
-        </button>
+
+        {/* 🔒 PROTEGER BOTÓN DE CREAR */}
+        <PermissionGate permission="tournaments.create">
+          <button
+            onClick={() => {
+              setSelectedTournament(undefined);
+              setShowModal(true);
+            }}
+            className="bg-uptc-black text-uptc-yellow px-6 py-2 rounded-lg hover:bg-gray-800 transition font-semibold"
+          >
+            + Nuevo Torneo
+          </button>
+        </PermissionGate>
       </div>
 
       {/* Estadísticas */}
@@ -241,32 +246,39 @@ export default function AdminTorneosPage() {
                 <div className="space-y-2">
                   {tournament.status === 'PLANNING' && (
                     <>
-                      <button
-                        onClick={() => handleChangeStatus(tournament.id, 'openInscriptions')}
-                        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition text-sm font-semibold"
-                      >
-                        Abrir Inscripciones
-                      </button>
-                      <button
-                        onClick={() => handleChangeStatus(tournament.id, 'start')}
-                        className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition text-sm font-semibold"
-                      >
-                        Iniciar Torneo
-                      </button>
+                      {/* 🔒 PROTEGER BOTONES DE CAMBIO DE ESTADO */}
+                      <PermissionGate permission="tournaments.change_status">
+                        <button
+                          onClick={() => handleChangeStatus(tournament.id, 'openInscriptions')}
+                          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition text-sm font-semibold"
+                        >
+                          Abrir Inscripciones
+                        </button>
+                      </PermissionGate>
+                      <PermissionGate permission="tournaments.change_status">
+                        <button
+                          onClick={() => handleChangeStatus(tournament.id, 'start')}
+                          className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition text-sm font-semibold"
+                        >
+                          Iniciar Torneo
+                        </button>
+                      </PermissionGate>
                     </>
                   )}
 
                   {tournament.status === 'IN_PROGRESS' && (
-                    <button
-                      onClick={() => handleChangeStatus(tournament.id, 'complete')}
-                      className="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700 transition text-sm font-semibold"
-                    >
-                      Finalizar Torneo
-                    </button>
+                    <PermissionGate permission="tournaments.change_status">
+                      <button
+                        onClick={() => handleChangeStatus(tournament.id, 'complete')}
+                        className="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700 transition text-sm font-semibold"
+                      >
+                        Finalizar Torneo
+                      </button>
+                    </PermissionGate>
                   )}
 
                   <div className="flex gap-2">
-                    {/* Redirige a la pestaña de equipos del torneo */}
+                    {/* ✅ VER DETALLES - Todos pueden verlo */}
                     <Link
                       href={`/admin/torneos/${tournament.id}/equipos`}
                       className="flex-1 bg-uptc-black text-uptc-yellow text-center py-2 rounded hover:bg-gray-800 transition text-sm font-semibold"
@@ -274,35 +286,44 @@ export default function AdminTorneosPage() {
                       Ver detalles
                     </Link>
 
-                    <button
-                      onClick={() => {
-                        setSelectedTournament(tournament.id);
-                        setShowModal(true);
-                      }}
-                      className="px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition font-semibold"
-                      title="Editar"
-                    >
-                      ✏️
-                    </button>
-
-                    {tournament.status === 'PLANNING' && (
+                    {/* 🔒 EDITAR - Solo con permiso */}
+                    <PermissionGate permission="tournaments.edit">
                       <button
-                        onClick={() => handleDelete(tournament.id)}
-                        className="px-4 bg-red-600 text-white rounded hover:bg-red-700 transition font-semibold"
-                        title="Eliminar"
+                        onClick={() => {
+                          setSelectedTournament(tournament.id);
+                          setShowModal(true);
+                        }}
+                        className="px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition font-semibold"
+                        title="Editar"
                       >
-                        🗑️
+                        ✏️
                       </button>
+                    </PermissionGate>
+
+                    {/* 🔒 ELIMINAR - Solo con permiso */}
+                    {tournament.status === 'PLANNING' && (
+                      <PermissionGate permission="tournaments.delete">
+                        <button
+                          onClick={() => handleDelete(tournament.id)}
+                          className="px-4 bg-red-600 text-white rounded hover:bg-red-700 transition font-semibold"
+                          title="Eliminar"
+                        >
+                          🗑️
+                        </button>
+                      </PermissionGate>
                     )}
 
+                    {/* 🔒 CANCELAR - Solo con permiso */}
                     {(tournament.status === 'PLANNING' || tournament.status === 'REGISTRATION') && (
-                      <button
-                        onClick={() => handleChangeStatus(tournament.id, 'cancel')}
-                        className="px-4 bg-gray-600 text-white rounded hover:bg-gray-700 transition font-semibold"
-                        title="Cancelar"
-                      >
-                        ✖️
-                      </button>
+                      <PermissionGate permission="tournaments.change_status">
+                        <button
+                          onClick={() => handleChangeStatus(tournament.id, 'cancel')}
+                          className="px-4 bg-gray-600 text-white rounded hover:bg-gray-700 transition font-semibold"
+                          title="Cancelar"
+                        >
+                          ✖️
+                        </button>
+                      </PermissionGate>
                     )}
                   </div>
                 </div>
@@ -312,29 +333,33 @@ export default function AdminTorneosPage() {
         </div>
       )}
 
-      {/* Modal para crear/editar torneo */}
-      <Modal
-        isOpen={showModal}
-        onClose={() => {
-          setShowModal(false);
-          setSelectedTournament(undefined);
-        }}
-        title={selectedTournament ? 'Editar Torneo' : 'Crear Nuevo Torneo'}
-        size="lg"
-      >
-        <TournamentForm
-          tournamentId={selectedTournament}
-          onSuccess={() => {
-            setShowModal(false);
-            setSelectedTournament(undefined);
-            fetchTournaments();
-          }}
-          onCancel={() => {
-            setShowModal(false);
-            setSelectedTournament(undefined);
-          }}
-        />
-      </Modal>
+      {/* 🔒 PROTEGER MODAL */}
+      {showModal && (
+        <PermissionGate permission="tournaments.create">
+          <Modal
+            isOpen={showModal}
+            onClose={() => {
+              setShowModal(false);
+              setSelectedTournament(undefined);
+            }}
+            title={selectedTournament ? 'Editar Torneo' : 'Crear Nuevo Torneo'}
+            size="lg"
+          >
+            <TournamentForm
+              tournamentId={selectedTournament}
+              onSuccess={() => {
+                setShowModal(false);
+                setSelectedTournament(undefined);
+                fetchTournaments();
+              }}
+              onCancel={() => {
+                setShowModal(false);
+                setSelectedTournament(undefined);
+              }}
+            />
+          </Modal>
+        </PermissionGate>
+      )}
     </div>
   );
 }
