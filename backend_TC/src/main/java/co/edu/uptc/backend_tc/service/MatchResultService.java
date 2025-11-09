@@ -34,22 +34,32 @@ public class MatchResultService {
             throw new BadRequestException("Match already finished. Use update endpoint instead.");
         }
 
-        MatchResult result = matchResultRepository.findById(dto.getMatchId())
-                .orElse(matchResultMapper.toEntity(dto, match)); // ✅ USAR MAPPER INYECTADO
+        // Verificar si ya existe un resultado
+        MatchResult existingResult = matchResultRepository.findById(dto.getMatchId()).orElse(null);
+        
+        if (existingResult != null) {
+            // Si ya existe, revertir estadísticas anteriores
+            standingService.revertStandingsFromMatch(match, existingResult.getHomeScore(), existingResult.getAwayScore());
+            
+            // Actualizar resultado existente
+            existingResult.setHomeScore(dto.getHomeScore());
+            existingResult.setAwayScore(dto.getAwayScore());
+            existingResult.setNotes(dto.getNotes());
+            existingResult.setEnteredAt(LocalDateTime.now());
+        } else {
+            // Crear nuevo resultado
+            existingResult = matchResultMapper.toEntity(dto, match);
+        }
 
-        result.setHomeScore(dto.getHomeScore());
-        result.setAwayScore(dto.getAwayScore());
-        result.setNotes(dto.getNotes());
-        result.setEnteredAt(LocalDateTime.now());
-
-        MatchResult savedResult = matchResultRepository.save(result);
+        MatchResult savedResult = matchResultRepository.save(existingResult);
 
         match.setStatus(MatchStatus.FINISHED);
         matchRepository.save(match);
 
+        // Aplicar nuevas estadísticas
         standingService.updateStandingsFromMatch(match, dto.getHomeScore(), dto.getAwayScore());
 
-        return matchResultMapper.toDTO(savedResult); // ✅ USAR MAPPER INYECTADO
+        return matchResultMapper.toDTO(savedResult);
     }
 
     @Transactional
@@ -57,18 +67,28 @@ public class MatchResultService {
         MatchResult result = matchResultRepository.findById(dto.getMatchId())
                 .orElseThrow(() -> new ResourceNotFoundException("MatchResult", "matchId", dto.getMatchId()));
 
+        Match match = result.getMatch();
+        
+        // Guardar valores anteriores para revertir estadísticas
+        Integer oldHomeScore = result.getHomeScore();
+        Integer oldAwayScore = result.getAwayScore();
+        
+        // Revertir estadísticas del resultado anterior
+        standingService.revertStandingsFromMatch(match, oldHomeScore, oldAwayScore);
+
+        // Actualizar resultado
         result.setHomeScore(dto.getHomeScore());
         result.setAwayScore(dto.getAwayScore());
         result.setNotes(dto.getNotes());
         result.setEnteredAt(LocalDateTime.now());
 
-        Match match = result.getMatch();
         match.setStatus(MatchStatus.FINISHED);
         matchRepository.save(match);
 
+        // Aplicar nuevas estadísticas
         standingService.updateStandingsFromMatch(match, dto.getHomeScore(), dto.getAwayScore());
 
-        return matchResultMapper.toDTO(matchResultRepository.save(result)); // ✅ USAR MAPPER INYECTADO
+        return matchResultMapper.toDTO(matchResultRepository.save(result));
     }
 
     public MatchResultDTO getResultByMatchId(Long matchId) {
@@ -83,6 +103,10 @@ public class MatchResultService {
                 .orElseThrow(() -> new ResourceNotFoundException("MatchResult", "matchId", matchId));
 
         Match match = result.getMatch();
+        
+        // Revertir estadísticas antes de eliminar
+        standingService.revertStandingsFromMatch(match, result.getHomeScore(), result.getAwayScore());
+
         match.setStatus(MatchStatus.SCHEDULED);
         matchRepository.save(match);
 
