@@ -106,36 +106,46 @@ export default function LiveMatchPage() {
   };
 
   const handleFinishMatch = async () => {
-    try {
-      await matchesService.finishMatch(matchId);
+  try {
+    const result: MatchResult = {
+      matchId,
+      homeScore: liveScore.home,
+      awayScore: liveScore.away,
+      winnerId:
+        liveScore.home > liveScore.away
+          ? match!.homeTeam.id
+          : liveScore.away > liveScore.home
+            ? match!.awayTeam.id
+            : undefined,
+      notes: `Partido finalizado. Eventos registrados: ${events.length}`
+    };
 
-      const result: MatchResult = {
-        matchId: matchId,
-        homeScore: liveScore.home,
-        awayScore: liveScore.away,
-        winnerId:
-          liveScore.home > liveScore.away
-            ? match!.homeTeam.id
-            : liveScore.away > liveScore.home
-              ? match!.awayTeam.id
-              : undefined,
-        notes: `Partido finalizado. Eventos registrados: ${events.length}`
-      };
+    // ✅ 1. Registrar el resultado primero
+    await toastPromise(
+      matchesService.registerResult(result),
+      {
+        loading: 'Registrando resultado...',
+        success: '✅ Resultado registrado correctamente',
+        error: '❌ Error al registrar resultado'
+      }
+    );
 
-      await toastPromise(
-        matchesService.registerResult(result),
-        {
-          loading: 'Finalizando partido...',
-          success: '✅ Partido finalizado y resultado registrado',
-          error: '❌ Error al finalizar partido'
-        }
-      );
-      router.push(`/admin/torneos/${tournamentId}/partidos`);
-    } catch (error) {
-      console.error('Error al finalizar partido:', error);
-      // El error ya se muestra en el toastPromise
-    }
-  };
+    // ✅ 2. Luego finalizar el partido
+    await toastPromise(
+      matchesService.finishMatch(matchId),
+      {
+        loading: 'Finalizando partido...',
+        success: '🏁 Partido finalizado correctamente',
+        error: '❌ Error al finalizar partido'
+      }
+    );
+
+    router.push(`/admin/torneos/${tournamentId}/partidos`);
+  } catch (error) {
+    console.error('Error al finalizar partido:', error);
+    toast.error('❌ Ocurrió un error al finalizar el partido');
+  }
+};
 
   const handleAddEvent = async (event: MatchEvent) => {
     if (!event.team?.id || !event.player?.id || !event.type) {

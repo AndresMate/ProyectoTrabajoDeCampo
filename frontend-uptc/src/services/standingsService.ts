@@ -1,40 +1,72 @@
+// frontend-uptc/src/services/standingsService.ts
 import api from "./api";
 
-export interface Standing {
+export interface StandingResponse {
+  id?: number;
   position: number;
-  team: {
+  teamName: string;
+  team?: {
     id: number;
     name: string;
   };
   matchesPlayed: number;
+  played?: number;
   wins: number;
   draws: number;
   losses: number;
   goalsFor: number;
+  gf?: number;
   goalsAgainst: number;
+  ga?: number;
   goalDifference: number;
   points: number;
+  pts?: number;
 }
 
 const standingsService = {
-  // Obtener tabla de posiciones
-  getStandings: async (tournamentId: number, categoryId: number): Promise<Standing[]> => {
+  /**
+   * Obtener standings de un torneo y categoría
+   */
+  getStandings: async (
+    tournamentId: number,
+    categoryId: number
+  ): Promise<StandingResponse[]> => {
     try {
-      const response = await api.get(`/standings/${tournamentId}/${categoryId}`);
-      return response.data;
+      console.log(`🔍 Consultando standings: tournament=${tournamentId}, category=${categoryId}`);
+      const response = await api.get(
+        `/standings/tournament/${tournamentId}/category/${categoryId}`
+      );
+      console.log('📊 Respuesta del backend:', response.data);
+      return response.data as StandingResponse[];
     } catch (error) {
-      console.error("Error al obtener tabla de posiciones:", error);
+      console.error("❌ Error al obtener standings:", error);
       throw error;
     }
   },
 
-  // Recalcular tabla de posiciones (Admin)
-  recalculate: async (tournamentId: number, categoryId: number): Promise<string> => {
+  /**
+   * Recalcular standings desde los resultados de los partidos
+   */
+  recalculate: async (
+    tournamentId: number,
+    categoryId: number
+  ): Promise<string> => {
     try {
-      const response = await api.post(`/standings/${tournamentId}/${categoryId}/recalculate`);
-      return response.data;
-    } catch (error) {
-      console.error("Error al recalcular tabla:", error);
+      console.log(`🔄 Recalculando standings: tournament=${tournamentId}, category=${categoryId}`);
+      const response = await api.post(
+        `/standings/recalculate`,
+        null,
+        {
+          params: {
+            tournamentId,
+            categoryId
+          }
+        }
+      );
+      console.log('✅ Recalculación completada:', response.data);
+      return response.data?.message || "Standings recalculados exitosamente";
+    } catch (error: any) {
+      console.error("❌ Error al recalcular standings:", error);
       throw error;
     }
   }

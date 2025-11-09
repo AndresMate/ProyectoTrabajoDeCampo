@@ -25,6 +25,7 @@ public class StandingMapper {
                 .teamId(entity.getTeam() != null ? entity.getTeam().getId() : null)
                 .points(entity.getPoints())
                 .played(entity.getPlayed())
+                .matchesPlayed(entity.getPlayed())
                 .wins(entity.getWins())
                 .draws(entity.getDraws())
                 .losses(entity.getLosses())
@@ -34,15 +35,23 @@ public class StandingMapper {
                 .build();
     }
 
+    /**
+     * ✅ MÉTODO CORREGIDO: Incluye teamName y matchesPlayed
+     */
     public StandingResponseDTO toResponseDTO(Standing entity, Integer position, String form) {
         if (entity == null) return null;
 
         return StandingResponseDTO.builder()
                 .id(entity.getId())
-                .position(position)
+                .position(position != null ? position : 0)
+                // ✅ CRÍTICO: teamName para que el frontend pueda mostrar el nombre
+                .teamName(entity.getTeam() != null ? entity.getTeam().getName() : "Equipo Desconocido")
+                // Información completa del equipo (opcional)
                 .team(teamMapper.toSummaryDTO(entity.getTeam()))
+                // Estadísticas
                 .points(entity.getPoints())
                 .played(entity.getPlayed())
+                .matchesPlayed(entity.getPlayed()) // ✅ Alias para compatibilidad
                 .wins(entity.getWins())
                 .draws(entity.getDraws())
                 .losses(entity.getLosses())
