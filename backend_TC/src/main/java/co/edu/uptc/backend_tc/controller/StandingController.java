@@ -25,18 +25,11 @@ public class StandingController {
         return standingService.getStandings(tournamentId, categoryId);
     }
 
-    // 🔥 Nuevo endpoint: Recalcular standings completos
+    // Endpoint mejorado: Recalcular standings completos
     @PostMapping("/{tournamentId}/{categoryId}/recalculate")
     public String recalculateStandings(@PathVariable Long tournamentId, @PathVariable Long categoryId) {
-        List<MatchResult> results = matchResultRepository.findAll();
-        standingService.recalculateStandings(
-                tournamentId,
-                categoryId,
-                results.stream()
-                        .filter(r -> r.getMatch().getTournament().getId().equals(tournamentId)
-                                && r.getMatch().getCategory().getId().equals(categoryId))
-                        .toList()
-        );
+        List<MatchResult> results = matchResultRepository.findByTournamentIdAndCategoryId(tournamentId, categoryId);
+        standingService.recalculateStandings(tournamentId, categoryId, results);
         return "Standings recalculated for tournament " + tournamentId + " and category " + categoryId;
     }
 }

@@ -1,4 +1,4 @@
-// src/app/admin/torneos/[tournamentId]/partidos/[matchId]/live/page.tsx
+// src/app/admin/torneos/[id]/partidos/[matchId]/live/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -14,7 +14,7 @@ import { toastWarning, toastPromise } from '@/utils/toast';
 export default function LiveMatchPage() {
   const params = useParams();
   const router = useRouter();
-  const tournamentId = Number(params.tournamentId);
+  const tournamentId = Number(params.id);
   const matchId = Number(params.matchId);
 
   const [match, setMatch] = useState<Match | null>(null);

@@ -28,7 +28,8 @@ interface Category {
 interface TournamentBrief {
   id: number;
   name: string;
-  categories?: Category[];
+  category?: { id: number; name: string };  // ✅ CORREGIDO: category (singular)
+  categories?: Category[];  // Mantener por compatibilidad
 }
 
 function getPropNumber(obj: unknown, key: string, fallback = 0): number {
@@ -62,6 +63,8 @@ export default function StandingsPage() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [recalculating, setRecalculating] = useState(false); // ✅ AGREGAR
+  const [error, setError] = useState<string | null>(null); // ✅ AGREGAR
 
   useEffect(() => {
     if (id) {
@@ -83,27 +86,59 @@ export default function StandingsPage() {
       const tour = data as unknown as TournamentBrief;
       setTournament(tour);
 
-      if (Array.isArray(tour?.categories) && tour.categories.length > 0) {
+      console.log('📊 Datos del torneo recibidos:', tour); // Para debug
+
+      // ✅ CORREGIDO: El backend devuelve 'category' (singular)
+      // Un torneo tiene UNA sola categoría, no múltiples
+      if (tour?.category?.id) {
+        // Opción 1: Si viene como objeto category (lo correcto)
+        const category = {
+          id: tour.category.id,
+          name: tour.category.name || 'Categoría'
+        };
+        setCategories([category]);
+        setSelectedCategory(category.id);
+        console.log('✅ Categoría obtenida del torneo:', category);
+      } else if (Array.isArray(tour?.categories) && tour.categories.length > 0) {
+        // Opción 2: Si por alguna razón viene como array (compatibilidad)
         setCategories(tour.categories);
         setSelectedCategory(tour.categories[0].id);
+        console.log('✅ Categorías obtenidas del array:', tour.categories);
       } else {
-        // fallback si la API no devuelve categorías
-        const fallback = [{ id: 1, name: 'Categoría Única' }];
-        setCategories(fallback);
-        setSelectedCategory(fallback[0].id);
+        // Opción 3: Si no hay categoría, intentar obtenerla desde los partidos
+        console.warn('⚠️ No se encontró categoría en el torneo. Revisa los datos del backend.');
+        console.warn('Datos completos del torneo:', JSON.stringify(tour, null, 2));
+        // No usar fallback con id: 1, mejor dejar en null y mostrar error
+        setCategories([]);
+        setSelectedCategory(null);
       }
     } catch (error) {
-      console.error('Error al cargar torneo:', error);
+      console.error('❌ Error al cargar torneo:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const fetchStandings = async () => {
-    if (!selectedCategory) return;
+    if (!selectedCategory) {
+      console.warn('⚠️ No hay categoría seleccionada. No se pueden cargar los standings.');
+      setError('No hay categoría seleccionada');
+      return;
+    }
 
     try {
+      setError(null); // Limpiar errores
+      console.log('🔍 Consultando standings para:', {
+        tournamentId: Number(id),
+        categoryId: selectedCategory
+      });
+      
       const raw = await standingsService.getStandings(Number(id), selectedCategory);
+      
+      console.log('📊 Respuesta del backend:', raw);
+      console.log('📊 Tipo de respuesta:', Array.isArray(raw) ? 'Array' : typeof raw);
+      console.log('📊 Longitud del array:', Array.isArray(raw) ? raw.length : 'N/A');
+      
       const list: Standing[] = Array.isArray(raw)
         ? raw.map((s, idx) => {
             const gf = getPropNumber(s, 'goalsFor', getPropNumber(s, 'gf', 0));
@@ -127,9 +162,54 @@ export default function StandingsPage() {
           })
         : [];
 
+      console.log('✅ Standings procesados:', list);
+      console.log('✅ Cantidad de standings:', list.length);
+      
+      if (list.length === 0) {
+        setError('No hay datos de posiciones disponibles. Puede que necesites recalcular los standings desde los resultados de los partidos.');
+      } else {
+        setError(null); // Limpiar error si hay datos
+      }
+      
       setStandings(list);
-    } catch (error) {
-      console.error('Error al cargar posiciones:', error);
+    } catch (error: any) {
+      console.error('❌ Error al cargar posiciones:', error);
+      setError(`Error al cargar posiciones: ${error?.message || 'Error desconocido'}`);
+      setStandings([]);
+    }
+  };
+
+  // ✅ AGREGAR: Función para recalcular standings
+  const handleRecalculate = async () => {
+    if (!selectedCategory) {
+      alert('Selecciona una categoría primero');
+      return;
+    }
+
+    try {
+      setRecalculating(true);
+      setError(null);
+      console.log('🔄 Recalculando standings para:', {
+        tournamentId: Number(id),
+        categoryId: selectedCategory
+      });
+      
+      const message = await standingsService.recalculate(Number(id), selectedCategory);
+      console.log('✅ Recalculación completada:', message);
+      
+      // Esperar un momento para que el backend termine de procesar
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Recargar los standings después de recalcular
+      await fetchStandings();
+      
+      alert('✅ Standings recalculados exitosamente. Los datos deberían aparecer ahora.');
+    } catch (error: any) {
+      console.error('❌ Error al recalcular:', error);
+      setError(`Error al recalcular: ${error?.response?.data?.message || error?.message || 'Error desconocido'}`);
+      alert(`❌ Error al recalcular standings: ${error?.response?.data?.message || error?.message || 'Error desconocido'}`);
+    } finally {
+      setRecalculating(false);
     }
   };
 
@@ -149,6 +229,52 @@ export default function StandingsPage() {
           <p className="text-gray-600">{tournament?.name}</p>
         </div>
 
+        {/* ✅ AGREGAR: Mensaje de error */}
+        {error && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-yellow-800 font-medium">⚠️ {error}</p>
+                <p className="text-yellow-700 text-sm mt-1">
+                  Si ya registraste resultados de partidos, haz clic en "Recalcular Standings" para generar la tabla desde los resultados.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ✅ AGREGAR: Botón de recalculación */}
+        {selectedCategory && (
+          <div className="bg-white rounded-lg shadow p-4 mb-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm text-gray-700 font-medium mb-1">
+                  Recalcular Tabla de Posiciones
+                </p>
+                <p className="text-xs text-gray-500">
+                  Esto procesará todos los resultados de partidos finalizados y generará la tabla de posiciones actualizada.
+                </p>
+              </div>
+              <button
+                onClick={handleRecalculate}
+                disabled={recalculating}
+                className="px-6 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              >
+                {recalculating ? '🔄 Recalculando...' : '🔄 Recalcular Standings'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ✅ Mostrar mensaje si no hay categoría */}
+        {!selectedCategory && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <p className="text-yellow-800">
+              ⚠️ No se pudo determinar la categoría del torneo. Por favor, verifica que el torneo tenga una categoría asignada.
+            </p>
+          </div>
+        )}
+
         {categories.length > 1 && (
           <div className="bg-white rounded-lg shadow p-4 mb-6">
             <label className="block text-gray-700 font-medium mb-2">Seleccionar Categoría:</label>
@@ -166,7 +292,7 @@ export default function StandingsPage() {
           </div>
         )}
 
-        {/* El resto del JSX permanece igual */}
+        {/* El resto del código de la tabla permanece igual */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full">
