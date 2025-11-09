@@ -80,7 +80,8 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3000",
                 "http://localhost:3001",
-                "https://tu-dominio-frontend.com"
+                "https://tu-dominio-frontend.com",
+                "http://158.247.122.111:3000"
         ));
 
         // Métodos HTTP permitidos
