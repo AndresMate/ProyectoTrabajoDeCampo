@@ -3,7 +3,7 @@
 import {useEffect, useState} from 'react';
 import matchesService, {MatchCreateDTO} from '@/services/matchesService';
 import {tournamentsService} from '@/services/tournamentsService';
-import categoriesService from '@/services/categoriesService';
+// categories selection removed: no longer importing categoriesService
 import teamsService from '@/services/teamsService';
 import venuesService from '@/services/venuesService';
 import usersService from '@/services/usersService';
@@ -21,10 +21,7 @@ interface Tournament {
     name: string;
 }
 
-interface Category {
-    id: number;
-    name: string;
-}
+// Category selection removed from the form UI
 
 interface Team {
     id: number;
@@ -54,7 +51,7 @@ export default function MatchForm({matchId, onSuccess, onCancel}: MatchFormProps
     });
 
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
-    const [categories, setCategories] = useState<Category[]>([]);
+    // categories state removed (no UI selection)
     const [teams, setTeams] = useState<Team[]>([]);
     const [scenarios, setScenarios] = useState<Scenario[]>([]);
     const [referees, setReferees] = useState<Referee[]>([]);
@@ -64,18 +61,6 @@ export default function MatchForm({matchId, onSuccess, onCancel}: MatchFormProps
     useEffect(() => {
         loadInitialData();
     }, []);
-
-    useEffect(() => {
-        if (matchId) loadMatch();
-    }, [matchId]);
-
-    useEffect(() => {
-        if (formData.tournamentId > 0) loadCategories();
-    }, [formData.tournamentId]);
-
-    useEffect(() => {
-        if (formData.tournamentId > 0 && formData.categoryId > 0) loadTeams();
-    }, [formData.tournamentId, formData.categoryId]);
 
     const loadInitialData = async () => {
         setLoadingData(true);
@@ -115,21 +100,12 @@ export default function MatchForm({matchId, onSuccess, onCancel}: MatchFormProps
         }
     };
 
-    const loadCategories = async () => {
-        try {
-            const categoriesData = await categoriesService.getAll();
-            setCategories(categoriesData.content || categoriesData);
-        } catch (error) {
-            console.error('Error al cargar categorías:', error);
-        }
-    };
+    // loadCategories removed because category selection was removed from the form
 
     const loadTeams = async () => {
         try {
-            const teamsData = await teamsService.getByTournamentAndCategory(
-                formData.tournamentId,
-                formData.categoryId
-            );
+            // Obtener equipos del torneo (sin filtrar por categoría)
+            const teamsData = await teamsService.getByTournamentId(formData.tournamentId);
             setTeams(teamsData);
         } catch (error) {
             console.error('Error al cargar equipos:', error);
@@ -242,25 +218,7 @@ export default function MatchForm({matchId, onSuccess, onCancel}: MatchFormProps
                 </select>
             </div>
 
-            {/* Categoría */}
-            <div>
-                <label className="block text-gray-800 font-semibold mb-2">Categoría *</label>
-                <select
-                    name="categoryId"
-                    value={formData.categoryId}
-                    onChange={handleChange}
-                    required
-                    disabled={!isScheduled || !formData.tournamentId}
-                    className="w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-uptc-yellow focus:border-uptc-yellow disabled:bg-gray-100 disabled:text-gray-500"
-                >
-                    <option value="">-- Selecciona una categoría --</option>
-                    {categories.map(c => (
-                        <option key={c.id} value={c.id}>
-                            {c.name}
-                        </option>
-                    ))}
-                </select>
-            </div>
+            {/* Categoría eliminada del formulario - se gestiona automáticamente por el torneo */}
 
             {/* Equipos */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

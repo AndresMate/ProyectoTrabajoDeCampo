@@ -2,7 +2,7 @@
 
 import {useState, useEffect} from 'react';
 import {tournamentsService} from '@/services/tournamentsService';
-import categoriesService from '@/services/categoriesService';
+// categories selection removed: derive category from the selected tournament or prop
 import fixtureService from '@/services/fixtureService';
 import { toastWarning, toastPromise } from '@/utils/toast';
 
@@ -14,9 +14,7 @@ interface FixtureGeneratorProps {
 
 export default function FixtureGenerator({onClose, onSuccess, tournamentId}: FixtureGeneratorProps) {
     const [tournaments, setTournaments] = useState<any[]>([]);
-    const [categories, setCategories] = useState<any[]>([]);
     const [selectedTournament, setSelectedTournament] = useState<number | null>(null);
-    const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
     const [selectedMode, setSelectedMode] = useState<string>('round_robin');
     const [loading, setLoading] = useState(false);
 
@@ -24,9 +22,10 @@ export default function FixtureGenerator({onClose, onSuccess, tournamentId}: Fix
         fetchTournaments();
     }, []);
 
+    // Si el componente recibe `tournamentId` como prop, preseleccionarlo
     useEffect(() => {
-        if (selectedTournament) fetchCategories();
-    }, [selectedTournament]);
+        if (tournamentId) setSelectedTournament(tournamentId);
+    }, [tournamentId]);
 
     // 🔹 Cargar torneos activos
     const fetchTournaments = async () => {
@@ -41,30 +40,26 @@ export default function FixtureGenerator({onClose, onSuccess, tournamentId}: Fix
         }
     };
 
-    // 🔹 Cargar categorías
-    const fetchCategories = async () => {
-        try {
-            const data = await categoriesService.getAll();
-            setCategories(data.content || data);
-        } catch (error) {
-            console.error('Error al cargar categorías:', error);
-        }
-    };
+    // Note: categories list left for compatibility but we no longer show a category selector
 
     // 🔹 Generar fixture
     const handleGenerate = async () => {
-        if (!selectedTournament || !selectedCategory) {
-            toastWarning('Selecciona torneo y categoría');
+        const tournamentToUse = selectedTournament ?? tournamentId ?? null;
+        const derivedCategoryId = tournamentToUse
+            ? (tournaments.find((t: any) => t.id === tournamentToUse)?.category?.id ?? null)
+            : null;
+
+        if (!tournamentToUse || !derivedCategoryId) {
+            toastWarning('Selecciona torneo (y asegúrate que el torneo tenga una categoría)');
             return;
         }
-
 
         setLoading(true);
         try {
             const response = await toastPromise(
                 fixtureService.generate(
-                    selectedTournament,
-                    selectedCategory,
+                    tournamentToUse,
+                    derivedCategoryId,
                     selectedMode
                 ),
                 {
@@ -84,18 +79,22 @@ export default function FixtureGenerator({onClose, onSuccess, tournamentId}: Fix
 
     // 🔹 Eliminar fixture
     const handleDelete = async () => {
-        if (!selectedTournament || !selectedCategory) {
-            toastWarning('Selecciona torneo y categoría');
+        const tournamentToUse = selectedTournament ?? tournamentId ?? null;
+        const derivedCategoryId = tournamentToUse
+            ? (tournaments.find((t: any) => t.id === tournamentToUse)?.category?.id ?? null)
+            : null;
+
+        if (!tournamentToUse || !derivedCategoryId) {
+            toastWarning('Selecciona torneo (y asegúrate que el torneo tenga una categoría)');
             return;
         }
-
 
         setLoading(true);
         try {
             await toastPromise(
                 fixtureService.delete(
-                    selectedTournament,
-                    selectedCategory
+                    tournamentToUse,
+                    derivedCategoryId
                 ),
                 {
                     loading: 'Eliminando fixture...',
@@ -112,6 +111,7 @@ export default function FixtureGenerator({onClose, onSuccess, tournamentId}: Fix
         }
     };
 
+    // Solo dejamos Round Robin (Eliminación Directa eliminada)
     const modes = [
         {
             value: 'round_robin',
@@ -119,14 +119,7 @@ export default function FixtureGenerator({onClose, onSuccess, tournamentId}: Fix
             description: 'Todos los equipos se enfrentan entre sí (ida y vuelta opcional)',
             icon: '🔄',
             recommended: 'Recomendado para ligas',
-        },
-        {
-            value: 'knockout',
-            name: 'Eliminación Directa',
-            description: 'Sistema de playoffs donde el perdedor queda eliminado',
-            icon: '🏆',
-            recommended: 'Recomendado para copas',
-        },
+        }
     ];
 
     return (
@@ -158,7 +151,6 @@ export default function FixtureGenerator({onClose, onSuccess, tournamentId}: Fix
                             value={selectedTournament || ''}
                             onChange={(e) => {
                                 setSelectedTournament(Number(e.target.value));
-                                setSelectedCategory(null);
                             }}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow"
                         >
@@ -171,29 +163,10 @@ export default function FixtureGenerator({onClose, onSuccess, tournamentId}: Fix
                         </select>
                     </div>
 
-                    {/* Selector de categoría */}
-                    {selectedTournament && (
-                        <div>
-                            <label className="block text-gray-700 font-medium mb-2">
-                                Seleccionar Categoría *
-                            </label>
-                            <select
-                                value={selectedCategory || ''}
-                                onChange={(e) => setSelectedCategory(Number(e.target.value))}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-uptc-yellow"
-                            >
-                                <option value="">-- Selecciona una categoría --</option>
-                                {categories.map((c) => (
-                                    <option key={c.id} value={c.id}>
-                                        {c.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    )}
+                    {/* Selector de categoría eliminado: la categoría se deriva del torneo */}
 
                     {/* Selector de modo */}
-                    {selectedCategory && (
+                    { (tournamentId || selectedTournament) && (
                         <div>
                             <label className="block text-gray-700 font-medium mb-3">Modo de Fixture *</label>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -225,7 +198,7 @@ export default function FixtureGenerator({onClose, onSuccess, tournamentId}: Fix
                     )}
 
                     {/* Botones de acción */}
-                    {selectedCategory && (
+                    { (tournamentId || selectedTournament) && (
                         <div className="border-t pt-6">
                             <div className="flex gap-3">
                                 <button
